@@ -1,9 +1,13 @@
-
 import sys
 import os
-sys.path.append(os.getcwd())
+
+# Ensure `app` package is importable when Alembic runs from its folder.
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if BASE_DIR not in sys.path:
+    sys.path.append(BASE_DIR)
+
 from sqlmodel import SQLModel
-from app.models import *   
+from app.models import *
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
@@ -14,6 +18,11 @@ from alembic import context
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
+
+# Allow overriding the Alembic URL via `DATABASE_URL` environment variable.
+db_url = os.getenv("DATABASE_URL")
+if db_url:
+    config.set_main_option("sqlalchemy.url", db_url)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
