@@ -64,6 +64,11 @@ async def upload_doc(
     current_user: User = Depends(get_current_user),
     session=Depends(get_session),
 ):
+    """Upload a marksheet/certificate and return an OCR preview.
+
+    Important: this endpoint does NOT write to `Mark` yet.
+    The frontend must call `/confirm-ocr` with edited/confirmed values.
+    """
     if current_user.role == "student" and student_id != current_user.id:
         raise HTTPException(status_code=403, detail="Cannot upload for another student")
 
@@ -104,6 +109,10 @@ def confirm_ocr(
     current_user: User = Depends(get_current_user),
     session=Depends(get_session),
 ):
+    """Persist confirmed OCR results into `Mark`.
+
+    This is the step that makes the data "real" for roadmap and risk scoring.
+    """
     doc = session.get(Document, payload.doc_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
@@ -139,6 +148,10 @@ def list_documents(
     current_user: User = Depends(get_current_user),
     session=Depends(get_session),
 ):
+    """List uploaded documents for a student.
+
+    Students can only list their own documents.
+    """
     if current_user.role == "student" and student_id != current_user.id:
         raise HTTPException(status_code=403, detail="Cannot view another student's documents")
 

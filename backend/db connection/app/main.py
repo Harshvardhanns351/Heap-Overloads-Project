@@ -1,3 +1,12 @@
+"""
+EduPulse backend entrypoint.
+
+Key ideas:
+- DB connection comes from `DATABASE_URL` env var (see `app/database.py`)
+- Monitoring events are fire-and-forget (no auth) and power the wellbeing engine
+- Students never see risk labels; teachers receive factual alerts
+"""
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -14,7 +23,7 @@ from app.api.routers.assignments import router as assignments_router
 from app.auth.router import router as auth_router
 
 
-app = FastAPI(title="Heap Overloads API", version="1.0.0")
+app = FastAPI(title="EduPulse API", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -29,14 +38,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Serve uploads folder
+# Serve uploaded files (documents/submissions) from disk.
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 
 @app.on_event("startup")
 def _startup() -> None:
-    # Create tables automatically based on SQLModel metadata.
-    # In production you should use Alembic migrations instead.
+    # Hackathon-friendly: create tables on startup.
+    # For production: generate and apply Alembic migrations instead.
     create_db()
 
 

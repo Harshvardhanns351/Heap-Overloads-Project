@@ -11,6 +11,10 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 
 def get_current_user(token: str = Depends(oauth2_scheme), session=Depends(get_session)) -> User:
+    """Resolve the current user from a JWT bearer token.
+
+    This is the canonical auth dependency for all protected routes.
+    """
     try:
         payload = decode_token(token)
     except ValueError:
@@ -32,6 +36,11 @@ def get_current_user(token: str = Depends(oauth2_scheme), session=Depends(get_se
 
 
 def role_required(roles: Iterable[str]) -> Callable:
+    """RBAC guard for FastAPI routes.
+
+    Usage:
+      @router.get(..., dependencies=[Depends(role_required(["teacher"]))])
+    """
     allowed = set(roles)
 
     def _dep(user: User = Depends(get_current_user)) -> User:
