@@ -4,8 +4,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import select
 
 from app.database import get_session
-from app.models import Mark
+from app.models import Mark, User
 from app.schemas.mark import MarkCreate, MarkRead, MarkUpdate
+from app.auth.deps import get_current_user
 
 router = APIRouter()
 
@@ -19,6 +20,16 @@ def _to_mark_read(m: Mark) -> MarkRead:
         max_score=m.max_score,
         semester=m.semester,
     )
+
+
+@router.get("/me", response_model=List[MarkRead])
+def get_my_marks(
+    current_user: User = Depends(get_current_user),
+    session=Depends(get_session),
+):
+    marks = session.exec(select(Mark).where(Mark.student_id == current_user.id)).all()
+    return [_to_mark_read(m) for m in marks]
+
 
 
 @router.get("/", response_model=List[MarkRead])

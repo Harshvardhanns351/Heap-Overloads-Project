@@ -4,7 +4,6 @@ import useAppStore from './store';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 
-// Student pages
 import StudentDashboard from './pages/student/Dashboard';
 import Roadmap from './pages/student/Roadmap';
 import Mentor from './pages/student/Mentor';
@@ -12,14 +11,12 @@ import Documents from './pages/student/Documents';
 import CodingProfile from './pages/student/CodingProfile';
 import Disputes from './pages/student/Disputes';
 
-// Teacher pages
 import TeacherClasses from './pages/teacher/Classes';
 import TeacherAssignments from './pages/teacher/Assignments';
 import TeacherAttendance from './pages/teacher/Attendance';
 import TeacherAlerts from './pages/teacher/Alerts';
 import StudentDetail from './pages/teacher/StudentDetail';
 
-// Admin pages
 import AdminAnalytics from './pages/admin/Analytics';
 import AdminDisputes from './pages/admin/Disputes';
 import AdminUsers from './pages/admin/Users';
@@ -69,7 +66,13 @@ function AdminRoutes() {
 }
 
 export default function App() {
-  const { currentUser, role } = useAppStore();
+  const { currentUser, role, initialize } = useAppStore();
+
+  React.useEffect(() => {
+    if (currentUser) {
+      initialize();
+    }
+  }, [currentUser, role, initialize]);
 
   if (!currentUser) {
     return (

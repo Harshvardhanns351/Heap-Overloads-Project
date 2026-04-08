@@ -1,8 +1,8 @@
-# EduPulse (Heap-Overloads-Project)
+# Veloris (Heap-Overloads-Project)
 Adaptive learning + student wellbeing platform.
 
 ## Philosophy: wellbeing by inference (not self-reporting)
-EduPulse **never asks students how they feel**. It watches observable behavior and infers:
+Veloris **never asks students how they feel**. It watches observable behavior and infers:
 - Late submissions at 2am, repeatedly
 - No activity for multiple days after a bad score
 - Attendance dropping while scores hold steady

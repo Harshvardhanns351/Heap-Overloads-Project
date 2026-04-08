@@ -10,7 +10,7 @@ from sqlmodel import select
 
 from app.auth.deps import get_current_user, role_required
 from app.database import get_session
-from app.models import Mark, Roadmap, RoadmapNode, RiskScore, User
+from app.models import Mark, Roadmap, RoadmapNode, RiskScore, User, MonitoringEvent
 
 router = APIRouter()
 
@@ -32,7 +32,22 @@ class MentorChatResponse(BaseModel):
 def _load_prompt_template() -> str:
     here = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
     # app/api/routers -> app/api -> app -> (..)
-    prompt_path = os.path.abspath(os.path.join(here, "..", "..", "ai_engine", "prompts", "mentor.txt"))
+    prompt_path = os.path.abspath(
+        os.path.join(here, "..", "..", "ai_engine", "prompts", "mentor.txt")
+    )
+    try:
+        with open(prompt_path, "r", encoding="utf-8") as f:
+            return f.read()
+    except Exception:
+        # Hard fallback (should not happen in repo)
+        return (
+            "You are an academic mentor for engineering students. "
+            "You do NOT provide mental health advice or therapy. "
+            "Student context: Name: {name}. Weak subjects: {weak_subjects}. "
+            "Current roadmap node: {current_node}. Recent marks trend: {marks_trend}. "
+            "Recent activity: {recent_activity}. Risk level: {risk_level}. "
+            "Provide study guidance that references this student's actual context."
+        )
     try:
         with open(prompt_path, "r", encoding="utf-8") as f:
             return f.read()
@@ -66,7 +81,9 @@ def _student_context(session, student: User) -> Dict[str, Any]:
         avg = sum(mark_pcts) / len(mark_pcts)
         marks_trend = f"avg {avg:.0f}% across {len(mark_pcts)} subjects"
 
-    roadmap = session.exec(select(Roadmap).where(Roadmap.student_id == student.id)).first()
+    roadmap = session.exec(
+        select(Roadmap).where(Roadmap.student_id == student.id)
+    ).first()
     current_node = "none"
     if roadmap:
         node = session.exec(
@@ -85,12 +102,23 @@ def _student_context(session, student: User) -> Dict[str, Any]:
         .limit(1)
     ).first()
 
+    recent_events = session.exec(
+        select(MonitoringEvent)
+        .where(MonitoringEvent.student_id == student.id)
+        .order_by(MonitoringEvent.created_at.desc())
+        .limit(3)
+    ).all()
+    recent_activity = [
+        {"type": e.event_type, "at": e.created_at.isoformat()} for e in recent_events
+    ]
+
     return {
         "name": student.name,
         "weak_subjects": sorted(list(set(weak_subjects))) or ["none"],
         "current_node": current_node,
         "marks_trend": marks_trend,
         "recent_risk_level": getattr(recent_risk, "level", None),
+        "recent_activity": recent_activity,
     }
 
 
@@ -133,11 +161,20 @@ def mentor_chat(
 
     ctx = _student_context(session, current_user)
     template = _load_prompt_template()
+
+    recent_activity_str = (
+        ", ".join([f"{a['type']} on {a['at']}" for a in ctx.get("recent_activity", [])])
+        or "no recent activity"
+    )
+    risk_level = ctx.get("recent_risk_level") or "unknown"
+
     system_prompt = template.format(
         name=ctx["name"],
         weak_subjects=", ".join(ctx["weak_subjects"]),
         current_node=ctx["current_node"],
         marks_trend=ctx["marks_trend"],
+        recent_activity=recent_activity_str,
+        risk_level=risk_level,
     )
 
     # Build Groq/OpenAI-style messages
@@ -155,18 +192,19 @@ def mentor_chat(
     # Deterministic fallback (no Groq key / error)
     weak = ctx["weak_subjects"]
     node = ctx["current_node"]
+    risk = ctx.get("recent_risk_level") or "unknown"
     if weak and weak != ["none"]:
         focus = weak[0]
         fallback = (
-            f"Based on your current roadmap node ({node}) and weak subject ({focus}), "
-            f"let’s do 30 minutes of {focus} fundamentals and 2 practice problems. "
-            f"Then we’ll return to {node} and connect the concepts."
+            f"I notice your risk level is {risk}. Based on your current roadmap node ({node}) "
+            f"and weak subject ({focus}), let's do 30 minutes of {focus} fundamentals and 2 practice problems. "
+            f"Then we'll return to {node} and connect the concepts."
         )
     else:
         fallback = (
-            f"Based on your current roadmap node ({node}), start with a quick concept review "
-            f"and then solve 2 practice problems. Tell me what part feels confusing and I’ll explain it."
+            f"Your current risk level is {risk}. Based on your current roadmap node ({node}), "
+            f"start with a quick concept review and then solve 2 practice problems. "
+            f"Tell me what part feels confusing and I'll explain it."
         )
 
     return MentorChatResponse(reply=fallback)
-

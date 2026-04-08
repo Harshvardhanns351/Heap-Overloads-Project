@@ -26,10 +26,16 @@ export default function Login() {
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1200)); // Simulate slow auth for premium effect
-    login(selectedRole.key);
-    setLoading(false);
+    try {
+      await login(email, password);
+      // Success is handled by store updating state and triggering re-render/redirect
+    } catch (err) {
+      alert(err.message || 'Login failed');
+    } finally {
+      setLoading(false);
+    }
   };
+
 
   return (
     <div className="min-h-screen bg-[#030014] flex items-center justify-center p-6 relative overflow-hidden font-inter">
@@ -50,7 +56,7 @@ export default function Login() {
             <div className="w-10 h-10 bg-gradient-to-br from-violet-600 via-purple-500 to-sky-500 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.6)]">
               <Brain size={24} className="text-white" />
             </div>
-            <span className="text-3xl font-bold font-space tracking-tight text-white">EduPulse</span>
+            <span className="text-3xl font-bold font-space tracking-tight text-white">Veloris</span>
           </div>
           <p className="text-slate-400 font-medium text-sm mt-3 tracking-wide">
             AI-powered Academic Intelligence

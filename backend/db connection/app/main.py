@@ -1,5 +1,5 @@
 """
-EduPulse backend entrypoint.
+Veloris backend entrypoint.
 
 Key ideas:
 - DB connection comes from `DATABASE_URL` env var (see `app/database.py`)
@@ -7,9 +7,12 @@ Key ideas:
 - Students never see risk labels; teachers receive factual alerts
 """
 
+import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from app.database import engine, create_db
 from app.api.routers.users import router as users_router
@@ -20,10 +23,20 @@ from app.api.routers.documents import router as academics_router
 from app.api.routers.roadmap import router as roadmap_router
 from app.api.routers.mentor import router as mentor_router
 from app.api.routers.assignments import router as assignments_router
+from app.api.routers.coding import router as coding_router
+from app.api.routers.disputes import router as disputes_router
+from app.api.routers.attendance import router as attendance_router
+from app.api.routers.alerts import router as alerts_router
+from app.api.routers.analytics import router as analytics_router
+from app.api.routers.sprints import router as sprints_router
+from app.api.routers.exams import router as exams_router
+from app.api.routers.peer_notes import router as peer_notes_router
+from app.api.routers.digest import router as digest_router
 from app.auth.router import router as auth_router
+from app.scheduler import run_wellbeing_check
 
 
-app = FastAPI(title="EduPulse API", version="1.0.0")
+app = FastAPI(title="Veloris API", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -31,7 +44,7 @@ app.add_middleware(
         "http://localhost:5173",
         "http://127.0.0.1:5173",
         "http://localhost:3000",
-        "https://edupulse.vercel.app",
+        "https://veloris.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -39,14 +52,30 @@ app.add_middleware(
 )
 
 # Serve uploaded files (documents/submissions) from disk.
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+import os
+
+uploads_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
+if not os.path.exists(uploads_dir):
+    os.makedirs(uploads_dir)
+app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
+
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+scheduler = AsyncIOScheduler()
 
 
 @app.on_event("startup")
-def _startup() -> None:
+async def _startup() -> None:
     # Hackathon-friendly: create tables on startup.
     # For production: generate and apply Alembic migrations instead.
     create_db()
+
+    # Schedule nightly wellbeing check at midnight
+    scheduler.add_job(run_wellbeing_check, "cron", hour=0, minute=0)
+    scheduler.start()
+    logger.info("Scheduler started with nightly wellbeing check")
 
 
 @app.get("/api/health")
@@ -63,6 +92,15 @@ app.include_router(academics_router, prefix="/api/academics", tags=["academics"]
 app.include_router(roadmap_router, prefix="/api/roadmap", tags=["roadmap"])
 app.include_router(mentor_router, prefix="/api/mentor", tags=["mentor"])
 app.include_router(assignments_router, prefix="/api/assignments", tags=["assignments"])
+app.include_router(coding_router, prefix="/api/coding", tags=["coding"])
+app.include_router(disputes_router, prefix="/api/disputes", tags=["disputes"])
+app.include_router(attendance_router, prefix="/api/attendance", tags=["attendance"])
+app.include_router(alerts_router, prefix="/api/alerts", tags=["alerts"])
+app.include_router(analytics_router, prefix="/api/analytics", tags=["analytics"])
+app.include_router(sprints_router, prefix="/api/sprints", tags=["sprints"])
+app.include_router(exams_router, prefix="/api/exams", tags=["exams"])
+app.include_router(peer_notes_router, prefix="/api/peer-notes", tags=["peer-notes"])
+app.include_router(digest_router, prefix="/api/digest", tags=["digest"])
 
 
 if __name__ == "__main__":

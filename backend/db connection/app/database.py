@@ -7,7 +7,7 @@ load_dotenv()
 
 # Use `DATABASE_URL` from environment for all DB connectivity.
 # For safety, do NOT commit real credentials; default to local sqlite for dev.
-DEFAULT_DATABASE_URL = "sqlite:///./edupulse.db"
+DEFAULT_DATABASE_URL = "sqlite:///./veloris.db"
 DATABASE_URL = os.getenv("DATABASE_URL", DEFAULT_DATABASE_URL)
 
 if "DATABASE_URL" not in os.environ:

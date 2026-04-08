@@ -97,15 +97,26 @@ def _marks_for_student(session, student_id: int) -> List[Dict[str, Any]]:
     return out
 
 
-def _create_roadmap_from_generated(session, student: User, goal: str, semester: int, branch: str, generated: Dict[str, Any]) -> Roadmap:
-    roadmap = Roadmap(student_id=student.id, goal=goal, semester=semester, branch=branch)
+def _create_roadmap_from_generated(
+    session,
+    student: User,
+    goal: str,
+    semester: int,
+    branch: str,
+    generated: Dict[str, Any],
+) -> Roadmap:
+    roadmap = Roadmap(
+        student_id=student.id, goal=goal, semester=semester, branch=branch
+    )
     session.add(roadmap)
     session.commit()
     session.refresh(roadmap)
 
     nodes = generated.get("nodes") or []
     if not isinstance(nodes, list) or not nodes:
-        raise HTTPException(status_code=500, detail="Roadmap generator returned no nodes")
+        raise HTTPException(
+            status_code=500, detail="Roadmap generator returned no nodes"
+        )
 
     for idx, node in enumerate(nodes):
         if not isinstance(node, dict):
@@ -113,7 +124,7 @@ def _create_roadmap_from_generated(session, student: User, goal: str, semester: 
         rn = RoadmapNode(
             roadmap_id=roadmap.id,
             order_index=idx,
-            title=str(node.get("title", f"Node {idx+1}")),
+            title=str(node.get("title", f"Node {idx + 1}")),
             description=str(node.get("description", "")),
             hours=int(node.get("estimated_hours", node.get("hours", 0)) or 0),
             node_type=str(node.get("type", node.get("node_type", "concept"))),
@@ -136,15 +147,57 @@ def get_my_roadmap(
     current_user: User = Depends(get_current_user),
     session=Depends(get_session),
 ):
-    roadmap = session.exec(select(Roadmap).where(Roadmap.student_id == current_user.id)).first()
+    roadmap = session.exec(
+        select(Roadmap).where(Roadmap.student_id == current_user.id)
+    ).first()
+
+    semester = current_user.semester or 6
+    branch = current_user.branch or "CSE"
+    goal = current_user.goal or "crack placements"
+
     if not roadmap:
-        # Generate + persist
         marks = _marks_for_student(session, current_user.id)
-        semester = 6
-        branch = "CSE"
-        goal = "crack placements"
-        generated = generate_roadmap(goal=goal, semester=semester, branch=branch, marks=marks)
-        roadmap = _create_roadmap_from_generated(session, current_user, goal, semester, branch, generated)
+        generated = generate_roadmap(
+            goal=goal, semester=semester, branch=branch, marks=marks
+        )
+        roadmap = _create_roadmap_from_generated(
+            session, current_user, goal, semester, branch, generated
+        )
+    elif (
+        roadmap.goal != goal or roadmap.semester != semester or roadmap.branch != branch
+    ):
+        marks = _marks_for_student(session, current_user.id)
+        generated = generate_roadmap(
+            goal=goal, semester=semester, branch=branch, marks=marks
+        )
+        nodes = session.exec(
+            select(RoadmapNode).where(RoadmapNode.roadmap_id == roadmap.id)
+        ).all()
+        for n in nodes:
+            session.delete(n)
+        roadmap.goal = goal
+        roadmap.semester = semester
+        roadmap.branch = branch
+        roadmap.regenerated_at = datetime.utcnow()
+
+        nodes = generated.get("nodes") or []
+        for idx, node in enumerate(nodes):
+            if not isinstance(node, dict):
+                continue
+            rn = RoadmapNode(
+                roadmap_id=roadmap.id,
+                order_index=idx,
+                title=str(node.get("title", f"Node {idx + 1}")),
+                description=str(node.get("description", "")),
+                hours=int(node.get("estimated_hours", node.get("hours", 0)) or 0),
+                node_type=str(node.get("type", node.get("node_type", "concept"))),
+                status="pending",
+                prereq_ids_json=json.dumps(node.get("prerequisites", [])),
+                resources_json=json.dumps(node.get("resources", [])),
+            )
+            session.add(rn)
+        session.add(roadmap)
+        session.commit()
 
     nodes = session.exec(
         select(RoadmapNode)
@@ -216,20 +269,28 @@ def regenerate(
     current_user: User = Depends(get_current_user),
     session=Depends(get_session),
 ):
-    existing = session.exec(select(Roadmap).where(Roadmap.student_id == current_user.id)).first()
+    existing = session.exec(
+        select(Roadmap).where(Roadmap.student_id == current_user.id)
+    ).first()
     if existing:
-        nodes = session.exec(select(RoadmapNode).where(RoadmapNode.roadmap_id == existing.id)).all()
+        nodes = session.exec(
+            select(RoadmapNode).where(RoadmapNode.roadmap_id == existing.id)
+        ).all()
         for n in nodes:
             session.delete(n)
         session.delete(existing)
         session.commit()
 
     marks = _marks_for_student(session, current_user.id)
-    semester = 6
-    branch = "CSE"
-    goal = "crack placements"
-    generated = generate_roadmap(goal=goal, semester=semester, branch=branch, marks=marks)
-    roadmap = _create_roadmap_from_generated(session, current_user, goal, semester, branch, generated)
+    semester = current_user.semester or 6
+    branch = current_user.branch or "CSE"
+    goal = current_user.goal or "crack placements"
+    generated = generate_roadmap(
+        goal=goal, semester=semester, branch=branch, marks=marks
+    )
+    roadmap = _create_roadmap_from_generated(
+        session, current_user, goal, semester, branch, generated
+    )
     roadmap.regenerated_at = datetime.utcnow()
     session.add(roadmap)
     session.commit()
@@ -254,3 +315,142 @@ def regenerate(
         nodes=[_node_from_db(n) for n in nodes],
     )
 
+
+class GoalUpdate(BaseModel):
+    goal: str
+    semester: int | None = None
+    branch: str | None = None
+
+
+@router.patch(
+    "/goal",
+    response_model=RoadmapOut,
+    dependencies=[Depends(role_required(["student"]))],
+)
+def update_goal(
+    payload: GoalUpdate,
+    current_user: User = Depends(get_current_user),
+    session=Depends(get_session),
+):
+    current_user.goal = payload.goal
+    if payload.semester is not None:
+        current_user.semester = payload.semester
+    if payload.branch is not None:
+        current_user.branch = payload.branch
+    current_user.goal_changed_at = datetime.utcnow()
+    session.add(current_user)
+    session.commit()
+
+    roadmap = session.exec(
+        select(Roadmap).where(Roadmap.student_id == current_user.id)
+    ).first()
+    if roadmap:
+        nodes = session.exec(
+            select(RoadmapNode).where(RoadmapNode.roadmap_id == roadmap.id)
+        ).all()
+        for n in nodes:
+            session.delete(n)
+        roadmap.goal = payload.goal
+        roadmap.semester = current_user.semester or 6
+        roadmap.branch = current_user.branch or "CSE"
+        roadmap.regenerated_at = datetime.utcnow()
+        session.add(roadmap)
+
+        marks = _marks_for_student(session, current_user.id)
+        generated = generate_roadmap(
+            goal=payload.goal,
+            semester=roadmap.semester,
+            branch=roadmap.branch,
+            marks=marks,
+        )
+
+        nodes = generated.get("nodes") or []
+        for idx, node in enumerate(nodes):
+            if not isinstance(node, dict):
+                continue
+            rn = RoadmapNode(
+                roadmap_id=roadmap.id,
+                order_index=idx,
+                title=str(node.get("title", f"Node {idx + 1}")),
+                description=str(node.get("description", "")),
+                hours=int(node.get("estimated_hours", node.get("hours", 0)) or 0),
+                node_type=str(node.get("type", node.get("node_type", "concept"))),
+                status="pending",
+                prereq_ids_json=json.dumps(node.get("prerequisites", [])),
+                resources_json=json.dumps(node.get("resources", [])),
+            )
+            session.add(rn)
+
+        session.commit()
+
+        nodes = session.exec(
+            select(RoadmapNode)
+            .where(RoadmapNode.roadmap_id == roadmap.id)
+            .order_by(RoadmapNode.order_index.asc())
+        ).all()
+
+        title = f"{roadmap.branch} Semester {roadmap.semester} Roadmap"
+        return RoadmapOut(
+            id=roadmap.id,
+            student_id=roadmap.student_id,
+            goal=roadmap.goal,
+            semester=roadmap.semester,
+            branch=roadmap.branch,
+            title=title,
+            created_at=roadmap.created_at,
+            regenerated_at=roadmap.regenerated_at,
+            nodes=[_node_from_db(n) for n in nodes],
+        )
+
+    return {"detail": "Goal updated. Generate roadmap to see changes."}
+
+
+def regenerate(
+    current_user: User = Depends(get_current_user),
+    session=Depends(get_session),
+):
+    existing = session.exec(
+        select(Roadmap).where(Roadmap.student_id == current_user.id)
+    ).first()
+    if existing:
+        nodes = session.exec(
+            select(RoadmapNode).where(RoadmapNode.roadmap_id == existing.id)
+        ).all()
+        for n in nodes:
+            session.delete(n)
+        session.delete(existing)
+        session.commit()
+
+    marks = _marks_for_student(session, current_user.id)
+    semester = 6
+    branch = "CSE"
+    goal = "crack placements"
+    generated = generate_roadmap(
+        goal=goal, semester=semester, branch=branch, marks=marks
+    )
+    roadmap = _create_roadmap_from_generated(
+        session, current_user, goal, semester, branch, generated
+    )
+    roadmap.regenerated_at = datetime.utcnow()
+    session.add(roadmap)
+    session.commit()
+    session.refresh(roadmap)
+
+    nodes = session.exec(
+        select(RoadmapNode)
+        .where(RoadmapNode.roadmap_id == roadmap.id)
+        .order_by(RoadmapNode.order_index.asc())
+    ).all()
+
+    title = f"{roadmap.branch} Semester {roadmap.semester} Roadmap"
+    return RoadmapOut(
+        id=roadmap.id,
+        student_id=roadmap.student_id,
+        goal=roadmap.goal,
+        semester=roadmap.semester,
+        branch=roadmap.branch,
+        title=title,
+        created_at=roadmap.created_at,
+        regenerated_at=roadmap.regenerated_at,
+        nodes=[_node_from_db(n) for n in nodes],
+    )

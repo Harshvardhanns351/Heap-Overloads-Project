@@ -20,6 +20,8 @@ def _deterministic_fallback() -> List[Dict[str, Any]]:
     ]
 
 
+import re
+
 def _try_pytesseract(file_path: str) -> List[Dict[str, Any]] | None:
     ext = os.path.splitext(file_path)[1].lower()
     if ext not in [".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tiff"]:
@@ -27,11 +29,32 @@ def _try_pytesseract(file_path: str) -> List[Dict[str, Any]] | None:
 
     try:
         img = Image.open(file_path)
-        _ = pytesseract.image_to_string(img)  # We don't parse reliably yet.
-        # For hackathon scope we return deterministic output after OCR runs.
-        return _deterministic_fallback()
+        raw_text = pytesseract.image_to_string(img)
+        
+        # Basic heuristic parsing: Look for "Subject: Score" patterns
+        # Example: "Mathematics 85" or "OS: 72"
+        lines = raw_text.split("\n")
+        results = []
+        for line in lines:
+            match = re.search(r"([a-zA-Z\s&]+)[:\s-]+(\d+)", line)
+            if match:
+                subject = match.group(1).strip()
+                score = int(match.group(2))
+                if len(subject) > 2 and score <= 100:
+                    results.append({
+                        "subject": subject,
+                        "marks_obtained": score,
+                        "max_marks": 100,
+                        "semester": 6 # Default to current
+                    })
+        
+        if len(results) >= 2:
+            return results
+            
+        return None # Too few results, try vision fallback
     except Exception:
         return None
+
 
 
 def _try_groq_vision(file_path: str) -> List[Dict[str, Any]] | None:
