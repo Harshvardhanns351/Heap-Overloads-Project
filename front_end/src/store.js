@@ -298,6 +298,17 @@ const useAppStore = create((set, get) => ({
     }
   },
 
+  // Coding
+  codingSummary: null,
+  fetchCodingSummary: async () => {
+    try {
+      const data = await api.coding.getSummary();
+      set({ codingSummary: data });
+    } catch (err) {
+      console.error('Failed to fetch coding summary', err);
+    }
+  },
+
   // Initialization
   initialize: async () => {
     const role = get().role;

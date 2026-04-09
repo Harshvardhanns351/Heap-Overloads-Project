@@ -13,6 +13,7 @@ from app.models.attendance_record import AttendanceRecord
 from app.models.assignment import AssignmentSubmission
 from app.models.monitoring_event import MonitoringEvent
 from app.models.roadmap import Roadmap, RoadmapNode
+from app.models.coding_profile import CodingProfile
 from ai_engine.wellbeing.detector import compute_risk_score
 
 logger = logging.getLogger(__name__)
@@ -50,6 +51,19 @@ async def process_student_wellbeing(session, student: User):
     ).first()
 
     last_activity_at = last_activity.created_at if last_activity else None
+
+    # Also check coding platform activity — more reliable signal
+    coding_profiles = session.exec(
+        select(CodingProfile).where(CodingProfile.student_id == student.id)
+    ).all()
+    for cp in coding_profiles:
+        if cp.last_activity_at:
+            dt = cp.last_activity_at
+            if dt.tzinfo is None:
+                from datetime import timezone
+                dt = dt.replace(tzinfo=timezone.utc)
+            if last_activity_at is None or dt > last_activity_at:
+                last_activity_at = dt
 
     attendance_percent = get_student_attendance(session, student.id)
 

@@ -110,8 +110,12 @@ export const api = {
   },
   
   coding: {
-    getProfile: () => fetch(`${API_BASE}/coding/profile`, { headers: getHeaders() }).then(handleResponse),
-    sync: () => fetch(`${API_BASE}/coding/sync`, { method: 'POST', headers: getHeaders() }).then(handleResponse),
+    getProfiles: () => fetch(`${API_BASE}/coding/me`, { headers: getHeaders() }).then(handleResponse),
+    getSummary: () => fetch(`${API_BASE}/coding/me/summary`, { headers: getHeaders() }).then(handleResponse),
+    syncLeetcode: (username) => fetch(`${API_BASE}/coding/leetcode/${username}`, { headers: getHeaders() }).then(handleResponse),
+    syncGithub: (username) => fetch(`${API_BASE}/coding/github/${username}`, { headers: getHeaders() }).then(handleResponse),
+    syncCodeforces: (handle) => fetch(`${API_BASE}/coding/codeforces/${handle}`, { headers: getHeaders() }).then(handleResponse),
+    syncCodechef: (username) => fetch(`${API_BASE}/coding/codechef/${username}`, { headers: getHeaders() }).then(handleResponse),
   },
 
   users: {
