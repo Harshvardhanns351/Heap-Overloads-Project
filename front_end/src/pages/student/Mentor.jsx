@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import useAppStore from '../../store';
 import { PageHeader } from '../../components/UI';
 import { Send, Sparkles, User } from 'lucide-react';
-import { api } from '../../api';
 
 function Message({ msg }) {
   const isUser = msg.role === 'user';

@@ -1,0 +1,29 @@
+# Local dev folders (old name, superseded by backend/server)
+backend/dbconnection/
+backend/backend/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+*.db
+
+# Node
+node_modules/
+dist/
+dist-ssr/
+
+# Editor
+.vscode/
+.idea/
+*.suo
+*.sw?
+
+# Env files (never commit real secrets)
+.env
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
