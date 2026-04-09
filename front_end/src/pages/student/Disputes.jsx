@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import useAppStore from '../../store';
-import { PageHeader, Tabs, Modal } from '../../components/UI';
-import { Plus, AlertCircle, Clock, CheckCircle2, Loader } from 'lucide-react';
+import { PageHeader, Tabs } from '../../components/UI';
+import { Plus, CheckCircle2, Loader } from 'lucide-react';
 
 const STATUS_CONFIG = {
   Open: { cls: 'badge-red', label: 'Open' },
@@ -52,13 +52,13 @@ export default function Disputes() {
 
       {tab === 'list' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {myDisputes.length === 0 && (
+          {disputes.length === 0 && (
             <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>
               <CheckCircle2 size={28} style={{ marginBottom: '10px', opacity: 0.4 }} />
               <div>No disputes raised</div>
             </div>
           )}
-          {myDisputes.map((d) => {
+          {disputes.map((d) => {
             const sc = STATUS_CONFIG[d.status] || STATUS_CONFIG.Open;
             return (
               <div key={d.id} className="card" style={{ padding: '16px 20px' }}>
