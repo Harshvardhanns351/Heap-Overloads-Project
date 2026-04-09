@@ -16,10 +16,12 @@ export default function StudentDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
     Promise.all([
       fetchMarks(), fetchRiskScore(), fetchRoadmap(), fetchSprintStats(), fetchAssignments(),
-    ]).finally(() => setLoading(false));
-  }, []);
+    ]).finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) {
     return (

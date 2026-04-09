@@ -10,8 +10,14 @@ const getHeaders = () => {
 
 const handleResponse = async (resp) => {
   if (resp.status === 401) {
-    localStorage.removeItem('token');
-    window.location.href = '/login';
+    // Only redirect if we had a token — prevents redirect loops on missing token
+    const hadToken = !!localStorage.getItem('token');
+    if (hadToken) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('role');
+      window.location.href = '/login';
+    }
     throw new Error('Unauthorized');
   }
   if (!resp.ok) {

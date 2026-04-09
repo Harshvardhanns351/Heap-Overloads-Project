@@ -6,8 +6,23 @@ export const MOCK_STUDENTS = [];
 
 const useAppStore = create((set, get) => ({
   // Auth
-  currentUser: JSON.parse(localStorage.getItem('user') || 'null'),
-  role: localStorage.getItem('role') || null,
+  currentUser: (() => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || 'null');
+      const token = localStorage.getItem('token');
+      // If user is set but token is missing, clear everything
+      if (user && !token) {
+        localStorage.removeItem('user');
+        localStorage.removeItem('role');
+        return null;
+      }
+      return user;
+    } catch { return null; }
+  })(),
+  role: (() => {
+    const token = localStorage.getItem('token');
+    return token ? (localStorage.getItem('role') || null) : null;
+  })(),
   isInitializing: false,
 
   setAuth: (user, token) => {
