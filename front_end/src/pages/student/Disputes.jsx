@@ -12,24 +12,28 @@ const STATUS_CONFIG = {
 const CATEGORIES = ['Infrastructure', 'Academic', 'Administrative'];
 
 export default function Disputes() {
-  const { disputes, addDispute } = useAppStore();
+  const { disputes, createDispute, fetchDisputes } = useAppStore();
   const [tab, setTab] = useState('list');
   const [form, setForm] = useState({ category: 'Infrastructure', title: '', description: '' });
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const myDisputes = disputes.filter((d) => d.studentName === 'Rahul Sharma');
+  useEffect(() => { fetchDisputes(); }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.title || !form.description) return;
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    addDispute({ ...form, studentName: 'Rahul Sharma' });
-    setLoading(false);
-    setSubmitted(true);
-    setForm({ category: 'Infrastructure', title: '', description: '' });
-    setTimeout(() => { setSubmitted(false); setTab('list'); }, 2000);
+    try {
+      await createDispute(form.category, form.title, form.description);
+      setSubmitted(true);
+      setForm({ category: 'Infrastructure', title: '', description: '' });
+      setTimeout(() => { setSubmitted(false); setTab('list'); }, 2000);
+    } catch (err) {
+      alert(err.message || 'Failed to submit dispute');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

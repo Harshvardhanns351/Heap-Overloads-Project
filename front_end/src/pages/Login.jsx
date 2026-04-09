@@ -13,7 +13,7 @@ export default function Login() {
   const [selectedRole, setSelectedRole] = useState(ROLES[0]);
   const [showPass, setShowPass] = useState(false);
   const [email, setEmail] = useState('rahul@college.edu');
-  const [password, setPassword] = useState('password123');
+  const [password, setPassword] = useState('password');
   const [loading, setLoading] = useState(false);
 
   const roleEmails = { student: 'rahul@college.edu', teacher: 'priya@college.edu', admin: 'admin@college.edu' };

@@ -31,15 +31,22 @@ export default function Roadmap() {
       {/* Progress bar */}
       <div className="card" style={{ padding: '16px 20px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
         <div style={{ flex: 1 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-            <span style={{ fontSize: '12px', fontWeight: '500' }}>Overall Progress</span>
-            <span style={{ fontSize: '12px', fontWeight: '700', color: '#4f8ef7' }}>2 / 6 completed</span>
-          </div>
-          <div style={{ background: 'var(--bg-elevated)', borderRadius: '99px', height: '6px', overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: '33%', background: 'linear-gradient(90deg, #4f8ef7, #8b5cf6)', borderRadius: '99px', transition: 'width 0.5s ease' }} />
-          </div>
+          {(() => {
+            const completed = roadmapNodes.filter(n => n.status === 'completed').length;
+            const total = roadmapNodes.length;
+            const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+            return <>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <span style={{ fontSize: '12px', fontWeight: '500' }}>Overall Progress</span>
+                <span style={{ fontSize: '12px', fontWeight: '700', color: '#4f8ef7' }}>{completed} / {total} completed</span>
+              </div>
+              <div style={{ background: 'var(--bg-elevated)', borderRadius: '99px', height: '6px', overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${pct}%`, background: 'linear-gradient(90deg, #4f8ef7, #8b5cf6)', borderRadius: '99px', transition: 'width 0.5s ease' }} />
+              </div>
+              <div style={{ fontSize: '24px', fontWeight: '700', fontFamily: 'Space Grotesk, sans-serif', color: '#f0f0f8', marginTop: '8px' }}>{pct}%</div>
+            </>;
+          })()}
         </div>
-        <div style={{ fontSize: '24px', fontWeight: '700', fontFamily: 'Space Grotesk, sans-serif', color: '#f0f0f8' }}>33%</div>
       </div>
 
       {/* Vertical ladder */}
@@ -50,8 +57,12 @@ export default function Roadmap() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {roadmapNodes.map((node, idx) => {
             const isExpanded = expandedNode === node.id;
-            const Icon = TYPE_ICONS[node.type] || BookOpen;
-            const typeColor = TYPE_COLORS[node.type];
+            const nodeType = node.node_type || node.type || 'concept';
+            const Icon = TYPE_ICONS[nodeType] || BookOpen;
+            const typeColor = TYPE_COLORS[nodeType];
+            const resources = (() => {
+              try { return JSON.parse(node.resources_json || '[]'); } catch { return []; }
+            })();
 
             return (
               <div key={node.id} className="roadmap-node" style={{ opacity: node.status === 'upcoming' && idx > 3 ? 0.5 : 1 }}>
@@ -74,9 +85,9 @@ export default function Roadmap() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                       <span style={{ fontSize: '13px', fontWeight: '600' }}>{node.title}</span>
                       <span style={{ fontSize: '10px', padding: '1px 7px', borderRadius: '99px', background: `${typeColor}15`, color: typeColor, border: `1px solid ${typeColor}25`, fontWeight: '600' }}>
-                        {node.type}
+                        {nodeType}
                       </span>
-                      {node.status === 'current' && (
+                      {node.status === 'in_progress' && (
                         <span className="badge-blue" style={{ fontSize: '10px', padding: '1px 7px', borderRadius: '99px', fontWeight: '600' }}>Current</span>
                       )}
                     </div>
@@ -100,16 +111,17 @@ export default function Roadmap() {
                     <div style={{ marginBottom: '14px' }}>
                       <div style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Resources</div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                        {node.resources.map((r, i) => (
+                        {resources.map((r, i) => (
                           <span key={i} style={{ fontSize: '11px', padding: '3px 10px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '6px', color: '#4f8ef7', cursor: 'pointer' }}>
                             🔗 {r}
                           </span>
                         ))}
+                        {resources.length === 0 && <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>No resources listed</span>}
                       </div>
                     </div>
 
                     <div style={{ display: 'flex', gap: '8px' }}>
-                      {node.status === 'current' && (
+                      {node.status === 'in_progress' && (
                         <button className="btn btn-primary" onClick={() => markNodeComplete(node.id)} style={{ fontSize: '12px', padding: '6px 14px' }}>
                           <CheckCircle2 size={13} /> Mark Complete
                         </button>
@@ -119,7 +131,7 @@ export default function Roadmap() {
                           <CheckCircle2 size={13} /> Completed
                         </span>
                       )}
-                      {node.status === 'upcoming' && (
+                      {node.status === 'pending' && (
                         <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Complete previous nodes to unlock</span>
                       )}
                     </div>

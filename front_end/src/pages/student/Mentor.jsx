@@ -2,15 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import useAppStore from '../../store';
 import { PageHeader } from '../../components/UI';
 import { Send, Sparkles, User } from 'lucide-react';
-
-const MOCK_RESPONSES = [
-  "Great question! **Binary Search Trees** allow O(log n) search, insert, and delete on average. The key property: every left child is smaller, every right child is larger. Want me to walk through the insertion algorithm step-by-step?",
-  "Based on your ML score of 45%, I'd suggest starting with **linear regression fundamentals** before jumping into neural networks. Your DBMS strength (81%) shows you handle structured thinking well — apply that same approach to ML math.",
-  "For placements at your target companies, focus on: **1)** Arrays + Strings (you're strong here), **2)** Graph problems (BFS/DFS — most common), **3)** DP (start with 1D, skip trees for now). You have ~3 weeks before campus season.",
-  "Your CN score (63%) is recoverable. The most tested topics in placements are: OSI layers, TCP vs UDP, DNS resolution, and subnetting. Want a focused 5-day plan for CN specifically?",
-];
-
-let responseIdx = 0;
+import { api } from '../../api';
 
 function Message({ msg }) {
   const isUser = msg.role === 'user';
@@ -24,7 +16,6 @@ function Message({ msg }) {
         {isUser ? <User size={13} color="#4f8ef7" /> : <Sparkles size={13} color="#8b5cf6" />}
       </div>
       <div className={isUser ? 'chat-user' : 'chat-ai'} style={{ maxWidth: '75%', padding: '10px 14px', fontSize: '13px', lineHeight: '1.6', color: 'var(--text-primary)' }}>
-        {/* Render simple markdown bold */}
         {msg.content.split(/(\*\*[^*]+\*\*)/).map((part, i) =>
           part.startsWith('**') ? <strong key={i}>{part.slice(2, -2)}</strong> : <span key={i}>{part}</span>
         )}
@@ -34,15 +25,13 @@ function Message({ msg }) {
 }
 
 export default function Mentor() {
-  const { chatMessages, addChatMessage } = useAppStore();
+  const { chatMessages, addChatMessage, marks, roadmapNodes, riskScore } = useAppStore();
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef(null);
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [chatMessages, loading]);
 
   const send = async () => {
@@ -51,18 +40,41 @@ export default function Mentor() {
     setInput('');
     addChatMessage({ role: 'user', content: text });
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1200 + Math.random() * 800));
-    const reply = MOCK_RESPONSES[responseIdx % MOCK_RESPONSES.length];
-    responseIdx++;
-    addChatMessage({ role: 'assistant', content: reply });
-    setLoading(false);
+
+    try {
+      const history = chatMessages
+        .filter(m => m.role === 'user' || m.role === 'assistant')
+        .slice(-10)
+        .map(m => ({ role: m.role, content: m.content }));
+
+      const data = await fetch('http://localhost:8000/api/mentor/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({ message: text, conversation_history: history }),
+      }).then(r => r.json());
+
+      addChatMessage({ role: 'assistant', content: data.reply || 'Sorry, I could not generate a response.' });
+    } catch (err) {
+      addChatMessage({ role: 'assistant', content: 'Connection error. Please check the backend is running.' });
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const weakSubjects = marks
+    ?.filter(m => m.max_score > 0 && (m.score / m.max_score) < 0.6)
+    .map(m => `${m.subject} (${Math.round((m.score / m.max_score) * 100)}%)`) || [];
+
+  const currentNode = roadmapNodes?.find(n => n.status === 'in_progress')?.title;
 
   const SUGGESTED = [
     'What should I study today?',
-    'Explain BSTs with examples',
-    'Give me a 7-day CN plan',
-    'Which placement topics are most urgent?',
+    currentNode ? `Explain ${currentNode} with examples` : 'Give me a study plan',
+    weakSubjects[0] ? `Help me improve in ${weakSubjects[0].split(' ')[0]}` : 'Which topics are most urgent?',
+    'Give me 5 practice problems',
   ];
 
   return (
@@ -72,18 +84,17 @@ export default function Mentor() {
         subtitle="Context-aware academic tutor · knows your roadmap, marks, and weak spots"
       />
 
-      {/* Context chip bar */}
       <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '16px' }}>
-        {['Weak: ML (45%)', 'Current: BST', 'Sem 6 CSE', 'Goal: Placements'].map((c, i) => (
-          <span key={i} className="badge-blue" style={{ fontSize: '10px', padding: '3px 10px', borderRadius: '99px', fontWeight: '500' }}>{c}</span>
+        {weakSubjects.slice(0, 2).map((s, i) => (
+          <span key={i} className="badge-red" style={{ fontSize: '10px', padding: '3px 10px', borderRadius: '99px', fontWeight: '500' }}>Weak: {s}</span>
         ))}
+        {currentNode && <span className="badge-blue" style={{ fontSize: '10px', padding: '3px 10px', borderRadius: '99px', fontWeight: '500' }}>Current: {currentNode}</span>}
+        {riskScore && <span className="badge-yellow" style={{ fontSize: '10px', padding: '3px 10px', borderRadius: '99px', fontWeight: '500' }}>Risk: {riskScore.level}</span>}
       </div>
 
-      {/* Chat window */}
       <div className="card" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
           {chatMessages.map((msg, i) => <Message key={i} msg={msg} />)}
-
           {loading && (
             <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
               <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(139,92,246,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -98,18 +109,14 @@ export default function Mentor() {
           )}
         </div>
 
-        {/* Suggestions */}
         {chatMessages.length <= 1 && (
           <div style={{ padding: '0 20px 12px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
             {SUGGESTED.map((s, i) => (
-              <button key={i} onClick={() => { setInput(s); }} className="btn btn-ghost" style={{ fontSize: '11px', padding: '5px 12px' }}>
-                {s}
-              </button>
+              <button key={i} onClick={() => setInput(s)} className="btn btn-ghost" style={{ fontSize: '11px', padding: '5px 12px' }}>{s}</button>
             ))}
           </div>
         )}
 
-        {/* Input */}
         <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', display: 'flex', gap: '10px' }}>
           <input
             className="input"
@@ -126,10 +133,7 @@ export default function Mentor() {
       </div>
 
       <style>{`
-        @keyframes bounce {
-          0%, 60%, 100% { transform: translateY(0); }
-          30% { transform: translateY(-6px); }
-        }
+        @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
       `}</style>
     </div>
   );
