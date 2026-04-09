@@ -22,7 +22,11 @@ const handleResponse = async (resp) => {
   }
   if (!resp.ok) {
     const err = await resp.json().catch(() => ({ detail: 'Unknown error' }));
-    throw new Error(err.detail || 'API error');
+    // FastAPI 422 returns detail as an array of validation errors
+    const detail = Array.isArray(err.detail)
+      ? err.detail.map(e => e.msg || JSON.stringify(e)).join(', ')
+      : (err.detail || 'API error');
+    throw new Error(detail);
   }
   return resp.json();
 };

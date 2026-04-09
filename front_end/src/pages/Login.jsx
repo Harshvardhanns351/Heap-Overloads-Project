@@ -26,9 +26,13 @@ export default function Login() {
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1200)); // Simulate slow auth for premium effect
-    login(selectedRole.key);
-    setLoading(false);
+    try {
+      await login(email, password);
+    } catch (err) {
+      alert(err.message || 'Login failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
