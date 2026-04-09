@@ -68,6 +68,16 @@ _FALLBACKS: Dict[str, List[Dict]] = {
         {"title": "Growth & Analytics", "node_type": "concept", "hours": 4, "description": "Posthog, Mixpanel, A/B testing, funnel analysis, retention.", "resources": [{"label": "PostHog", "url": "https://posthog.com/"}, {"label": "Reforge", "url": "https://www.reforge.com/"}]},
         {"title": "Cloud & Scaling", "node_type": "project", "hours": 6, "description": "AWS/GCP basics, Docker, CI/CD, monitoring with Sentry.", "resources": [{"label": "AWS Free Tier", "url": "https://aws.amazon.com/free/"}, {"label": "Sentry Docs", "url": "https://docs.sentry.io/"}]},
     ],
+    # "prompt_engineering": [
+    #     {"title": "LLM Fundamentals", "node_type": "concept", "hours": 6, "description": "How large language models work: tokenization, attention, temperature, top-p, context windows. Understand GPT, Claude, Gemini, Llama architectures at a conceptual level.", "resources": [{"label": "Andrej Karpathy — Intro to LLMs", "url": "https://www.youtube.com/watch?v=zjkBMFhNj_g"}, {"label": "OpenAI Tokenizer", "url": "https://platform.openai.com/tokenizer"}, {"label": "Lilian Weng — LLM Powered Agents", "url": "https://lilianweng.github.io/posts/2023-06-23-agent/"}]},
+    #     {"title": "Prompt Engineering Techniques", "node_type": "concept", "hours": 7, "description": "Zero-shot, few-shot, chain-of-thought, tree-of-thought, ReAct, self-consistency. Learn when and why each technique works.", "resources": [{"label": "Prompt Engineering Guide", "url": "https://www.promptingguide.ai/"}, {"label": "OpenAI Prompt Engineering", "url": "https://platform.openai.com/docs/guides/prompt-engineering"}, {"label": "Learn Prompting", "url": "https://learnprompting.org/"}]},
+    #     {"title": "System Prompts & Instruction Tuning", "node_type": "concept", "hours": 5, "description": "Crafting effective system prompts, persona design, output formatting constraints, role-playing patterns, and how instruction-tuned models differ from base models.", "resources": [{"label": "Anthropic Prompt Library", "url": "https://docs.anthropic.com/en/prompt-library/library"}, {"label": "OpenAI Cookbook", "url": "https://cookbook.openai.com/"}]},
+    #     {"title": "AI Red Teaming Fundamentals", "node_type": "concept", "hours": 8, "description": "What AI red teaming is, threat modeling for LLMs, categories of failure: hallucination, bias, toxicity, privacy leakage, misuse. OWASP LLM Top 10.", "resources": [{"label": "OWASP LLM Top 10", "url": "https://owasp.org/www-project-top-10-for-large-language-model-applications/"}, {"label": "Microsoft AI Red Team", "url": "https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/red-teaming"}, {"label": "Anthropic Red Teaming", "url": "https://www.anthropic.com/research/red-teaming-language-models-to-reduce-harms"}]},
+    #     {"title": "Jailbreaks & Prompt Injection", "node_type": "practice", "hours": 9, "description": "Direct and indirect prompt injection, jailbreak techniques (DAN, role-play bypasses, token smuggling), defense strategies, and how to test for them systematically.", "resources": [{"label": "Prompt Injection Explained", "url": "https://simonwillison.net/2023/Apr/14/worst-that-can-happen/"}, {"label": "Gandalf Challenge", "url": "https://gandalf.lakera.ai/"}, {"label": "HackAPrompt", "url": "https://www.aicrowd.com/challenges/hackaprompt-2023"}]},
+    #     {"title": "Automated Red Teaming & Evaluation", "node_type": "practice", "hours": 8, "description": "Using LLMs to red-team other LLMs, building adversarial test suites, evaluation frameworks (HELM, EleutherAI LM Eval), and responsible disclosure.", "resources": [{"label": "HELM Benchmark", "url": "https://crfm.stanford.edu/helm/"}, {"label": "LM Evaluation Harness", "url": "https://github.com/EleutherAI/lm-evaluation-harness"}, {"label": "Garak LLM Vulnerability Scanner", "url": "https://github.com/leondz/garak"}]},
+    #     {"title": "RAG & Agentic System Security", "node_type": "concept", "hours": 7, "description": "Security considerations in RAG pipelines, tool-use agents, and multi-agent systems. Data poisoning, exfiltration via tool calls, and sandboxing strategies.", "resources": [{"label": "LangChain Security", "url": "https://python.langchain.com/docs/security"}, {"label": "NIST AI RMF", "url": "https://www.nist.gov/system/files/documents/2023/01/26/AI%20RMF%201.0.pdf"}]},
+    #     {"title": "Red Team Report & Responsible AI", "node_type": "project", "hours": 10, "description": "Conduct a structured red team exercise on a public LLM API or open-source model. Document findings, severity ratings, and mitigations in a professional report.", "resources": [{"label": "AI Incident Database", "url": "https://incidentdatabase.ai/"}, {"label": "Google SAIF", "url": "https://saif.google/"}, {"label": "HuggingFace Model Cards", "url": "https://huggingface.co/docs/hub/model-cards"}]},
+    # ],
     "default": [
         {"title": "Programming Fundamentals", "node_type": "concept", "hours": 8, "description": "Variables, loops, functions, OOP, recursion in Python/C++.", "resources": [{"label": "CS50", "url": "https://cs50.harvard.edu/x/"}, {"label": "Python.org Tutorial", "url": "https://docs.python.org/3/tutorial/"}]},
         {"title": "Data Structures", "node_type": "concept", "hours": 10, "description": "Arrays, linked lists, stacks, queues, trees, graphs, hash maps.", "resources": [{"label": "Visualgo", "url": "https://visualgo.net/en"}, {"label": "GFG DSA", "url": "https://www.geeksforgeeks.org/data-structures/"}]},
@@ -88,12 +98,16 @@ def generate_roadmap_fallback(goal: str, branch: str = "CSE") -> List[Dict]:
         return _FALLBACKS["system_design"]
     if any(k in g for k in ["web", "full stack", "frontend", "backend", "react", "node"]):
         return _FALLBACKS["web_development"]
-    if any(k in g for k in ["ml", "machine learning", "ai", "deep learning", "data science"]):
+    if any(k in g for k in ["prompt engineering", "red team", "red-team", "jailbreak", "llm security", "ai safety", "prompt injection"]):
+        return _FALLBACKS["prompt_engineering"]
+    if any(k in g for k in ["ml", "machine learning", "deep learning", "data science"]):
         return _FALLBACKS["machine_learning"]
     if any(k in g for k in ["competitive", "cp", "codeforces", "icpc", "programming contest"]):
         return _FALLBACKS["competitive_programming"]
     if any(k in g for k in ["startup", "intern", "product", "ship"]):
         return _FALLBACKS["startup"]
+    if any(k in g for k in ["ai", "artificial intelligence", "generative ai", "gen ai"]):
+        return _FALLBACKS["machine_learning"]
     return _FALLBACKS["default"]
 
 
@@ -148,7 +162,8 @@ def generate_roadmap(
         "- Return ONLY a JSON array, no markdown, no explanation\n"
         "- Each node: title, node_type (concept|practice|project), hours (int), "
         "description (2-3 sentences matching the difficulty level), "
-        "resources (array of {label, url} — real working URLs), prereq_ids ([])\n"
+        "resources (empty array []), prereq_ids ([])\n"
+        "- DO NOT generate any URLs or resource links — leave resources as []\n"
         f"- For {difficulty} level: {'keep descriptions simple and beginner-friendly' if difficulty == 'beginner' else 'include implementation details and tradeoffs' if difficulty == 'advanced' else 'balance theory and practice'}\n"
         "- Order nodes from foundational to advanced within the goal\n"
         f"Return exactly {node_count} nodes as a JSON array."
@@ -161,7 +176,7 @@ def generate_roadmap(
                 "https://api.groq.com/openai/v1/chat/completions",
                 headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
                 json={
-                    "model": "llama3-70b-8192",
+                    "model": "llama-3.3-70b-versatile",
                     "temperature": 0.4,
                     "max_tokens": 3500,
                     "messages": [
@@ -193,3 +208,115 @@ def generate_roadmap(
         logger.warning(f"Groq roadmap generation failed: {e} — using curated fallback")
 
     return generate_roadmap_fallback(goal, branch)
+
+
+# ─── Resource regeneration ────────────────────────────────────────────────────
+
+def generate_resources(node_title: str, node_description: str, goal: str, difficulty: str = "intermediate", timeframe_days: int = 30) -> List[Dict]:
+    """
+    Hybrid resource generation:
+      1. Groq generates targeted search QUERIES (no URLs — avoids hallucination)
+      2. Real APIs (GitHub, ArXiv, YouTube) fetch actual URLs
+      3. Curated verified fallbacks fill any gaps
+    """
+    import asyncio
+    from ai_engine.resource_fetcher import fetch_resources_for_queries, get_curated
+
+    api_key = os.getenv("GROQ_API_KEY")
+
+    # Resource count based on depth + timeframe
+    base = {1: 3, 5: 4, 10: 5, 15: 6, 30: 7}.get(timeframe_days, 5)
+    depth_mult = {"beginner": 0.8, "intermediate": 1.0, "advanced": 1.3}.get(difficulty, 1.0)
+    resource_count = max(3, int(base * depth_mult))
+
+    # Depth-based mix strategy
+    mix = {
+        "beginner":     {"github_repo": 1, "youtube_video": 2, "research_paper": 0},
+        "intermediate": {"github_repo": 2, "youtube_video": 1, "research_paper": 1},
+        "advanced":     {"github_repo": 2, "youtube_video": 1, "research_paper": 2},
+    }.get(difficulty, {"github_repo": 2, "youtube_video": 1, "research_paper": 1})
+
+    queries = []
+
+    # Step 1: Ask Groq for search queries only (no URLs)
+    if api_key:
+        mix_desc = ", ".join(f"{v} {k.replace('_', ' ')}(s)" for k, v in mix.items() if v > 0)
+        prompt = (
+            f"Topic: {node_title}\n"
+            f"Context: {node_description}\n"
+            f"Overall goal: {goal}\n"
+            f"Depth: {difficulty}\n\n"
+            f"Generate {resource_count} search queries to find real learning resources.\n"
+            f"Mix: {mix_desc}.\n"
+            "For github_repo: write a specific repo search query (e.g. 'prompt injection defense LLM').\n"
+            "For youtube_video: write a specific video search query (e.g. 'prompt engineering tutorial 2024 intermediate').\n"
+            "For research_paper: write an ArXiv search query (e.g. 'adversarial attacks language models survey').\n"
+            "Return ONLY a JSON array. No markdown. No URLs. No explanation.\n"
+            'Each item: {"type": "github_repo"|"youtube_video"|"research_paper", "query": "search string"}\n'
+            f"Return exactly {resource_count} items."
+        )
+        try:
+            with httpx.Client(timeout=20) as client:
+                resp = client.post(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+                    json={
+                        "model": "llama-3.3-70b-versatile",
+                        "temperature": 0.3,
+                        "max_tokens": 600,
+                        "messages": [
+                            {"role": "system", "content": "You generate search queries for learning resources. Return ONLY a valid JSON array. No URLs. No markdown."},
+                            {"role": "user", "content": prompt},
+                        ],
+                    },
+                )
+                resp.raise_for_status()
+                content = resp.json()["choices"][0]["message"]["content"].strip()
+                if "```" in content:
+                    for part in content.split("```"):
+                        part = part.strip().lstrip("json").strip()
+                        if part.startswith("["):
+                            content = part
+                            break
+                parsed = json.loads(content)
+                if isinstance(parsed, list):
+                    queries = parsed
+                    logger.info(f"Groq generated {len(queries)} search queries for: {node_title}")
+        except Exception as e:
+            logger.warning(f"Groq query generation failed: {e}")
+
+    # Fallback queries if Groq failed
+    if not queries:
+        queries = [
+            {"type": "github_repo", "query": f"{goal} {node_title}"},
+            {"type": "youtube_video", "query": f"{node_title} {difficulty} tutorial"},
+            {"type": "research_paper", "query": f"{goal} {node_title}"},
+        ]
+
+    # Step 2: Fetch real resources from APIs
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as pool:
+                future = pool.submit(asyncio.run, fetch_resources_for_queries(queries))
+                fetched = future.result(timeout=25)
+        else:
+            fetched = loop.run_until_complete(fetch_resources_for_queries(queries))
+    except Exception as e:
+        logger.warning(f"API resource fetch failed: {e}")
+        fetched = []
+
+    # Step 3: Merge with curated fallbacks (curated first — highest quality)
+    curated = get_curated(goal, node_title)
+    seen_urls: set = set()
+    merged = []
+    for r in curated + fetched:
+        url = r.get("url", "")
+        if url and url not in seen_urls:
+            seen_urls.add(url)
+            # Normalize to {label, url, tag} — keep tag if present
+            merged.append({"label": r.get("label", url), "url": url, "tag": r.get("tag", "")})
+
+    logger.info(f"Resources for '{node_title}': {len(curated)} curated + {len(fetched)} fetched = {len(merged)} total")
+    return merged[:resource_count + 2]  # slight buffer so UI has enough to show

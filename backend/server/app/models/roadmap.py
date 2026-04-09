@@ -29,3 +29,4 @@ class RoadmapNode(SQLModel, table=True):
     status: str = Field(default="pending", index=True)  # pending / in_progress / complete
     prereq_ids_json: str = "[]"
     resources_json: str = "[]"
+    resources_history_json: str = "[]"  # list of previous resources arrays

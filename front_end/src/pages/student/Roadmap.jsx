@@ -261,11 +261,28 @@ function SprintTimer({ onComplete }) {
 }
 
 // ── Node Panel ────────────────────────────────────────────────────────────────
-function NodePanel({ node, onClose, onMarkComplete, onStartSprint, sprintActive, updating }) {
+function NodePanel({ node, onClose, onMarkComplete, onStartSprint, sprintActive, updating, onResourcesRegenerated }) {
   if (!node) return null;
   const tc = TYPE_COLORS[node.node_type] || TYPE_COLORS.concept;
   const sc = STATUS_CFG[node.status] || STATUS_CFG.pending;
   const resources = Array.isArray(node.resources) ? node.resources : [];
+  const history = Array.isArray(node.resources_history) ? node.resources_history : [];
+  const [regenLoading, setRegenLoading] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+
+  const handleRegenResources = async () => {
+    setRegenLoading(true);
+    try {
+      const res = await authFetch(`/roadmap/nodes/${node.id}/regenerate-resources`, { method: "POST" });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      onResourcesRegenerated(node.id, data.resources, data.history);
+    } catch {
+      // silently fail — user can retry
+    }
+    setRegenLoading(false);
+  };
+
   return (
     <>
       <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 100 }} />
@@ -285,21 +302,59 @@ function NodePanel({ node, onClose, onMarkComplete, onStartSprint, sprintActive,
           </div>
           <div style={{ fontSize: "13px", color: "var(--text-secondary)", lineHeight: 1.7, marginBottom: "20px", background: "rgba(255,255,255,0.03)", borderRadius: "10px", padding: "12px", border: "1px solid rgba(255,255,255,0.06)" }}>{node.description}</div>
           {sprintActive && <SprintTimer onComplete={() => {}} />}
-          {resources.length > 0 && (
-            <div style={{ marginBottom: "20px" }}>
-              <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "8px" }}>Resources</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                {resources.map((r, i) => (
-                  <a key={i} href={r.url || "#"} target="_blank" rel="noopener noreferrer"
-                    style={{ display: "flex", alignItems: "center", gap: "10px", padding: "9px 12px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "8px", textDecoration: "none", color: "var(--text-primary)", fontSize: "13px" }}>
-                    <span style={{ width: "22px", height: "22px", borderRadius: "5px", background: "rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", flexShrink: 0 }}>◈</span>
-                    <span style={{ flex: 1 }}>{r.label || r}</span>
-                    <span style={{ fontSize: "10px", color: "rgba(255,255,255,0.25)" }}>↗</span>
-                  </a>
-                ))}
+
+          {/* Resources */}
+          <div style={{ marginBottom: "20px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
+              <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Resources</div>
+              <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                {history.length > 0 && (
+                  <button onClick={() => setShowHistory(h => !h)} style={{ fontSize: "10px", background: "transparent", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "6px", color: "rgba(255,255,255,0.4)", cursor: "pointer", padding: "2px 8px" }}>
+                    {showHistory ? "Hide history" : `History (${history.length})`}
+                  </button>
+                )}
+                <button onClick={handleRegenResources} disabled={regenLoading} style={{ fontSize: "10px", background: regenLoading ? "rgba(91,91,214,0.1)" : "rgba(91,91,214,0.15)", border: "1px solid rgba(91,91,214,0.3)", borderRadius: "6px", color: regenLoading ? "rgba(255,255,255,0.3)" : "#8B8BF5", cursor: regenLoading ? "not-allowed" : "pointer", padding: "2px 8px" }}>
+                  {regenLoading ? "⟳ Generating..." : "⟳ Regenerate"}
+                </button>
               </div>
             </div>
-          )}
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              {resources.map((r, i) => (
+                <a key={i} href={r.url || "#"} target="_blank" rel="noopener noreferrer"
+                  style={{ display: "flex", alignItems: "center", gap: "10px", padding: "9px 12px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "8px", textDecoration: "none", color: "var(--text-primary)", fontSize: "13px" }}>
+                  <span style={{ width: "22px", height: "22px", borderRadius: "5px", background: "rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", flexShrink: 0 }}>◈</span>
+                  <span style={{ flex: 1 }}>{r.label || r}</span>
+                  {r.tag && <span style={{ fontSize: "9px", padding: "1px 6px", borderRadius: "4px", background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.35)", whiteSpace: "nowrap" }}>{r.tag}</span>}
+                  <span style={{ fontSize: "10px", color: "rgba(255,255,255,0.25)" }}>↗</span>
+                </a>
+              ))}
+              {resources.length === 0 && !regenLoading && (
+                <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.25)", padding: "8px 0" }}>No resources yet — click Regenerate to fetch some.</div>
+              )}
+            </div>
+
+            {/* History */}
+            {showHistory && history.length > 0 && (
+              <div style={{ marginTop: "14px" }}>
+                {history.map((batch, bi) => (
+                  <div key={bi} style={{ marginBottom: "10px" }}>
+                    <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.2)", marginBottom: "5px" }}>Previous set {bi + 1}</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                      {batch.map((r, i) => (
+                        <a key={i} href={r.url || "#"} target="_blank" rel="noopener noreferrer"
+                          style={{ display: "flex", alignItems: "center", gap: "10px", padding: "7px 12px", background: "rgba(255,255,255,0.015)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "8px", textDecoration: "none", color: "rgba(255,255,255,0.45)", fontSize: "12px" }}>
+                          <span style={{ width: "18px", height: "18px", borderRadius: "4px", background: "rgba(255,255,255,0.04)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "9px", flexShrink: 0 }}>◈</span>
+                          <span style={{ flex: 1 }}>{r.label || r}</span>
+                          <span style={{ fontSize: "9px", color: "rgba(255,255,255,0.15)" }}>↗</span>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div style={{ display: "flex", gap: "8px", paddingTop: "14px", borderTop: "1px solid rgba(255,255,255,0.06)", flexWrap: "wrap" }}>
             {node.status !== "complete" ? (
               <>
@@ -345,6 +400,14 @@ function RoadmapView({ roadmap, onBack, onNodeUpdate }) {
       showToast("Node completed!", "success");
     } catch { showToast("Failed to update."); }
     setUpdating(false);
+  };
+
+  // Update selected node in-place after resource regeneration (no full reload needed)
+  const handleResourcesRegenerated = (nodeId, newResources, newHistory) => {
+    setSelectedNode(prev => prev && prev.id === nodeId
+      ? { ...prev, resources: newResources, resources_history: newHistory }
+      : prev
+    );
   };
 
   return (
@@ -407,7 +470,8 @@ function RoadmapView({ roadmap, onBack, onNodeUpdate }) {
       {selectedNode && (
         <NodePanel node={selectedNode} onClose={() => setSelectedNode(null)}
           onMarkComplete={handleMarkComplete} onStartSprint={id => setSprintNodeId(id)}
-          sprintActive={sprintNodeId === selectedNode.id} updating={updating} />
+          sprintActive={sprintNodeId === selectedNode.id} updating={updating}
+          onResourcesRegenerated={handleResourcesRegenerated} />
       )}
       {toast && (
         <div style={{ position: "fixed", bottom: "24px", right: "24px", background: "rgba(20,20,36,0.95)", border: `1px solid ${toast.type === "success" ? "#1D9E75" : "rgba(255,255,255,0.12)"}`, borderRadius: "10px", padding: "10px 16px", fontSize: "13px", zIndex: 999, color: toast.type === "success" ? "#7DC9A8" : "var(--text-primary)" }}>

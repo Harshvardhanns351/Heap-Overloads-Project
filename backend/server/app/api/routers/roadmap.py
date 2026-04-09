@@ -13,7 +13,7 @@ from app.models.roadmap import Roadmap, RoadmapNode
 from app.models.mark import Mark
 from app.schemas.roadmap import RoadmapGenerateRequest, NodeProgressUpdate, GoalUpdateRequest
 from app.auth.deps import get_current_user, role_required
-from ai_engine.roadmap_generator import generate_roadmap, generate_roadmap_fallback
+from ai_engine.roadmap_generator import generate_roadmap, generate_roadmap_fallback, generate_resources
 
 router = APIRouter()
 MAX_ROADMAPS = 3
@@ -48,6 +48,7 @@ def _serialize(roadmap: Roadmap, nodes) -> dict:
                 "status": n.status,
                 "prereq_ids": json.loads(n.prereq_ids_json or "[]"),
                 "resources": json.loads(n.resources_json or "[]"),
+                "resources_history": json.loads(n.resources_history_json or "[]"),
             }
             for n in nodes
         ],
@@ -224,7 +225,15 @@ def generate_my_roadmap(
             node_type=str(nd.get("node_type", nd.get("type", "concept"))),
             status="in_progress" if i == 0 else "pending",
             prereq_ids_json=json.dumps(nd.get("prereq_ids", [])),
-            resources_json=json.dumps(nd.get("resources", [])),
+            resources_json=json.dumps(
+                generate_resources(
+                    node_title=str(nd.get("title", f"Node {i+1}")),
+                    node_description=str(nd.get("description", "")),
+                    goal=goal,
+                    difficulty=difficulty,
+                    timeframe_days=timeframe_days,
+                )
+            ),
         )
         db.add(node)
         node_objs.append(node)
@@ -287,6 +296,47 @@ def update_node_progress(
     db.commit()
     db.refresh(node)
     return {"node_id": node.id, "status": node.status}
+
+
+@router.post("/nodes/{node_id}/regenerate-resources", status_code=status.HTTP_200_OK)
+def regenerate_node_resources(
+    node_id: int,
+    current_user: User = Depends(role_required(["student"])),
+    db: Session = Depends(get_session),
+):
+    node = db.get(RoadmapNode, node_id)
+    if not node:
+        raise HTTPException(status_code=404, detail="Node not found")
+    roadmap = db.get(Roadmap, node.roadmap_id)
+    if not roadmap or roadmap.student_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not your roadmap")
+
+    # Archive current resources into history
+    current = json.loads(node.resources_json or "[]")
+    history = json.loads(node.resources_history_json or "[]")
+    if current:
+        history.append(current)
+
+    new_resources = generate_resources(
+        node_title=node.title,
+        node_description=node.description,
+        goal=roadmap.goal,
+        difficulty=roadmap.difficulty,
+        timeframe_days=roadmap.timeframe_days,
+    )
+    if not new_resources:
+        raise HTTPException(status_code=503, detail="AI resource generation unavailable, try again.")
+
+    node.resources_json = json.dumps(new_resources)
+    node.resources_history_json = json.dumps(history)
+    db.add(node)
+    db.commit()
+    db.refresh(node)
+
+    return {
+        "resources": new_resources,
+        "history": history,
+    }
 
 
 @router.patch("/nodes/{node_id}", status_code=status.HTTP_200_OK)
