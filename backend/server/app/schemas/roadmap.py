@@ -1,10 +1,11 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Literal
 
 
 class RoadmapGenerateRequest(BaseModel):
     goal: Optional[str] = None
-    duration_weeks: Optional[int] = 4
+    difficulty: Literal["beginner", "intermediate", "advanced"] = "intermediate"
+    timeframe_days: Literal[1, 5, 10, 15, 30] = 30
     branch: Optional[str] = None
     semester: Optional[int] = None
 

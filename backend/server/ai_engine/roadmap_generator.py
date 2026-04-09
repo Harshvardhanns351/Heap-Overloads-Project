@@ -117,30 +117,45 @@ def generate_roadmap(
     branch: str,
     marks: List[Dict],
     duration_weeks: int = 4,
+    difficulty: str = "intermediate",
+    timeframe_days: int = 30,
 ) -> List[Dict]:
     api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
         logger.info("No GROQ_API_KEY — using curated fallback roadmap")
         return generate_roadmap_fallback(goal, branch)
 
-    node_count = min(8, max(4, duration_weeks * 2))
+    # Node count scales with timeframe and difficulty
+    base = max(3, timeframe_days // 5)
+    depth_mult = {"beginner": 0.7, "intermediate": 1.0, "advanced": 1.3}.get(difficulty, 1.0)
+    node_count = min(10, max(3, int(base * depth_mult)))
     weak = _weak_subjects(marks)
 
+    depth_desc = {
+        "beginner": "introductory level — focus on fundamentals, simple examples, avoid jargon",
+        "intermediate": "solid understanding — cover core concepts with practical examples",
+        "advanced": "deep mastery — include edge cases, internals, advanced patterns, tradeoffs",
+    }.get(difficulty, "intermediate level")
+
     prompt = (
-        f"Generate a {node_count}-node personalized learning roadmap for a {branch} engineering student.\n"
-        f"Goal: {goal}\nSemester: {semester}, Duration: {duration_weeks} weeks\n"
-        f"Weak subjects (prioritize these): {weak}\n\n"
+        f"Generate a {node_count}-node personalized learning roadmap.\n"
+        f"Student: {branch} engineering, Semester {semester}\n"
+        f"Goal: {goal}\n"
+        f"Difficulty: {difficulty} ({depth_desc})\n"
+        f"Timeframe: {timeframe_days} days\n"
+        f"Weak subjects to prioritize: {weak}\n\n"
         "Rules:\n"
         "- Return ONLY a JSON array, no markdown, no explanation\n"
-        "- Each node must have: title, node_type (concept|practice|project), hours (int), description (1-2 sentences), resources (array of {label, url}), prereq_ids (empty array)\n"
-        "- Include 2-3 real, working resource URLs per node (YouTube, official docs, free courses)\n"
-        "- Order nodes from foundational to advanced\n"
-        "- First node status should be most beginner-friendly\n\n"
+        "- Each node: title, node_type (concept|practice|project), hours (int), "
+        "description (2-3 sentences matching the difficulty level), "
+        "resources (array of {label, url} — real working URLs), prereq_ids ([])\n"
+        f"- For {difficulty} level: {'keep descriptions simple and beginner-friendly' if difficulty == 'beginner' else 'include implementation details and tradeoffs' if difficulty == 'advanced' else 'balance theory and practice'}\n"
+        "- Order nodes from foundational to advanced within the goal\n"
         f"Return exactly {node_count} nodes as a JSON array."
     )
 
     try:
-        logger.info(f"Calling Groq for roadmap: goal={goal}, branch={branch}, weeks={duration_weeks}")
+        logger.info(f"Calling Groq: goal={goal}, difficulty={difficulty}, days={timeframe_days}, nodes={node_count}")
         with httpx.Client(timeout=45) as client:
             resp = client.post(
                 "https://api.groq.com/openai/v1/chat/completions",
@@ -159,7 +174,6 @@ def generate_roadmap(
             content = resp.json()["choices"][0]["message"]["content"].strip()
             logger.info("Groq responded successfully")
 
-            # Strip markdown fences
             if "```" in content:
                 parts = content.split("```")
                 for part in parts:
