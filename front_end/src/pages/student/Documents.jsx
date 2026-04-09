@@ -59,7 +59,10 @@ export default function Documents() {
 
   const fetchDocs = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/academics/documents', { headers: { Authorization: `Bearer ${token()}` } });
+      const userId = JSON.parse(localStorage.getItem('user') || '{}').id;
+      const res = await fetch(`http://localhost:8000/api/academics/documents?student_id=${userId}`, {
+        headers: { Authorization: `Bearer ${token()}` },
+      });
       if (res.ok) setDocs(await res.json());
     } catch (e) { console.error(e); }
     finally { setLoadingDocs(false); }
@@ -72,13 +75,23 @@ export default function Documents() {
     setUploading(true);
     setOcrData(null);
     try {
+      const userId = JSON.parse(localStorage.getItem('user') || '{}').id;
       const fd = new FormData();
       fd.append('file', file);
-      const res = await fetch('http://localhost:8000/api/academics/upload', { method: 'POST', headers: { Authorization: `Bearer ${token()}` }, body: fd });
+      fd.append('student_id', userId);
+      const res = await fetch('http://localhost:8000/api/academics/upload-doc', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token()}` },
+        body: fd,
+      });
       const data = await res.json();
       if (data.ocr_preview) {
-        setOcrData(data.ocr_preview.map(r => ({ subject: r.subject, obtained: r.obtained, max: r.max || 100 })));
-        setDocId(data.id);
+        setOcrData(data.ocr_preview.map(r => ({
+          subject: r.subject,
+          obtained: r.marks_obtained,
+          max: r.max_marks || 100,
+        })));
+        setDocId(data.doc_id);
       }
       await fetchDocs();
     } catch (e) { alert('Upload failed: ' + e.message); }
@@ -89,10 +102,19 @@ export default function Documents() {
     if (!docId || !ocrData) return;
     setSaving(true);
     try {
-      await fetch(`http://localhost:8000/api/academics/confirm/${docId}`, {
+      const semester = JSON.parse(localStorage.getItem('user') || '{}').semester || 6;
+      await fetch('http://localhost:8000/api/academics/confirm-ocr', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` },
-        body: JSON.stringify({ marks: ocrData }),
+        body: JSON.stringify({
+          doc_id: docId,
+          confirmed_marks: ocrData.map(r => ({
+            subject: r.subject,
+            marks_obtained: r.obtained,
+            max_marks: r.max,
+            semester,
+          })),
+        }),
       });
       setOcrData(null);
       setDocId(null);
