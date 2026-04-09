@@ -13,7 +13,7 @@ export default function Login() {
   const [selectedRole, setSelectedRole] = useState(ROLES[0]);
   const [showPass, setShowPass] = useState(false);
   const [email, setEmail] = useState('rahul@college.edu');
-  const [password, setPassword] = useState('password123');
+  const [password, setPassword] = useState('password');
   const [loading, setLoading] = useState(false);
 
   const roleEmails = { student: 'rahul@college.edu', teacher: 'priya@college.edu', admin: 'admin@college.edu' };
@@ -26,9 +26,13 @@ export default function Login() {
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1200)); // Simulate slow auth for premium effect
-    login(selectedRole.key);
-    setLoading(false);
+    try {
+      await login(email, password);
+    } catch (err) {
+      alert(err.message || 'Login failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
