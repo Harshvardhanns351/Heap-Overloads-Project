@@ -52,7 +52,9 @@ const useAppStore = create((set, get) => ({
   fetchRoadmap: async () => {
     try {
       const data = await api.roadmap.getMe();
-      set({ roadmapNodes: data.nodes || [] });
+      // Support both {roadmap: {nodes}, nodes} shapes
+      const nodes = data.nodes || data.roadmap?.nodes || [];
+      set({ roadmapNodes: nodes });
     } catch (err) {
       console.error('Failed to fetch roadmap', err);
     }
