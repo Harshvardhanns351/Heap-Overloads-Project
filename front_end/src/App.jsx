@@ -3,6 +3,9 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import useAppStore from './store';
 import Layout from './components/Layout';
 import Login from './pages/Login';
+import AuthCallback from './pages/AuthCallback';
+import RoleSelection from './pages/RoleSelection';
+import ResetPassword from './pages/ResetPassword';
 
 // Student pages
 import StudentDashboard from './pages/student/Dashboard';
@@ -71,21 +74,26 @@ function AdminRoutes() {
 export default function App() {
   const { currentUser, role } = useAppStore();
 
-  if (!currentUser) {
-    return (
-      <BrowserRouter>
-        <Routes>
-          <Route path="*" element={<Login />} />
-        </Routes>
-      </BrowserRouter>
-    );
-  }
-
   return (
     <BrowserRouter>
-      {role === 'student' && <StudentRoutes />}
-      {role === 'teacher' && <TeacherRoutes />}
-      {role === 'admin' && <AdminRoutes />}
+      {!currentUser ? (
+        <Routes>
+          <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="*" element={<Login />} />
+        </Routes>
+      ) : !role ? (
+        <Routes>
+          <Route path="/select-role" element={<RoleSelection />} />
+          <Route path="*" element={<Navigate to="/select-role" replace />} />
+        </Routes>
+      ) : (
+        <>
+          {role === 'student' && <StudentRoutes />}
+          {role === 'teacher' && <TeacherRoutes />}
+          {role === 'admin' && <AdminRoutes />}
+        </>
+      )}
     </BrowserRouter>
   );
 }

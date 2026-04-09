@@ -1,167 +1,170 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import zxcvbn from 'zxcvbn';
 import useAppStore from '../store';
-import { Brain, GraduationCap, Shield, Eye, EyeOff, Code2, Cpu } from 'lucide-react';
+import { buildApiUrl, api } from '../api';
+import { Brain, Eye, EyeOff, Mail, KeyRound, ShieldCheck } from 'lucide-react';
 
-const ROLES = [
-  { key: 'student', label: 'Student', icon: GraduationCap, color: 'sky', border: 'border-sky-500/40', bg: 'bg-sky-500/10', glow: 'shadow-[0_0_20px_rgba(14,165,233,0.3)]', text: 'text-sky-400', desc: 'View roadmap, mentor chat, documents' },
-  { key: 'teacher', label: 'Teacher', icon: Brain, color: 'violet', border: 'border-violet-500/40', bg: 'bg-violet-500/10', glow: 'shadow-[0_0_20px_rgba(139,92,246,0.3)]', text: 'text-violet-400', desc: 'Class analytics, risk alerts, assignments' },
-  { key: 'admin', label: 'Admin', icon: Shield, color: 'teal', border: 'border-teal-500/40', bg: 'bg-teal-500/10', glow: 'shadow-[0_0_20px_rgba(20,184,166,0.3)]', text: 'text-teal-400', desc: 'Org-wide insights, disputes, user mgmt' },
-];
+const passwordLevels = ['Very Weak', 'Weak', 'Fair', 'Good', 'Strong'];
+const strengthColors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#14b8a6'];
 
 export default function Login() {
   const login = useAppStore((s) => s.login);
-  const [selectedRole, setSelectedRole] = useState(ROLES[0]);
+  const [mode, setMode] = useState('login');
   const [showPass, setShowPass] = useState(false);
   const [email, setEmail] = useState('rahul@college.edu');
   const [password, setPassword] = useState('password');
+  const [name, setName] = useState('');
+  const [magicEmail, setMagicEmail] = useState('');
+  const [resetEmail, setResetEmail] = useState('');
+  const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const roleEmails = { student: 'rahul@college.edu', teacher: 'priya@college.edu', admin: 'admin@college.edu' };
+  const passwordScore = useMemo(() => {
+    if (mode !== 'signup' || !password) return null;
+    return zxcvbn(password).score;
+  }, [mode, password]);
 
-  const handleRoleSelect = (roleObj) => {
-    setSelectedRole(roleObj);
-    setEmail(roleEmails[roleObj.key]);
-  };
-
-  const handleLogin = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setMessage('');
     try {
-      await login(email, password);
+      if (mode === 'login') {
+        await login(email, password);
+      } else if (mode === 'signup') {
+        const data = await api.auth.signup(name, email, password);
+        setMessage(data.message || 'Verification email sent');
+        setMode('login');
+      } else if (mode === 'magic') {
+        const data = await api.auth.sendMagicLink(magicEmail);
+        setMessage(data.message || 'Magic link sent');
+      } else if (mode === 'forgot') {
+        const data = await api.auth.forgotPassword(resetEmail);
+        setMessage(data.message || 'Reset email sent');
+      }
     } catch (err) {
-      alert(err.message || 'Login failed');
+      setMessage(err.message || 'Request failed');
     } finally {
       setLoading(false);
     }
   };
 
+  const handleGoogle = () => {
+    window.location.href = buildApiUrl('/auth/google');
+  };
+
   return (
-    <div className="min-h-screen bg-[#030014] flex items-center justify-center p-6 relative overflow-hidden font-inter">
-      
-      {/* Premium background effects */}
-      <div className="absolute top-[-20%] left-[-10%] w-[800px] h-[800px] bg-violet-600/10 blur-[150px] rounded-full pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-sky-600/10 blur-[150px] rounded-full pointer-events-none" />
-      
-      {/* Subtle grid pattern overlay */}
-      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay pointer-events-none z-0" />
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none z-0 mask-image:linear-gradient(to_bottom,white,transparent)" />
-      
-      <div className="w-full max-w-md relative z-10 fade-in-up">
-        
-        {/* Brand Header */}
-        <div className="text-center mb-10 flex flex-col items-center">
-          <div className="inline-flex items-center gap-3 mb-2 px-6 py-2 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md shadow-2xl">
-            <div className="w-10 h-10 bg-gradient-to-br from-violet-600 via-purple-500 to-sky-500 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.6)]">
-              <Brain size={24} className="text-white" />
+    <div className="min-h-screen bg-[#07111f] text-white flex items-center justify-center p-6 relative overflow-hidden">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.18),transparent_32%),radial-gradient(circle_at_bottom_right,rgba(34,197,94,0.14),transparent_28%)]" />
+      <div className="absolute inset-0 bg-[url('/noise.svg')] opacity-20 mix-blend-soft-light" />
+
+      <div className="w-full max-w-md premium-card p-8 relative z-10">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center gap-3 mb-3 px-5 py-3 rounded-2xl bg-white/5 border border-white/10">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-emerald-400 flex items-center justify-center">
+              <Brain size={22} />
             </div>
-            <span className="text-3xl font-bold font-space tracking-tight text-white">EduPulse</span>
+            <span className="text-3xl font-space font-bold">EduPulse</span>
           </div>
-          <p className="text-slate-400 font-medium text-sm mt-3 tracking-wide">
-            AI-powered Academic Intelligence
-          </p>
+          <p className="text-slate-300 text-sm">Modern auth upgrade: Google first, magic link second, password flow polished.</p>
         </div>
 
-        {/* Auth Card */}
-        <div className="premium-card p-8">
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-white mb-2">Welcome Back</h2>
-            <p className="text-slate-400 text-sm">Select your portal role to continue</p>
-          </div>
-
-          <div className="flex flex-col gap-3 mb-8">
-            {ROLES.map((role) => {
-              const isSelected = selectedRole.key === role.key;
-              return (
-                <button
-                  key={role.key}
-                  onClick={() => handleRoleSelect(role)}
-                  type="button"
-                  className={`flex items-center gap-4 p-4 rounded-xl border transition-all duration-300 ${
-                    isSelected 
-                      ? `${role.border} ${role.bg} ${role.glow}` 
-                      : 'border-white/5 bg-white/5 hover:bg-white/10 hover:border-white/20 text-slate-400'
-                  }`}
-                >
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${isSelected ? role.bg + ' ' + role.text + ' border ' + role.border : 'bg-slate-800 text-slate-500'}`}>
-                    <role.icon size={20} />
-                  </div>
-                  <div className="text-left flex-1">
-                    <div className={`font-bold text-sm ${isSelected ? 'text-white' : 'text-slate-300'}`}>
-                      {role.label}
-                    </div>
-                    <div className="text-xs text-slate-500 mt-0.5 leading-snug">
-                      {role.desc}
-                    </div>
-                  </div>
-                  
-                  {/* Active Indicator Radio */}
-                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${isSelected ? role.border : 'border-slate-600'}`}>
-                    <div className={`w-2.5 h-2.5 rounded-full transition-all ${isSelected ? 'bg-current ' + role.text + ' scale-100' : 'bg-transparent scale-0'}`} />
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          <form onSubmit={handleLogin} className="flex flex-col gap-5">
-            <div>
-              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-2">
-                <Cpu size={14} /> System ID / Email
-              </label>
-              <input 
-                className="input-premium" 
-                type="email" 
-                value={email} 
-                onChange={(e) => setEmail(e.target.value)} 
-                required
-              />
-            </div>
-            
-            <div>
-              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-2">
-                <Code2 size={14} /> Security Token
-              </label>
-              <div className="relative">
-                <input 
-                  className="input-premium pr-12" 
-                  type={showPass ? 'text' : 'password'} 
-                  value={password} 
-                  onChange={(e) => setPassword(e.target.value)} 
-                  required
-                />
-                <button 
-                  type="button" 
-                  onClick={() => setShowPass(!showPass)} 
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
-                >
-                  {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-            </div>
-
-            <button 
-              className={`btn-premium w-full h-[52px] mt-4 ${selectedRole.glow.replace('0_0_20px', '0_8px_32px')}`} 
-              type="submit" 
-              disabled={loading}
-              style={{
-                background: selectedRole.key === 'student' ? 'linear-gradient(135deg, #0284c7, #38bdf8)' : 
-                            selectedRole.key === 'teacher' ? 'linear-gradient(135deg, #7c3aed, #a78bfa)' :
-                            'linear-gradient(135deg, #0d9488, #2dd4bf)'
+        <div className="grid grid-cols-4 gap-2 mb-6 text-xs">
+          {[
+            ['login', 'Sign In'],
+            ['signup', 'Sign Up'],
+            ['magic', 'Email Link'],
+            ['forgot', 'Reset'],
+          ].map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => {
+                setMode(key);
+                setMessage('');
               }}
+              className={`rounded-xl px-3 py-2 border transition ${mode === key ? 'bg-white text-slate-900 border-white' : 'bg-white/5 border-white/10 text-slate-300'}`}
             >
-              {loading ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <span className="text-[15px] font-bold tracking-wide">Initialize Interface</span>
-              )}
+              {label}
             </button>
-          </form>
+          ))}
         </div>
 
-        <p className="text-center text-slate-500 text-xs mt-8 font-medium tracking-wide">
-          Intelligence Core v2.0.4<br/>
-          <span className="opacity-60">Authentication tokens pre-filled for demo</span>
-        </p>
+        <button
+          type="button"
+          onClick={handleGoogle}
+          className="w-full rounded-2xl border border-white/10 bg-white text-slate-900 font-semibold h-12 flex items-center justify-center gap-3 mb-4"
+        >
+          <ShieldCheck size={18} />
+          Continue With Google
+        </button>
+
+        <div className="text-center text-xs text-slate-400 mb-4">or use another sign-in path</div>
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          {mode === 'signup' && (
+            <input className="input-premium" placeholder="Full name" value={name} onChange={(e) => setName(e.target.value)} required />
+          )}
+
+          {(mode === 'login' || mode === 'signup') && (
+            <>
+              <div>
+                <label className="text-xs uppercase tracking-wider text-slate-400 mb-2 block">Email</label>
+                <input className="input-premium" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              </div>
+              <div>
+                <label className="text-xs uppercase tracking-wider text-slate-400 mb-2 block">Password</label>
+                <div className="relative">
+                  <input
+                    className="input-premium pr-12"
+                    type={showPass ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                  <button type="button" onClick={() => setShowPass((v) => !v)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
+                    {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+                {mode === 'signup' && passwordScore !== null && (
+                  <div className="mt-3">
+                    <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+                      <div className="h-full transition-all" style={{ width: `${(passwordScore + 1) * 20}%`, background: strengthColors[passwordScore] }} />
+                    </div>
+                    <div className="text-xs mt-2" style={{ color: strengthColors[passwordScore] }}>
+                      Password strength: {passwordLevels[passwordScore]}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {mode === 'magic' && (
+            <input className="input-premium" type="email" placeholder="Enter email for a magic link" value={magicEmail} onChange={(e) => setMagicEmail(e.target.value)} required />
+          )}
+
+          {mode === 'forgot' && (
+            <input className="input-premium" type="email" placeholder="Enter email to reset password" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} required />
+          )}
+
+          <button className="btn-premium h-[52px] mt-2" type="submit" disabled={loading} style={{ background: 'linear-gradient(135deg, #0ea5e9, #22c55e)' }}>
+            {loading ? 'Working...' : mode === 'login' ? 'Sign In' : mode === 'signup' ? 'Create Account' : mode === 'magic' ? 'Send Magic Link' : 'Send Reset Link'}
+          </button>
+        </form>
+
+        {message && (
+          <div className="mt-4 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
+            {message}
+          </div>
+        )}
+
+        <div className="mt-6 text-xs text-slate-400 flex items-center gap-2">
+          <Mail size={14} /> Email verification and reset links use backend mail config.
+        </div>
+        <div className="mt-2 text-xs text-slate-500 flex items-center gap-2">
+          <KeyRound size={14} /> Demo sign-in still works for seeded accounts after backend restart.
+        </div>
       </div>
     </div>
   );

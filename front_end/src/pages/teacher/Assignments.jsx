@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import useAppStore from '../../store';
 import { PageHeader, Tabs } from '../../components/UI';
 import { Plus, BookOpen, Clock, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
+import { authHeaders, buildApiUrl } from '../../api';
 
 export default function TeacherAssignments() {
   const { assignments, fetchAssignments, currentUser } = useAppStore();
@@ -24,9 +25,9 @@ export default function TeacherAssignments() {
     e.preventDefault();
     setCreating(true);
     try {
-      await fetch('http://localhost:8000/api/assignments', {
+      await fetch(buildApiUrl('/assignments'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ ...form, deadline: new Date(form.deadline).toISOString() }),
       });
       await fetchAssignments();

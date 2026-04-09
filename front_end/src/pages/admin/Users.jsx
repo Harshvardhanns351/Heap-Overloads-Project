@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import useAppStore from '../../store';
 import { PageHeader, Modal } from '../../components/UI';
 import { Plus, Shield, GraduationCap, Brain, Search, Loader2 } from 'lucide-react';
+import { authHeaders, buildApiUrl } from '../../api';
 
 const ROLE_CONFIG = {
   student: { icon: GraduationCap, color: '#4f8ef7', label: 'Student' },
@@ -30,9 +31,9 @@ export default function AdminUsers() {
     e.preventDefault();
     setCreating(true);
     try {
-      await fetch('http://localhost:8000/api/auth/users', {
+      await fetch(buildApiUrl('/auth/users'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(form),
       });
       await fetchStudents();

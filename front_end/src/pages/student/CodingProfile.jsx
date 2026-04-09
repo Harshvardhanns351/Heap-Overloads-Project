@@ -3,6 +3,7 @@ import { PageHeader, ProgressBar } from '../../components/UI';
 import { Code2, TrendingUp, Zap, Award, ExternalLink, Check, RefreshCw, Loader2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import useAppStore from '../../store';
+import { authHeaders, buildApiUrl } from '../../api';
 
 export default function CodingProfile() {
   const { currentUser } = useAppStore();
@@ -12,13 +13,9 @@ export default function CodingProfile() {
   const [linking, setLinking] = useState(false);
   const [lcUsername, setLcUsername] = useState('');
 
-  const token = () => localStorage.getItem('token');
-
   const fetchProfiles = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/coding/me', {
-        headers: { Authorization: `Bearer ${token()}` },
-      });
+      const res = await fetch(buildApiUrl('/coding/me'), { headers: authHeaders() });
       const data = await res.json();
       setProfiles(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -35,9 +32,7 @@ export default function CodingProfile() {
     if (!lc) return;
     setSyncing(true);
     try {
-      await fetch(`http://localhost:8000/api/coding/leetcode/${lc.username}`, {
-        headers: { Authorization: `Bearer ${token()}` },
-      });
+      await fetch(buildApiUrl(`/coding/leetcode/${lc.username}`), { headers: authHeaders() });
       await fetchProfiles();
     } catch (err) { console.error('Sync failed', err); }
     finally { setSyncing(false); }
@@ -47,9 +42,7 @@ export default function CodingProfile() {
     if (!lcUsername.trim()) return;
     setLinking(true);
     try {
-      await fetch(`http://localhost:8000/api/coding/leetcode/${lcUsername.trim()}`, {
-        headers: { Authorization: `Bearer ${token()}` },
-      });
+      await fetch(buildApiUrl(`/coding/leetcode/${lcUsername.trim()}`), { headers: authHeaders() });
       await fetchProfiles();
     } catch (err) { alert('Failed to link: ' + err.message); }
     finally { setLinking(false); }

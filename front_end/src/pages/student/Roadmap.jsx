@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import useAppStore from '../../store';
 import { CheckCircle2, Clock, BookOpen, Zap, PlayCircle, ChevronRight, RefreshCw, Target, Loader2, Edit3, X } from 'lucide-react';
+import { authHeaders, buildApiUrl } from '../../api';
 
 const TYPE_COLOR = { concept: '#4f8ef7', practice: '#8b5cf6', project: '#14b8a6' };
 const TYPE_ICON = { concept: BookOpen, practice: Zap, project: PlayCircle };
@@ -131,9 +132,9 @@ export default function Roadmap() {
   const handleRegenerate = async () => {
     setRegenerating(true);
     try {
-      await fetch('http://localhost:8000/api/roadmap/regenerate', {
+      await fetch(buildApiUrl('/roadmap/regenerate'), {
         method: 'POST',
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        headers: authHeaders(),
       });
       await fetchRoadmap();
     } catch (e) { console.error(e); }
@@ -149,9 +150,9 @@ export default function Roadmap() {
   const handleSaveGoal = async () => {
     setSavingGoal(true);
     try {
-      await fetch('http://localhost:8000/api/roadmap/goal', {
+      await fetch(buildApiUrl('/roadmap/goal'), {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           goal: goalForm.goal,
           semester: goalForm.semester ? parseInt(goalForm.semester) : undefined,

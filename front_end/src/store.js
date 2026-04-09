@@ -28,12 +28,31 @@ const useAppStore = create((set, get) => ({
   setAuth: (user, token) => {
     localStorage.setItem('user', JSON.stringify(user));
     localStorage.setItem('token', token);
-    localStorage.setItem('role', user.role);
+    if (user.role) localStorage.setItem('role', user.role);
+    else localStorage.removeItem('role');
     set({ currentUser: user, role: user.role });
   },
 
   login: async (email, password) => {
     const data = await api.auth.login(email, password);
+    get().setAuth(data.user, data.access_token);
+    return data.user;
+  },
+
+  hydrateAuthFromToken: async (token) => {
+    localStorage.setItem('token', token);
+    try {
+      const user = await api.auth.me();
+      get().setAuth(user, token);
+      return user;
+    } catch (err) {
+      localStorage.removeItem('token');
+      throw err;
+    }
+  },
+
+  selectRole: async (role) => {
+    const data = await api.auth.selectRole(role);
     get().setAuth(data.user, data.access_token);
     return data.user;
   },

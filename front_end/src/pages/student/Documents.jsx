@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { PageHeader, Tabs } from '../../components/UI';
 import { Upload, FileText, Eye, CheckCircle2, X, Loader2 } from 'lucide-react';
-
-const token = () => localStorage.getItem('token');
+import { authHeaders, buildApiUrl, buildAssetUrl } from '../../api';
 
 function OCRPreview({ data, setData, onConfirm, onClose, saving }) {
   return (
@@ -60,8 +59,8 @@ export default function Documents() {
   const fetchDocs = async () => {
     try {
       const userId = JSON.parse(localStorage.getItem('user') || '{}').id;
-      const res = await fetch(`http://localhost:8000/api/academics/documents?student_id=${userId}`, {
-        headers: { Authorization: `Bearer ${token()}` },
+      const res = await fetch(buildApiUrl(`/academics/documents?student_id=${userId}`), {
+        headers: authHeaders(),
       });
       if (res.ok) setDocs(await res.json());
     } catch (e) { console.error(e); }
@@ -79,9 +78,9 @@ export default function Documents() {
       const fd = new FormData();
       fd.append('file', file);
       fd.append('student_id', userId);
-      const res = await fetch('http://localhost:8000/api/academics/upload-doc', {
+      const res = await fetch(buildApiUrl('/academics/upload-doc'), {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token()}` },
+        headers: authHeaders(),
         body: fd,
       });
       const data = await res.json();
@@ -103,9 +102,9 @@ export default function Documents() {
     setSaving(true);
     try {
       const semester = JSON.parse(localStorage.getItem('user') || '{}').semester || 6;
-      await fetch('http://localhost:8000/api/academics/confirm-ocr', {
+      await fetch(buildApiUrl('/academics/confirm-ocr'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` },
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           doc_id: docId,
           confirmed_marks: ocrData.map(r => ({
@@ -147,7 +146,7 @@ export default function Documents() {
                     <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{doc.doc_type} · {Math.round(doc.size_bytes / 1024)}KB · {new Date(doc.uploaded_at).toLocaleDateString()}</div>
                   </div>
                   {doc.ocr_confirmed && <span className="badge-green" style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '99px', fontWeight: '600' }}>OCR ✓</span>}
-                  <a href={`http://localhost:8000/${doc.storage_path}`} target="_blank" rel="noreferrer" className="btn btn-ghost" style={{ fontSize: '11px', padding: '5px 10px' }}>
+                  <a href={buildAssetUrl(doc.storage_path)} target="_blank" rel="noreferrer" className="btn btn-ghost" style={{ fontSize: '11px', padding: '5px 10px' }}>
                     <Eye size={12} /> View
                   </a>
                 </div>

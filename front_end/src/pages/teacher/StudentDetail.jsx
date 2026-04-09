@@ -3,10 +3,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { PageHeader, RiskBadge, ProgressBar } from '../../components/UI';
 import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer } from 'recharts';
 import { AlertTriangle, ArrowLeft, Loader2 } from 'lucide-react';
+import { authHeaders, buildApiUrl } from '../../api';
 
 const authGet = (url) =>
-  fetch(`http://localhost:8000/api${url}`, {
-    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+  fetch(buildApiUrl(url), {
+    headers: authHeaders(),
   }).then((r) => (r.ok ? r.json() : null));
 
 export default function StudentDetail() {

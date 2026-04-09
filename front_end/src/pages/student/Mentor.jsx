@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import useAppStore from '../../store';
 import { PageHeader } from '../../components/UI';
 import { Send, Sparkles, User } from 'lucide-react';
+import { authHeaders, buildApiUrl } from '../../api';
 
 function Message({ msg }) {
   const isUser = msg.role === 'user';
@@ -46,12 +47,9 @@ export default function Mentor() {
         .slice(-10)
         .map(m => ({ role: m.role, content: m.content }));
 
-      const data = await fetch('http://localhost:8000/api/mentor/chat', {
+      const data = await fetch(buildApiUrl('/mentor/chat'), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ message: text, conversation_history: history }),
       }).then(r => r.json());
 
