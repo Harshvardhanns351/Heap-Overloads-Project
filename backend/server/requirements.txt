@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+sqlmodel
+python-dotenv
+alembic
+sqlalchemy
+psycopg2-binary
+python-multipart
+apscheduler
+python-jose[cryptography]
+passlib[bcrypt]
+pytesseract
+pillow
+httpx
+
