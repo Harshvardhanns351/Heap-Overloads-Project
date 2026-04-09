@@ -139,9 +139,11 @@ def get_my_roadmap(current_user: User = Depends(get_current_user), session=Depen
 def regenerate(current_user: User = Depends(get_current_user), session=Depends(get_session)):
     existing = session.exec(select(Roadmap).where(Roadmap.student_id == current_user.id)).first()
     if existing:
-        for n in session.exec(select(RoadmapNode).where(RoadmapNode.roadmap_id == existing.id)).all():
-            session.delete(n)
-        session.delete(existing)
+        from sqlmodel import text
+        roadmap_id = existing.id
+        session.exec(text(f"DELETE FROM sprint WHERE node_id IN (SELECT id FROM roadmapnode WHERE roadmap_id = {roadmap_id})"))
+        session.exec(text(f"DELETE FROM roadmapnode WHERE roadmap_id = {roadmap_id}"))
+        session.exec(text(f"DELETE FROM roadmap WHERE id = {roadmap_id}"))
         session.commit()
 
     semester = current_user.semester or 6
