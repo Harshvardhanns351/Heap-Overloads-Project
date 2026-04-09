@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import useAppStore from '../../store';
-import { CheckCircle2, Circle, Clock, BookOpen, Zap, PlayCircle, ChevronRight, RefreshCw, Target, Loader2 } from 'lucide-react';
+import { CheckCircle2, Clock, BookOpen, Zap, PlayCircle, ChevronRight, RefreshCw, Target, Loader2, Edit3, X } from 'lucide-react';
 
 const TYPE_COLOR = { concept: '#4f8ef7', practice: '#8b5cf6', project: '#14b8a6' };
 const TYPE_ICON = { concept: BookOpen, practice: Zap, project: PlayCircle };
@@ -119,6 +119,9 @@ export default function Roadmap() {
   const { roadmapNodes, fetchRoadmap, markNodeComplete, startSprint, currentUser } = useAppStore();
   const [regenerating, setRegenerating] = useState(false);
   const [startingNode, setStartingNode] = useState(null);
+  const [editingGoal, setEditingGoal] = useState(false);
+  const [goalForm, setGoalForm] = useState({ goal: '', semester: '', branch: '' });
+  const [savingGoal, setSavingGoal] = useState(false);
 
   const completed = roadmapNodes.filter(n => n.status === 'completed').length;
   const total = roadmapNodes.length;
@@ -139,10 +142,26 @@ export default function Roadmap() {
 
   const handleStartSprint = async (nodeId) => {
     setStartingNode(nodeId);
-    try {
-      await startSprint(nodeId);
-    } catch (e) { console.error(e); }
+    try { await startSprint(nodeId); } catch (e) { console.error(e); }
     finally { setStartingNode(null); }
+  };
+
+  const handleSaveGoal = async () => {
+    setSavingGoal(true);
+    try {
+      await fetch('http://localhost:8000/api/roadmap/goal', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+        body: JSON.stringify({
+          goal: goalForm.goal,
+          semester: goalForm.semester ? parseInt(goalForm.semester) : undefined,
+          branch: goalForm.branch || undefined,
+        }),
+      });
+      await fetchRoadmap();
+      setEditingGoal(false);
+    } catch (e) { console.error(e); }
+    finally { setSavingGoal(false); }
   };
 
   return (
@@ -180,6 +199,51 @@ export default function Roadmap() {
           {regenerating ? 'Regenerating...' : 'Regenerate'}
         </button>
       </div>
+
+      {/* Goal editor */}
+      {editingGoal ? (
+        <div style={{ marginBottom: '24px', padding: '20px', background: 'rgba(79,142,247,0.06)', border: '1px solid rgba(79,142,247,0.2)', borderRadius: '12px' }}>
+          <div style={{ fontSize: '13px', fontWeight: '600', marginBottom: '14px' }}>Update your learning goal</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+            <div>
+              <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Goal</label>
+              <input className="input" placeholder="e.g. crack placements, startup intern" value={goalForm.goal}
+                onChange={e => setGoalForm(f => ({ ...f, goal: e.target.value }))} />
+            </div>
+            <div>
+              <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Semester</label>
+              <input className="input" type="number" min="1" max="8" placeholder="6" value={goalForm.semester}
+                onChange={e => setGoalForm(f => ({ ...f, semester: e.target.value }))} />
+            </div>
+            <div>
+              <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Branch</label>
+              <input className="input" placeholder="CSE" value={goalForm.branch}
+                onChange={e => setGoalForm(f => ({ ...f, branch: e.target.value }))} />
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button className="btn btn-primary" onClick={handleSaveGoal} disabled={savingGoal || !goalForm.goal} style={{ fontSize: '12px' }}>
+              {savingGoal ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
+              {savingGoal ? 'Saving...' : 'Save & Regenerate'}
+            </button>
+            <button className="btn btn-ghost" onClick={() => setEditingGoal(false)} style={{ fontSize: '12px' }}>
+              <X size={12} /> Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div style={{ marginBottom: '24px', padding: '14px 18px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <Target size={16} color="#4f8ef7" />
+          <div style={{ flex: 1 }}>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Current goal: </span>
+            <span style={{ fontSize: '12px', color: '#4f8ef7', fontWeight: '600' }}>{currentUser?.goal || 'crack placements'}</span>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}> · Sem {currentUser?.semester || 6} · {currentUser?.branch || 'CSE'}</span>
+          </div>
+          <button className="btn btn-ghost" onClick={() => { setGoalForm({ goal: currentUser?.goal || '', semester: currentUser?.semester || '', branch: currentUser?.branch || '' }); setEditingGoal(true); }} style={{ fontSize: '11px', padding: '5px 10px' }}>
+            <Edit3 size={11} /> Change Goal
+          </button>
+        </div>
+      )}
 
       {/* Progress bar */}
       <div style={{ marginBottom: '32px' }}>

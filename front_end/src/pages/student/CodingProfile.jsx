@@ -9,6 +9,8 @@ export default function CodingProfile() {
   const [profiles, setProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [linking, setLinking] = useState(false);
+  const [lcUsername, setLcUsername] = useState('');
 
   const token = () => localStorage.getItem('token');
 
@@ -37,11 +39,20 @@ export default function CodingProfile() {
         headers: { Authorization: `Bearer ${token()}` },
       });
       await fetchProfiles();
-    } catch (err) {
-      console.error('Sync failed', err);
-    } finally {
-      setSyncing(false);
-    }
+    } catch (err) { console.error('Sync failed', err); }
+    finally { setSyncing(false); }
+  };
+
+  const handleLink = async () => {
+    if (!lcUsername.trim()) return;
+    setLinking(true);
+    try {
+      await fetch(`http://localhost:8000/api/coding/leetcode/${lcUsername.trim()}`, {
+        headers: { Authorization: `Bearer ${token()}` },
+      });
+      await fetchProfiles();
+    } catch (err) { alert('Failed to link: ' + err.message); }
+    finally { setLinking(false); }
   };
 
   if (loading) {
@@ -58,10 +69,28 @@ export default function CodingProfile() {
     return (
       <div className="fade-in-up">
         <PageHeader title="Coding Profile" subtitle="Link your LeetCode account to track your progress" />
-        <div className="card" style={{ padding: '40px', textAlign: 'center' }}>
-          <Code2 size={40} style={{ margin: '0 auto 16px', opacity: 0.4 }} />
-          <div style={{ fontSize: '15px', fontWeight: '600', marginBottom: '8px' }}>No coding profile linked yet</div>
-          <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Ask your admin to link your LeetCode account.</div>
+        <div className="card" style={{ padding: '32px', maxWidth: '480px' }}>
+          <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '6px' }}>Link LeetCode Account</div>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '20px' }}>Enter your LeetCode username to sync your stats</div>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <input
+              className="input"
+              placeholder="your_leetcode_username"
+              value={lcUsername}
+              onChange={e => setLcUsername(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && !linking && lcUsername.trim() && handleLink()}
+              style={{ flex: 1 }}
+            />
+            <button
+              className="btn btn-primary"
+              disabled={linking || !lcUsername.trim()}
+              onClick={handleLink}
+              style={{ fontSize: '12px', whiteSpace: 'nowrap' }}
+            >
+              {linking ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
+              {linking ? 'Linking...' : 'Link Account'}
+            </button>
+          </div>
         </div>
       </div>
     );
