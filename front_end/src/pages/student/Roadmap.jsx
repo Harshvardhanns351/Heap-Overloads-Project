@@ -1,147 +1,252 @@
-import React from 'react';
+import React, { useState } from 'react';
 import useAppStore from '../../store';
-import { PageHeader } from '../../components/UI';
-import { CheckCircle2, Circle, PlayCircle, ChevronDown, ChevronUp, Clock, BookOpen, Zap } from 'lucide-react';
+import { CheckCircle2, Circle, Clock, BookOpen, Zap, PlayCircle, ChevronRight, RefreshCw, Target, Loader2 } from 'lucide-react';
 
-const TYPE_COLORS = { concept: '#4f8ef7', practice: '#8b5cf6', project: '#14b8a6' };
-const TYPE_ICONS = { concept: BookOpen, practice: Zap, project: PlayCircle };
+const TYPE_COLOR = { concept: '#4f8ef7', practice: '#8b5cf6', project: '#14b8a6' };
+const TYPE_ICON = { concept: BookOpen, practice: Zap, project: PlayCircle };
 
-function NodeIcon({ status, size = 22 }) {
-  if (status === 'completed') return <CheckCircle2 size={size} color="#22c55e" />;
-  if (status === 'current') return <PlayCircle size={size} color="#4f8ef7" className="pulse-ring" />;
-  return <Circle size={size} color="var(--text-muted)" />;
+const STATUS_STYLES = {
+  completed: { border: '#22c55e', bg: 'rgba(34,197,94,0.06)', dot: '#22c55e', label: 'Complete', labelBg: 'rgba(34,197,94,0.12)', labelColor: '#22c55e' },
+  in_progress: { border: '#4f8ef7', bg: 'rgba(79,142,247,0.06)', dot: '#4f8ef7', label: 'In Progress', labelBg: 'rgba(79,142,247,0.12)', labelColor: '#4f8ef7' },
+  pending: { border: 'rgba(255,255,255,0.08)', bg: 'transparent', dot: 'rgba(255,255,255,0.2)', label: 'Pending', labelBg: 'rgba(255,255,255,0.06)', labelColor: 'var(--text-muted)' },
+};
+
+function NodeCard({ node, index, onStart, onComplete, isStarting }) {
+  const [expanded, setExpanded] = useState(false);
+  const style = STATUS_STYLES[node.status] || STATUS_STYLES.pending;
+  const Icon = TYPE_ICON[node.node_type] || BookOpen;
+  const typeColor = TYPE_COLOR[node.node_type] || '#4f8ef7';
+  const resources = (() => { try { return JSON.parse(node.resources_json || '[]'); } catch { return []; } })();
+
+  return (
+    <div
+      style={{
+        background: style.bg,
+        border: `1px solid ${style.border}`,
+        borderRadius: '14px',
+        padding: '20px',
+        transition: 'all 0.2s',
+        cursor: 'pointer',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+      onClick={() => setExpanded(e => !e)}
+    >
+      {/* Top row */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', marginBottom: expanded ? '16px' : 0 }}>
+        {/* Index badge */}
+        <div style={{
+          width: '36px', height: '36px', borderRadius: '10px', flexShrink: 0,
+          background: node.status === 'completed' ? 'rgba(34,197,94,0.15)' : node.status === 'in_progress' ? 'rgba(79,142,247,0.15)' : 'rgba(255,255,255,0.06)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: '13px', fontWeight: '700',
+          color: node.status === 'completed' ? '#22c55e' : node.status === 'in_progress' ? '#4f8ef7' : 'var(--text-muted)',
+        }}>
+          {node.status === 'completed' ? <CheckCircle2 size={18} /> : String(index + 1).padStart(2, '0')}
+        </div>
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
+            <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>{node.title}</span>
+            <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '99px', background: `${typeColor}15`, color: typeColor, border: `1px solid ${typeColor}25`, fontWeight: '600' }}>
+              {node.node_type}
+            </span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Clock size={10} /> {node.hours}h
+            </span>
+            <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '99px', background: style.labelBg, color: style.labelColor, fontWeight: '600' }}>
+              {style.label}
+            </span>
+          </div>
+        </div>
+
+        <ChevronRight size={14} color="var(--text-muted)" style={{ transform: expanded ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0, marginTop: '4px' }} />
+      </div>
+
+      {/* Expanded content */}
+      {expanded && (
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '16px' }}>
+          <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '14px' }}>{node.description}</p>
+
+          {resources.length > 0 && (
+            <div style={{ marginBottom: '14px' }}>
+              <div style={{ fontSize: '10px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>Resources</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                {resources.map((r, i) => (
+                  <span key={i} style={{ fontSize: '11px', padding: '4px 10px', background: 'rgba(79,142,247,0.08)', border: '1px solid rgba(79,142,247,0.2)', borderRadius: '6px', color: '#4f8ef7' }}>
+                    🔗 {r}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: '8px' }} onClick={e => e.stopPropagation()}>
+            {node.status === 'in_progress' && (
+              <>
+                <button
+                  className="btn btn-primary"
+                  onClick={() => onStart(node.id)}
+                  disabled={isStarting}
+                  style={{ fontSize: '12px', padding: '7px 14px' }}
+                >
+                  {isStarting ? <Loader2 size={12} className="animate-spin" /> : <Zap size={12} />}
+                  Start 25-min Sprint
+                </button>
+                <button className="btn btn-ghost" onClick={() => onComplete(node.id)} style={{ fontSize: '12px', padding: '7px 14px' }}>
+                  <CheckCircle2 size={12} /> Mark Complete
+                </button>
+              </>
+            )}
+            {node.status === 'completed' && (
+              <span style={{ fontSize: '12px', color: '#22c55e', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '600' }}>
+                <CheckCircle2 size={13} /> Completed
+              </span>
+            )}
+            {node.status === 'pending' && (
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Complete previous nodes to unlock</span>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function Roadmap() {
-  const { roadmapNodes, expandedNode, setExpandedNode, markNodeComplete } = useAppStore();
+  const { roadmapNodes, fetchRoadmap, markNodeComplete, startSprint, currentUser } = useAppStore();
+  const [regenerating, setRegenerating] = useState(false);
+  const [startingNode, setStartingNode] = useState(null);
+
+  const completed = roadmapNodes.filter(n => n.status === 'completed').length;
+  const total = roadmapNodes.length;
+  const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+  const currentNode = roadmapNodes.find(n => n.status === 'in_progress');
+
+  const handleRegenerate = async () => {
+    setRegenerating(true);
+    try {
+      await fetch('http://localhost:8000/api/roadmap/regenerate', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
+      await fetchRoadmap();
+    } catch (e) { console.error(e); }
+    finally { setRegenerating(false); }
+  };
+
+  const handleStartSprint = async (nodeId) => {
+    setStartingNode(nodeId);
+    try {
+      await startSprint(nodeId);
+    } catch (e) { console.error(e); }
+    finally { setStartingNode(null); }
+  };
 
   return (
-    <div className="fade-in-up" style={{ maxWidth: '680px', margin: '0 auto' }}>
-      <PageHeader
-        title="My Learning Roadmap"
-        subtitle="AI-generated based on your marks, goals, and skill gaps"
-        action={
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Goal: Crack Placements · Sem 6 CSE</span>
-            <button className="btn btn-ghost" style={{ fontSize: '11px', padding: '5px 12px' }}>Regenerate</button>
+    <div className="fade-in-up">
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '28px', paddingBottom: '24px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <div>
+          <h1 style={{ fontSize: '22px', fontWeight: '600', color: 'white', marginBottom: '6px' }}>My Learning Roadmap</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+              Goal: <span style={{ color: '#4f8ef7', fontWeight: '500' }}>{currentUser?.goal || 'Crack Placements'}</span>
+            </span>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>·</span>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+              Sem {currentUser?.semester || 6} · {currentUser?.branch || 'CSE'}
+            </span>
+            {currentNode && (
+              <>
+                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>·</span>
+                <span style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#4f8ef7', display: 'inline-block', animation: 'pulse 2s infinite' }} />
+                  <span style={{ color: '#4f8ef7', fontWeight: '500' }}>Now: {currentNode.title}</span>
+                </span>
+              </>
+            )}
           </div>
-        }
-      />
+        </div>
+        <button
+          className="btn btn-ghost"
+          onClick={handleRegenerate}
+          disabled={regenerating}
+          style={{ fontSize: '12px', gap: '6px' }}
+        >
+          <RefreshCw size={12} className={regenerating ? 'spin' : ''} />
+          {regenerating ? 'Regenerating...' : 'Regenerate'}
+        </button>
+      </div>
 
       {/* Progress bar */}
-      <div className="card" style={{ padding: '16px 20px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-        <div style={{ flex: 1 }}>
-          {(() => {
-            const completed = roadmapNodes.filter(n => n.status === 'completed').length;
-            const total = roadmapNodes.length;
-            const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
-            return <>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                <span style={{ fontSize: '12px', fontWeight: '500' }}>Overall Progress</span>
-                <span style={{ fontSize: '12px', fontWeight: '700', color: '#4f8ef7' }}>{completed} / {total} completed</span>
-              </div>
-              <div style={{ background: 'var(--bg-elevated)', borderRadius: '99px', height: '6px', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${pct}%`, background: 'linear-gradient(90deg, #4f8ef7, #8b5cf6)', borderRadius: '99px', transition: 'width 0.5s ease' }} />
-              </div>
-              <div style={{ fontSize: '24px', fontWeight: '700', fontFamily: 'Space Grotesk, sans-serif', color: '#f0f0f8', marginTop: '8px' }}>{pct}%</div>
-            </>;
-          })()}
+      <div style={{ marginBottom: '32px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+          <span style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text-secondary)' }}>Overall Progress</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{completed} / {total} nodes</span>
+            <span style={{ fontSize: '20px', fontWeight: '700', color: '#4f8ef7', fontFamily: 'Space Grotesk, sans-serif' }}>{pct}%</span>
+          </div>
+        </div>
+        <div style={{ height: '8px', background: 'rgba(255,255,255,0.06)', borderRadius: '99px', overflow: 'hidden' }}>
+          <div style={{
+            height: '100%',
+            width: `${pct}%`,
+            background: 'linear-gradient(90deg, #4f8ef7, #8b5cf6)',
+            borderRadius: '99px',
+            transition: 'width 0.6s ease',
+            boxShadow: '0 0 12px rgba(79,142,247,0.4)',
+          }} />
+        </div>
+        {/* Step indicators */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
+          {roadmapNodes.map((n, i) => (
+            <div key={n.id} style={{
+              width: `${100 / Math.max(total, 1)}%`,
+              height: '3px',
+              background: n.status === 'completed' ? '#22c55e' : n.status === 'in_progress' ? '#4f8ef7' : 'rgba(255,255,255,0.06)',
+              borderRadius: '99px',
+              transition: 'background 0.3s',
+            }} />
+          ))}
         </div>
       </div>
 
-      {/* Vertical ladder */}
-      <div style={{ position: 'relative' }}>
-        {/* Connector line */}
-        <div style={{ position: 'absolute', left: '21px', top: '22px', bottom: '22px', width: '2px', background: 'linear-gradient(180deg, #22c55e 0%, #22c55e 33%, rgba(79,142,247,0.5) 33%, rgba(79,142,247,0.5) 50%, rgba(255,255,255,0.06) 50%)', borderRadius: '1px' }} />
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {roadmapNodes.map((node, idx) => {
-            const isExpanded = expandedNode === node.id;
-            const nodeType = node.node_type || node.type || 'concept';
-            const Icon = TYPE_ICONS[nodeType] || BookOpen;
-            const typeColor = TYPE_COLORS[nodeType];
-            const resources = (() => {
-              try { return JSON.parse(node.resources_json || '[]'); } catch { return []; }
-            })();
-
-            return (
-              <div key={node.id} className="roadmap-node" style={{ opacity: node.status === 'upcoming' && idx > 3 ? 0.5 : 1 }}>
-                <div
-                  onClick={() => setExpandedNode(node.id)}
-                  style={{
-                    display: 'flex', alignItems: 'flex-start', gap: '14px', padding: '14px 16px',
-                    background: node.status === 'current' ? 'rgba(79,142,247,0.06)' : 'var(--bg-card)',
-                    border: `1px solid ${node.status === 'current' ? 'rgba(79,142,247,0.2)' : node.status === 'completed' ? 'rgba(34,197,94,0.15)' : 'var(--border)'}`,
-                    borderRadius: '12px', cursor: 'pointer', transition: 'all 0.18s', paddingLeft: '16px',
-                  }}
-                >
-                  {/* Icon */}
-                  <div style={{ marginTop: '1px', zIndex: 1, flexShrink: 0, background: 'var(--bg-card)', padding: '2px' }}>
-                    <NodeIcon status={node.status} />
-                  </div>
-
-                  {/* Content */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: '13px', fontWeight: '600' }}>{node.title}</span>
-                      <span style={{ fontSize: '10px', padding: '1px 7px', borderRadius: '99px', background: `${typeColor}15`, color: typeColor, border: `1px solid ${typeColor}25`, fontWeight: '600' }}>
-                        {nodeType}
-                      </span>
-                      {node.status === 'in_progress' && (
-                        <span className="badge-blue" style={{ fontSize: '10px', padding: '1px 7px', borderRadius: '99px', fontWeight: '600' }}>Current</span>
-                      )}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '4px' }}>
-                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <Clock size={10} /> {node.hours}h estimated
-                      </span>
-                    </div>
-                  </div>
-
-                  <div style={{ color: 'var(--text-muted)', flexShrink: 0 }}>
-                    {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                  </div>
-                </div>
-
-                {/* Expanded panel */}
-                {isExpanded && (
-                  <div className="fade-in-up" style={{ margin: '4px 0 4px 44px', padding: '16px', background: 'var(--bg-elevated)', border: '1px solid var(--border-soft)', borderRadius: '10px' }}>
-                    <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '14px' }}>{node.description}</p>
-
-                    <div style={{ marginBottom: '14px' }}>
-                      <div style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Resources</div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                        {resources.map((r, i) => (
-                          <span key={i} style={{ fontSize: '11px', padding: '3px 10px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '6px', color: '#4f8ef7', cursor: 'pointer' }}>
-                            🔗 {r}
-                          </span>
-                        ))}
-                        {resources.length === 0 && <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>No resources listed</span>}
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      {node.status === 'in_progress' && (
-                        <button className="btn btn-primary" onClick={() => markNodeComplete(node.id)} style={{ fontSize: '12px', padding: '6px 14px' }}>
-                          <CheckCircle2 size={13} /> Mark Complete
-                        </button>
-                      )}
-                      {node.status === 'completed' && (
-                        <span style={{ fontSize: '12px', color: '#22c55e', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                          <CheckCircle2 size={13} /> Completed
-                        </span>
-                      )}
-                      {node.status === 'pending' && (
-                        <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Complete previous nodes to unlock</span>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+      {/* Empty state */}
+      {total === 0 && (
+        <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+          <Target size={48} style={{ margin: '0 auto 16px', opacity: 0.3 }} />
+          <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '8px' }}>No roadmap yet</div>
+          <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '20px' }}>Upload a marksheet or set your goal to generate a personalized roadmap</div>
+          <button className="btn btn-primary" onClick={handleRegenerate} disabled={regenerating}>
+            <RefreshCw size={13} /> Generate Roadmap
+          </button>
         </div>
-      </div>
+      )}
+
+      {/* Node grid */}
+      {total > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
+          {roadmapNodes.map((node, i) => (
+            <NodeCard
+              key={node.id}
+              node={node}
+              index={i}
+              onStart={handleStartSprint}
+              onComplete={markNodeComplete}
+              isStarting={startingNode === node.id}
+            />
+          ))}
+        </div>
+      )}
+
+      <style>{`
+        .spin { animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+      `}</style>
     </div>
   );
 }
