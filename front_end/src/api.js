@@ -107,6 +107,10 @@ export const api = {
       headers: getHeaders(),
       body: JSON.stringify({ status, resolution }),
     }).then(handleResponse),
+    remove: (id) => fetch(`${API_BASE}/disputes/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    }).then(r => { if (!r.ok && r.status !== 204) return handleResponse(r); }),
   },
   
   attendance: {

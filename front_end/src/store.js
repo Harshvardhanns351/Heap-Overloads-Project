@@ -131,6 +131,16 @@ const useAppStore = create((set, get) => ({
     }
   },
 
+  deleteDispute: async (id) => {
+    try {
+      await api.disputes.remove(id);
+      await get().fetchDisputes();
+    } catch (err) {
+      console.error('Failed to delete dispute', err);
+      throw err;
+    }
+  },
+
   // Alerts
   alerts: [],
   fetchAlerts: async () => {
