@@ -31,7 +31,6 @@ class MentorChatResponse(BaseModel):
 
 def _load_prompt_template() -> str:
     here = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-    # app/api/routers -> app/api -> app -> (..)
     prompt_path = os.path.abspath(
         os.path.join(here, "..", "..", "ai_engine", "prompts", "mentor.txt")
     )
@@ -39,25 +38,12 @@ def _load_prompt_template() -> str:
         with open(prompt_path, "r", encoding="utf-8") as f:
             return f.read()
     except Exception:
-        # Hard fallback (should not happen in repo)
         return (
-            "You are an academic mentor for engineering students. "
-            "You do NOT provide mental health advice or therapy. "
-            "Student context: Name: {name}. Weak subjects: {weak_subjects}. "
-            "Current roadmap node: {current_node}. Recent marks trend: {marks_trend}. "
+            "You are Veloris AI, an academic mentor for engineering students. "
+            "Student: {name}. Weak subjects: {weak_subjects}. "
+            "Current roadmap node: {current_node}. Marks trend: {marks_trend}. "
             "Recent activity: {recent_activity}. Risk level: {risk_level}. "
-            "Provide study guidance that references this student's actual context."
-        )
-    try:
-        with open(prompt_path, "r", encoding="utf-8") as f:
-            return f.read()
-    except Exception:
-        # Hard fallback (should not happen in repo)
-        return (
-            "You are an academic mentor for engineering students. "
-            "You do NOT provide mental health advice or therapy. "
-            "Student context: Name: {name}. Weak subjects: {weak_subjects}. "
-            "Current roadmap node: {current_node}. Recent marks trend: {marks_trend}."
+            "Give concise, personalised academic guidance. No mental health advice."
         )
 
 
@@ -131,7 +117,8 @@ def _call_groq(messages: List[Dict[str, str]]) -> Optional[str]:
     headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
     payload = {
         "model": "llama3-70b-8192",
-        "temperature": 0.4,
+        "temperature": 0.5,
+        "max_tokens": 512,
         "messages": messages,
     }
 
@@ -140,8 +127,10 @@ def _call_groq(messages: List[Dict[str, str]]) -> Optional[str]:
             resp = client.post(url, headers=headers, json=payload)
             resp.raise_for_status()
             data = resp.json()
-            return data["choices"][0]["message"]["content"]
-    except Exception:
+            return data["choices"][0]["message"]["content"].strip()
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"Groq call failed: {e}")
         return None
 
 
@@ -168,14 +157,26 @@ def mentor_chat(
     )
     risk_level = ctx.get("recent_risk_level") or "unknown"
 
-    system_prompt = template.format(
-        name=ctx["name"],
-        weak_subjects=", ".join(ctx["weak_subjects"]),
-        current_node=ctx["current_node"],
-        marks_trend=ctx["marks_trend"],
-        recent_activity=recent_activity_str,
-        risk_level=risk_level,
-    )
+    try:
+        system_prompt = template.format(
+            name=ctx["name"],
+            weak_subjects=", ".join(ctx["weak_subjects"]),
+            current_node=ctx["current_node"],
+            marks_trend=ctx["marks_trend"],
+            recent_activity=recent_activity_str,
+            risk_level=risk_level,
+        )
+    except KeyError:
+        # Prompt template has missing placeholders — use safe fallback
+        system_prompt = (
+            f"You are Veloris AI, an academic mentor. "
+            f"Student: {ctx['name']}. "
+            f"Weak subjects: {', '.join(ctx['weak_subjects'])}. "
+            f"Current roadmap node: {ctx['current_node']}. "
+            f"Marks trend: {ctx['marks_trend']}. "
+            f"Risk level: {risk_level}. "
+            f"Give concise, personalised academic guidance."
+        )
 
     # Build Groq/OpenAI-style messages
     messages: List[Dict[str, str]] = [{"role": "system", "content": system_prompt}]
