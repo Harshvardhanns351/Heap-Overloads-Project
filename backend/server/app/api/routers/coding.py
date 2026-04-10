@@ -395,7 +395,8 @@ async def get_heatmap(
     return {"dates": dates}
 
 
-
+@router.get("/me/score")
+def get_my_score(
     current_user: User = Depends(get_current_user),
     session=Depends(get_session),
 ):
