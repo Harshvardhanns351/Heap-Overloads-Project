@@ -116,7 +116,7 @@ def _call_groq(messages: List[Dict[str, str]]) -> Optional[str]:
     url = "https://api.groq.com/openai/v1/chat/completions"
     headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
     payload = {
-        "model": "llama3-70b-8192",
+        "model": "llama-3.3-70b-versatile",
         "temperature": 0.5,
         "max_tokens": 512,
         "messages": messages,
