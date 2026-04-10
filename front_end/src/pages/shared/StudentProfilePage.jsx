@@ -1090,14 +1090,26 @@ function OverviewTab({ coding, attendance, academics, internships, tier, onTabSw
             </div>
             <button onClick={() => onTabSwitch('activity')} style={{ fontSize: '11px', color: '#5B5BD6', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>View Full →</button>
           </div>
-          {/* Mini streak stats */}
+          {/* Mini streak stats — derived from recent submissions */}
           {(() => {
-            const { currentStreak, longestStreak, totalDays } = buildActivityMap(coding);
+            const allDates = {};
+            (coding?.platforms||[]).forEach(p=>(p.recent_submissions||[]).forEach(s=>{ if(s.time) allDates[s.time.slice(0,10)]=1; }));
+            (coding?.summary?.recent_submissions||[]).forEach(s=>{ if(s.time) allDates[s.time.slice(0,10)]=1; });
+            const today = new Date(); today.setHours(0,0,0,0);
+            let cur=0, longest=0, tmp=0;
+            for(let i=0;i<365;i++){
+              const d=new Date(today); d.setDate(d.getDate()-i);
+              const k=d.toISOString().slice(0,10);
+              if(allDates[k]){tmp++;if(i===0||cur>0)cur=tmp;}
+              else{if(i===0)cur=0;longest=Math.max(longest,tmp);tmp=0;}
+            }
+            longest=Math.max(longest,tmp);
+            const totalDays=Object.keys(allDates).length;
             return (
               <div style={{ display: 'flex', gap: '16px', marginBottom: '12px' }}>
                 {[
-                  { label: 'Current', value: `${currentStreak}d 🔥`, color: currentStreak > 0 ? '#f59e0b' : '#64748b' },
-                  { label: 'Longest', value: `${longestStreak}d`, color: '#a855f7' },
+                  { label: 'Current', value: `${cur}d 🔥`, color: cur > 0 ? '#f59e0b' : '#64748b' },
+                  { label: 'Longest', value: `${longest}d`, color: '#a855f7' },
                   { label: 'Active Days', value: totalDays, color: '#22c55e' },
                 ].map(({ label, value, color }) => (
                   <div key={label} style={{ textAlign: 'center' }}>
