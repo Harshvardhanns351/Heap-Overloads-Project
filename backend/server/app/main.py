@@ -38,6 +38,7 @@ from app.api.routers.sprints import router as sprints_router
 from app.api.routers.exams import router as exams_router
 from app.api.routers.peer_notes import router as peer_notes_router
 from app.api.routers.digest import router as digest_router
+from app.api.routers.profile import router as profile_router
 from app.auth.router import router as auth_router
 from app.scheduler import run_wellbeing_check
 
@@ -112,6 +113,7 @@ app.include_router(sprints_router, prefix="/api/sprints", tags=["sprints"])
 app.include_router(exams_router, prefix="/api/exams", tags=["exams"])
 app.include_router(peer_notes_router, prefix="/api/peer-notes", tags=["peer-notes"])
 app.include_router(digest_router, prefix="/api/digest", tags=["digest"])
+app.include_router(profile_router, prefix="/api/profile", tags=["profile"])
 
 
 if __name__ == "__main__":

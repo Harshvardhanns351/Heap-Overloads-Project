@@ -333,6 +333,30 @@ const useAppStore = create((set, get) => ({
     }
   },
 
+  // Profile
+  profile: null,
+  profileLoading: false,
+  fetchProfile: async () => {
+    set({ profileLoading: true });
+    try {
+      const data = await api.profile.getMyProfile();
+      set({ profile: data, profileLoading: false });
+    } catch { set({ profileLoading: false }); }
+  },
+  updateProfileLocal: (updates) =>
+    set(s => ({ profile: s.profile ? { ...s.profile, user: { ...s.profile.user, ...updates } } : s.profile })),
+
+  // Student list (teacher/admin)
+  studentsList: [],
+  studentsListLoading: false,
+  fetchStudentsList: async (params = {}) => {
+    set({ studentsListLoading: true });
+    try {
+      const data = await api.profile.getStudentsList(params);
+      set({ studentsList: data.students || [], studentsListLoading: false });
+    } catch { set({ studentsListLoading: false }); }
+  },
+
   // Initialization
   initialize: async () => {
     const role = get().role;
