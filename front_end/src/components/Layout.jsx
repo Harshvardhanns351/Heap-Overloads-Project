@@ -72,7 +72,7 @@ export default function Layout({ children }) {
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-sky-600 flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.5)]">
               <Brain size={22} className="text-white" />
             </div>
-            <span className="text-xl font-bold font-space tracking-tight text-white">EduPulse</span>
+            <span className="text-xl font-bold font-space tracking-tight text-white">Veloris</span>
           </div>
           <div className="mt-4 flex items-center gap-2">
             <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold border flex items-center gap-1.5 ${roleColorCls}`}>
