@@ -199,7 +199,7 @@ Return ONLY valid JSON array, no other text."""
                         "Content-Type": "application/json",
                     },
                     json={
-                        "model": "llama3-70b-8192",
+                        "model": "llama-3.3-70b-versatile",
                         "temperature": 0.3,
                         "messages": messages,
                     },
