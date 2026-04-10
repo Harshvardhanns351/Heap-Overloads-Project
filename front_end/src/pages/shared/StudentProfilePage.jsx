@@ -831,40 +831,47 @@ function ActivityHeatmap({ codingData, userId, isOwn }) {
   const availableYears = [currentYear, currentYear-1, currentYear-2, currentYear-3, currentYear-4];
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [tooltip, setTooltip] = useState(null);
-  const [heatmapDates, setHeatmapDates] = useState(null);
+
+  // Build date map from all platform recent_submissions already in codingData
+  // (API-based full calendar is fetched separately and merged if available)
+  const [extraDates, setExtraDates] = useState({});
 
   useEffect(() => {
-    setHeatmapDates(null);
-    const req = isOwn ? api.coding.getHeatmap() : api.coding.getStudentHeatmap(userId);
+    // Try to fetch full heatmap from API — merge on top of local data
+    const req = isOwn
+      ? api.coding.getHeatmap?.()
+      : (userId ? api.coding.getStudentHeatmap?.(userId) : null);
+    if (!req) return;
     req
-      .then(data => setHeatmapDates(data?.dates || {}))
-      .catch(() => {
-        const fb = {};
-        const add = (iso) => { if (!iso) return; const d = iso.slice(0,10); fb[d]=(fb[d]||0)+1; };
-        (codingData?.platforms||[]).forEach(p=>(p.recent_submissions||[]).forEach(s=>add(s.time)));
-        (codingData?.summary?.recent_submissions||[]).forEach(s=>add(s.time));
-        setHeatmapDates(fb);
-      });
+      .then(data => { if (data?.dates) setExtraDates(data.dates); })
+      .catch(() => {}); // silently ignore — local data is the fallback
   }, [userId, isOwn]); // eslint-disable-line
 
-  const dateMap = {};
-  if (heatmapDates) {
-    Object.entries(heatmapDates).forEach(([d,c]) => {
-      if (d.startsWith(String(selectedYear))) dateMap[d] = c;
-    });
-  }
+  // Merge local recent_submissions + API extra dates
+  const allDates = {};
+  const addDate = (iso) => { if (!iso) return; const d = iso.slice(0,10); allDates[d]=(allDates[d]||0)+1; };
+  try {
+    (codingData?.platforms||[]).forEach(p => (p.recent_submissions||[]).forEach(s => addDate(s.time)));
+    (codingData?.summary?.recent_submissions||[]).forEach(s => addDate(s.time));
+    Object.entries(extraDates).forEach(([d,c]) => { allDates[d] = (allDates[d]||0) + c; });
+  } catch(e) { /* ignore */ }
 
+  // Filter to selected year
+  const dateMap = {};
+  Object.entries(allDates).forEach(([d,c]) => {
+    if (d.startsWith(String(selectedYear))) dateMap[d] = c;
+  });
+
+  // Compute streaks from full data
   const today = new Date(); today.setHours(0,0,0,0);
   let cur = 0, longest = 0, tmp = 0;
-  if (heatmapDates) {
-    for (let i = 0; i < 730; i++) {
-      const d = new Date(today); d.setDate(d.getDate()-i);
-      const k = d.toISOString().slice(0,10);
-      if (heatmapDates[k]) { tmp++; if (i===0||cur>0) cur=tmp; }
-      else { if (i===0) cur=0; longest=Math.max(longest,tmp); tmp=0; }
-    }
-    longest = Math.max(longest, tmp);
+  for (let i = 0; i < 730; i++) {
+    const d = new Date(today); d.setDate(d.getDate()-i);
+    const k = d.toISOString().slice(0,10);
+    if (allDates[k]) { tmp++; if (i===0||cur>0) cur=tmp; }
+    else { if (i===0) cur=0; longest=Math.max(longest,tmp); tmp=0; }
   }
+  longest = Math.max(longest, tmp);
 
   const weeks       = buildYearGrid(selectedYear);
   const monthLabels = getMonthLabels(weeks, selectedYear);
@@ -877,10 +884,10 @@ function ActivityHeatmap({ codingData, userId, isOwn }) {
       {/* ── Streak stat cards ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px' }}>
         {[
-          { label: 'Current Streak', value: heatmapDates ? `${cur} days`     : '…', icon: '🔥', color: cur > 0 ? '#f59e0b' : '#475569', glow: cur > 0 },
-          { label: 'Longest Streak', value: heatmapDates ? `${longest} days` : '…', icon: '🏆', color: '#a855f7', glow: false },
-          { label: 'Active Days',    value: heatmapDates ? totalDays          : '…', icon: '⚡', color: '#22c55e', glow: false },
-          { label: 'Total Events',   value: heatmapDates ? yearTotal          : '…', icon: '📌', color: '#4f8ef7', glow: false },
+          { label: 'Current Streak', value: `${cur} days`,     icon: '🔥', color: cur > 0 ? '#f59e0b' : '#475569', glow: cur > 0 },
+          { label: 'Longest Streak', value: `${longest} days`, icon: '🏆', color: '#a855f7', glow: false },
+          { label: 'Active Days',    value: totalDays,          icon: '⚡', color: '#22c55e', glow: false },
+          { label: 'Total Events',   value: yearTotal,          icon: '📌', color: '#4f8ef7', glow: false },
         ].map(({ label, value, icon, color, glow }) => (
           <div key={label} style={{
             padding: '16px 18px', borderRadius: '12px',
@@ -903,14 +910,8 @@ function ActivityHeatmap({ codingData, userId, isOwn }) {
         {/* Header row */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <div style={{ fontSize: '13px', color: '#e6edf3', fontWeight: '600' }}>
-            {heatmapDates === null ? (
-              <span style={{ color: '#8b949e' }}>Loading contributions…</span>
-            ) : (
-              <>
-                <span style={{ color: '#e6edf3', fontWeight: '700' }}>{yearTotal.toLocaleString()}</span>
-                <span style={{ color: '#8b949e', fontWeight: '400' }}> contributions in {selectedYear}</span>
-              </>
-            )}
+            <span style={{ color: '#e6edf3', fontWeight: '700' }}>{yearTotal.toLocaleString()}</span>
+            <span style={{ color: '#8b949e', fontWeight: '400' }}> contributions in {selectedYear}</span>
           </div>
           {/* Year selector */}
           <div style={{ display: 'flex', gap: '4px' }}>
