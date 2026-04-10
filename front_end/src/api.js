@@ -50,10 +50,11 @@ export const api = {
   
   roadmap: {
     getMe: () => fetch(`${API_BASE}/roadmap/me`, { headers: getHeaders() }).then(handleResponse),
-    updateNode: (id, status) => fetch(`${API_BASE}/roadmap/nodes/${id}`, {
+    updateNode: (id, status) => fetch(`${API_BASE}/roadmap/nodes/${id}/progress`, {
       method: 'PATCH',
       headers: getHeaders(),
-      body: JSON.stringify({ status }),
+      // backend uses "complete" not "completed"
+      body: JSON.stringify({ status: status === 'completed' ? 'complete' : status }),
     }).then(handleResponse),
     regenerate: () => fetch(`${API_BASE}/roadmap/regenerate`, {
       method: 'POST',

@@ -4,10 +4,8 @@ Real API calls for learning resources — no LLM-generated URLs.
 
 Sources:
   - GitHub Search API  (no token needed; token raises rate limit 10→30 req/min)
-  - ArXiv API          (free, no key)
+  - ArXiv API          (free, no key) — CS category filtered to avoid physics papers
   - YouTube Data v3    (optional; falls back to search URL if no key)
-
-Curated fallbacks are verified-working URLs for common CS topics.
 """
 from __future__ import annotations
 
@@ -15,7 +13,7 @@ import asyncio
 import logging
 import os
 import xml.etree.ElementTree as ET
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 import httpx
 
@@ -195,7 +193,7 @@ async def search_youtube(query: str, limit: int = 2) -> List[Dict]:
 
 # ─── Parallel fetch ───────────────────────────────────────────────────────────
 
-async def fetch_resources_for_queries(queries: List[Dict]) -> List[Dict]:
+async def fetch_resources_for_queries(queries: List[Dict], topic: str = "") -> List[Dict]:
     """
     queries: list of {"type": "github_repo"|"youtube_video"|"research_paper", "query": str}
     Returns deduplicated list of resource dicts.

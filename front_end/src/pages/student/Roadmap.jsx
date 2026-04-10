@@ -581,24 +581,25 @@ export default function Roadmap() {
         <div>
           <div style={{ fontFamily: "Space Grotesk, sans-serif", fontSize: "22px", fontWeight: 700, marginBottom: "4px" }}>My Roadmaps</div>
           <div style={{ fontSize: "13px", color: "var(--text-muted)" }}>
-            {slotsUsed}/{3} slots used
-            {!canGenerate && " · Complete all roadmaps to generate new ones"}
+            {slotsUsed}/{3} active slots used
+            {!canGenerate && " · Complete or delete a roadmap to generate a new one"}
           </div>
         </div>
         <button
           onClick={() => canGenerate ? setPhase("wizard") : null}
           disabled={!canGenerate}
           style={{ padding: "10px 20px", borderRadius: "10px", fontSize: "13px", fontWeight: 500, background: canGenerate ? "#5B5BD6" : "rgba(255,255,255,0.06)", color: canGenerate ? "#fff" : "var(--text-muted)", border: "none", cursor: canGenerate ? "pointer" : "not-allowed", display: "flex", alignItems: "center", gap: "8px" }}>
-          + New Roadmap {!canGenerate && `(${3 - slotsUsed} slots full)`}
+          + New Roadmap
         </button>
       </div>
 
-      {/* Slot indicators */}
+      {/* Slot indicators — only show active (incomplete) slots */}
       <div style={{ display: "flex", gap: "6px", marginBottom: "24px" }}>
         {Array.from({ length: 3 }).map((_, i) => {
-          const rm = roadmaps[i];
+          const activeRoadmaps = roadmaps.filter(r => !r.is_completed);
+          const rm = activeRoadmaps[i];
           return (
-            <div key={i} style={{ flex: 1, height: "6px", borderRadius: "3px", background: rm ? (rm.is_completed ? "#1D9E75" : rm.is_active ? "#5B5BD6" : "rgba(91,91,214,0.4)") : "rgba(255,255,255,0.06)" }} />
+            <div key={i} style={{ flex: 1, height: "6px", borderRadius: "3px", background: rm ? (rm.is_active ? "#5B5BD6" : "rgba(91,91,214,0.4)") : "rgba(255,255,255,0.06)" }} />
           );
         })}
       </div>
@@ -611,16 +612,33 @@ export default function Roadmap() {
           <button onClick={() => setPhase("wizard")} style={{ padding: "10px 24px", borderRadius: "10px", fontSize: "13px", background: "#5B5BD6", color: "#fff", border: "none", cursor: "pointer" }}>Generate First Roadmap →</button>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: "14px" }}>
-          {roadmaps.map(rm => (
-            <RoadmapCard key={rm.id} rm={rm} onActivate={handleActivate} onView={handleView} onDelete={handleDelete} activating={activating === rm.id} />
-          ))}
-        </div>
+        <>
+          {/* Active (incomplete) roadmaps */}
+          {roadmaps.filter(r => !r.is_completed).length > 0 && (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: "14px", marginBottom: "28px" }}>
+              {roadmaps.filter(r => !r.is_completed).map(rm => (
+                <RoadmapCard key={rm.id} rm={rm} onActivate={handleActivate} onView={handleView} onDelete={handleDelete} activating={activating === rm.id} />
+              ))}
+            </div>
+          )}
+
+          {/* Completed roadmaps — history section */}
+          {roadmaps.filter(r => r.is_completed).length > 0 && (
+            <div>
+              <div style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "12px" }}>Completed History</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: "14px" }}>
+                {roadmaps.filter(r => r.is_completed).map(rm => (
+                  <RoadmapCard key={rm.id} rm={rm} onActivate={handleActivate} onView={handleView} onDelete={handleDelete} activating={activating === rm.id} />
+                ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
 
-      {!canGenerate && roadmaps.length >= 3 && (
+      {!canGenerate && (
         <div style={{ marginTop: "20px", padding: "14px 18px", background: "rgba(239,159,39,0.08)", border: "1px solid rgba(239,159,39,0.2)", borderRadius: "12px", fontSize: "13px", color: "#EF9F27" }}>
-          ⚠ You've used all 3 roadmap slots. Complete all roadmaps to unlock new generation.
+          ⚠ You've used all 3 active roadmap slots. Complete or delete a roadmap to generate a new one.
         </div>
       )}
 
