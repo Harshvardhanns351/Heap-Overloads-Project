@@ -9,20 +9,24 @@ import StudentDashboard from './pages/student/Dashboard';
 import Roadmap from './pages/student/Roadmap';
 import Mentor from './pages/student/Mentor';
 import Documents from './pages/student/Documents';
-import CodingProfile from './pages/student/CodingProfile';
 import Disputes from './pages/student/Disputes';
+
+// Shared
+import StudentProfilePage from './pages/shared/StudentProfilePage';
+import StudentListPage from './pages/shared/StudentListPage';
 
 // Teacher pages
 import TeacherClasses from './pages/teacher/Classes';
 import TeacherAssignments from './pages/teacher/Assignments';
 import TeacherAttendance from './pages/teacher/Attendance';
 import TeacherAlerts from './pages/teacher/Alerts';
-import StudentDetail from './pages/teacher/StudentDetail';
+import TeacherProfile from './pages/teacher/TeacherProfile';
 
 // Admin pages
 import AdminAnalytics from './pages/admin/Analytics';
 import AdminDisputes from './pages/admin/Disputes';
 import AdminUsers from './pages/admin/Users';
+import AdminProfile from './pages/admin/AdminProfile';
 
 function StudentRoutes() {
   return (
@@ -32,8 +36,10 @@ function StudentRoutes() {
         <Route path="/roadmap" element={<Roadmap />} />
         <Route path="/mentor" element={<Mentor />} />
         <Route path="/documents" element={<Documents />} />
-        <Route path="/coding" element={<CodingProfile />} />
         <Route path="/disputes" element={<Disputes />} />
+        <Route path="/profile" element={<StudentProfilePage />} />
+        {/* Legacy redirect */}
+        <Route path="/coding" element={<Navigate to="/profile?tab=coding" replace />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </Layout>
@@ -48,7 +54,9 @@ function TeacherRoutes() {
         <Route path="/teacher/assignments" element={<TeacherAssignments />} />
         <Route path="/teacher/attendance" element={<TeacherAttendance />} />
         <Route path="/teacher/alerts" element={<TeacherAlerts />} />
-        <Route path="/teacher/student/:id" element={<StudentDetail />} />
+        <Route path="/teacher/profile" element={<TeacherProfile />} />
+        <Route path="/teacher/students" element={<StudentListPage />} />
+        <Route path="/teacher/students/:userId" element={<StudentProfilePage viewMode />} />
         <Route path="*" element={<Navigate to="/teacher/classes" replace />} />
       </Routes>
     </Layout>
@@ -62,6 +70,9 @@ function AdminRoutes() {
         <Route path="/admin/analytics" element={<AdminAnalytics />} />
         <Route path="/admin/disputes" element={<AdminDisputes />} />
         <Route path="/admin/users" element={<AdminUsers />} />
+        <Route path="/admin/profile" element={<AdminProfile />} />
+        <Route path="/admin/students" element={<StudentListPage />} />
+        <Route path="/admin/students/:userId" element={<StudentProfilePage viewMode />} />
         <Route path="*" element={<Navigate to="/admin/analytics" replace />} />
       </Routes>
     </Layout>

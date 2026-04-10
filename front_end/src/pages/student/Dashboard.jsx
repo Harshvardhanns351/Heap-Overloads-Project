@@ -1,147 +1,175 @@
-import React from 'react';
-import useAppStore, { MOCK_STUDENTS } from '../../store';
-import { StatCard, PageHeader, RiskBadge, ProgressBar } from '../../components/UI';
+import React, { useEffect, useState } from 'react';
+import useAppStore from '../../store';
+import { StatCard, PageHeader, ProgressBar } from '../../components/UI';
 import {
   RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer,
-  AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid
 } from 'recharts';
-import { Activity, BookOpen, Code2, Bell, Zap, TrendingUp } from 'lucide-react';
+import { Activity, BookOpen, Code2, Zap, TrendingUp, Timer, Loader2 } from 'lucide-react';
 
-const student = MOCK_STUDENTS[0];
+export default function StudentDashboard() {
+  const {
+    currentUser,
+    marks, riskScore, roadmapNodes, assignments, sprintStats, codingSummary,
+    fetchMarks, fetchRiskScore, fetchRoadmap, fetchSprintStats, fetchAssignments, fetchCodingSummary,
+  } = useAppStore();
 
-const radarData = [
-  { subject: 'DSA', score: 72 },
-  { subject: 'OS', score: 58 },
-  { subject: 'DBMS', score: 81 },
-  { subject: 'CN', score: 63 },
-  { subject: 'ML', score: 45 },
-];
+  const [loading, setLoading] = useState(true);
 
-const activityData = [
-  { day: 'Mon', events: 8 },
-  { day: 'Tue', events: 12 },
-  { day: 'Wed', events: 3 },
-  { day: 'Thu', events: 0 },
-  { day: 'Fri', events: 0 },
-  { day: 'Sat', events: 2 },
-  { day: 'Sun', events: 5 },
-];
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      fetchMarks(), fetchRiskScore(), fetchRoadmap(), fetchSprintStats(), fetchAssignments(), fetchCodingSummary(),
+    ]).finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-const CustomTooltip = ({ active, payload }) => {
-  if (active && payload?.length) {
+  if (loading) {
     return (
-      <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px 12px', fontSize: '12px' }}>
-        <div style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{payload[0].value} events</div>
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
       </div>
     );
   }
-  return null;
-};
 
-export default function StudentDashboard() {
+  const name = currentUser?.name?.split(' ')[0] || 'Student';
+  const completedNodes = roadmapNodes?.filter(n => n.status === 'completed').length || 0;
+  const totalNodes = roadmapNodes?.length || 0;
+
+  const subjectScores = {};
+  marks?.forEach(m => {
+    if (m.max_score > 0) subjectScores[m.subject] = Math.round((m.score / m.max_score) * 100);
+  });
+
+  const radarData = Object.entries(subjectScores).map(([subject, score]) => ({ subject, score }));
+  const pendingAssignments = assignments?.filter(a => a.submission_status !== 'submitted').length || 0;
+  const overdueAssignments = assignments?.filter(a => {
+    if (a.submission_status === 'submitted') return false;
+    return new Date(a.deadline) < new Date();
+  }).length || 0;
+
+  const riskLevel = riskScore?.level || 'GREEN';
+  const riskColor = riskLevel === 'RED' ? '#ef4444' : riskLevel === 'YELLOW' ? '#f59e0b' : '#22c55e';
+  const sprintHours = Math.round((sprintStats?.this_week_minutes || 0) / 60);
+  const codingHours = codingSummary?.total_weekly_hours || 0;
+  const studyHours = +(sprintHours + codingHours).toFixed(1);
+  const totalProblems = codingSummary?.total_problems_solved || 0;
+  const recentActivity = codingSummary?.recent_submissions?.slice(0, 3) || [];
+
   return (
     <div className="fade-in-up">
       <PageHeader
-        title={`Good morning, ${student.name.split(' ')[0]} 👋`}
+        title={`Good morning, ${name} 👋`}
         subtitle="Here's your academic snapshot for today."
       />
 
-      {/* Nudge card */}
-      {student.nudge && (
-        <div className="nudge-card" style={{ padding: '14px 18px', marginBottom: '24px', display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-          <div style={{ width: '32px', height: '32px', background: 'rgba(79,142,247,0.15)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Zap size={15} color="#4f8ef7" />
+      {currentUser?.pending_nudge && (
+        <div style={{ padding: '14px 18px', marginBottom: '24px', display: 'flex', alignItems: 'flex-start', gap: '12px', background: '#FAEEDA', borderRadius: '12px', borderLeft: '4px solid #EF9F27' }}>
+          <div style={{ width: '32px', height: '32px', background: 'rgba(239,159,39,0.2)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Zap size={15} color="#EF9F27" />
           </div>
           <div>
-            <div style={{ fontSize: '11px', fontWeight: '600', color: '#4f8ef7', marginBottom: '2px' }}>Personal nudge</div>
-            <div style={{ fontSize: '13px', color: 'var(--text-primary)', lineHeight: '1.5' }}>{student.nudge}</div>
+            <div style={{ fontSize: '11px', fontWeight: '600', color: '#854F0B', marginBottom: '2px' }}>Your Veloris nudge</div>
+            <div style={{ fontSize: '13px', color: '#1a1a1a', lineHeight: '1.5' }}>{currentUser.pending_nudge}</div>
           </div>
         </div>
       )}
 
-      {/* Stats row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
-        <StatCard label="Attendance" value={`${student.attendance}%`} sub="This semester" color={student.attendance < 75 ? '#ef4444' : '#22c55e'} icon={Activity} trend={-8} />
-        <StatCard label="Roadmap Progress" value="2/6" sub="Nodes completed" color="#8b5cf6" icon={TrendingUp} />
-        <StatCard label="LeetCode Problems" value={student.codingStats.solved} sub={`Streak: ${student.codingStats.streak} days`} color="#f59e0b" icon={Code2} />
-        <StatCard label="Pending Assignments" value="2" sub="1 overdue" color="#ef4444" icon={BookOpen} />
+        <StatCard label="Wellbeing Risk" value={riskLevel} sub={riskScore ? `Score: ${riskScore.score}/100` : 'Calculated nightly'} color={riskColor} icon={Activity} />
+        <StatCard label="Roadmap Progress" value={`${completedNodes}/${totalNodes}`} sub="Nodes completed" color="#8b5cf6" icon={TrendingUp} />
+        <StatCard label="Study Time" value={`${studyHours}h`} sub="This week (sprints + coding)" color="#f59e0b" icon={Timer} />
+        <StatCard label="Problems Solved" value={totalProblems || pendingAssignments} sub={totalProblems ? "Across all platforms" : (overdueAssignments > 0 ? `${overdueAssignments} overdue` : 'All on track')} color={totalProblems ? '#22c55e' : (pendingAssignments > 0 ? '#ef4444' : '#22c55e')} icon={totalProblems ? Code2 : BookOpen} />
       </div>
 
-      {/* Charts row */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
-        {/* Radar chart */}
         <div className="card" style={{ padding: '20px' }}>
           <div style={{ fontSize: '13px', fontWeight: '600', marginBottom: '4px' }}>Subject Performance</div>
-          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '16px' }}>Unit 2 marks · out of 100</div>
-          <ResponsiveContainer width="100%" height={200}>
-            <RadarChart data={radarData}>
-              <PolarGrid stroke="rgba(255,255,255,0.05)" />
-              <PolarAngleAxis dataKey="subject" tick={{ fill: '#8b8ba0', fontSize: 11 }} />
-              <Radar dataKey="score" stroke="#4f8ef7" fill="#4f8ef7" fillOpacity={0.15} strokeWidth={2} dot={{ fill: '#4f8ef7', r: 3 }} />
-            </RadarChart>
-          </ResponsiveContainer>
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '16px' }}>Your scores · out of 100</div>
+          {radarData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={200}>
+              <RadarChart data={radarData}>
+                <PolarGrid stroke="rgba(255,255,255,0.05)" />
+                <PolarAngleAxis dataKey="subject" tick={{ fill: '#8b8ba0', fontSize: 11 }} />
+                <Radar dataKey="score" stroke="#4f8ef7" fill="#4f8ef7" fillOpacity={0.15} strokeWidth={2} dot={{ fill: '#4f8ef7', r: 3 }} />
+              </RadarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center h-[200px] text-slate-500 text-sm">Upload a marksheet to see your radar</div>
+          )}
         </div>
 
-        {/* Activity chart */}
         <div className="card" style={{ padding: '20px' }}>
           <div style={{ fontSize: '13px', fontWeight: '600', marginBottom: '4px' }}>Weekly Activity</div>
-          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '16px' }}>Platform events this week</div>
-          <ResponsiveContainer width="100%" height={200}>
-            <AreaChart data={activityData}>
-              <defs>
-                <linearGradient id="actGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.25} />
-                  <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-              <XAxis dataKey="day" tick={{ fill: '#8b8ba0', fontSize: 10 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: '#8b8ba0', fontSize: 10 }} axisLine={false} tickLine={false} />
-              <Tooltip content={<CustomTooltip />} />
-              <Area type="monotone" dataKey="events" stroke="#8b5cf6" fill="url(#actGrad)" strokeWidth={2} />
-            </AreaChart>
-          </ResponsiveContainer>
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '16px' }}>Sprints + coding platforms</div>
+          <div className="flex items-center justify-center" style={{ height: '120px' }}>
+            <div className="text-center">
+              <div style={{ fontSize: '52px', fontWeight: '500', color: '#8b5cf6', fontFamily: 'Space Grotesk, sans-serif' }}>{studyHours}</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>hours this week</div>
+              {sprintStats?.total_sprints > 0 && (
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>{sprintStats.total_sprints} sprints · {codingHours}h coding</div>
+              )}
+            </div>
+          </div>
+          {recentActivity.length > 0 && (
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '12px', marginTop: '4px' }}>
+              <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Recent commits / submissions</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {recentActivity.map((s, i) => (
+                  <a key={i} href={s.url || '#'} target="_blank" rel="noreferrer"
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: 'var(--text-secondary)', textDecoration: 'none' }}>
+                    <span style={{ fontSize: '9px', padding: '1px 5px', borderRadius: '4px', background: 'rgba(255,255,255,0.06)', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{s.platform}</span>
+                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.title}</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Bottom row */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-        {/* Subject bars */}
         <div className="card" style={{ padding: '20px' }}>
           <div style={{ fontSize: '13px', fontWeight: '600', marginBottom: '16px' }}>Subject Breakdown</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            {Object.entries(student.marks).map(([sub, score]) => (
-              <div key={sub}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                  <span style={{ fontSize: '12px', fontWeight: '500' }}>{sub}</span>
-                  <span style={{ fontSize: '12px', color: score < 60 ? '#ef4444' : score < 75 ? '#f59e0b' : '#22c55e', fontWeight: '600' }}>{score}%</span>
+          {Object.keys(subjectScores).length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {Object.entries(subjectScores).map(([sub, score]) => (
+                <div key={sub}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: '500' }}>{sub}</span>
+                    <span style={{ fontSize: '12px', color: score < 60 ? '#ef4444' : score < 75 ? '#f59e0b' : '#22c55e', fontWeight: '600' }}>{score}%</span>
+                  </div>
+                  <ProgressBar value={score} color={score < 60 ? '#ef4444' : score < 75 ? '#f59e0b' : '#22c55e'} height={5} />
                 </div>
-                <ProgressBar value={score} color={score < 60 ? '#ef4444' : score < 75 ? '#f59e0b' : '#22c55e'} height={5} />
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-slate-500 text-sm text-center py-8">Upload a marksheet to see your subjects</div>
+          )}
         </div>
 
-        {/* Assignments */}
         <div className="card" style={{ padding: '20px' }}>
           <div style={{ fontSize: '13px', fontWeight: '600', marginBottom: '16px' }}>Recent Assignments</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {[
-              { title: 'Graph Traversal Problems', subject: 'DSA', deadline: 'Apr 1', status: 'pending' },
-              { title: 'ER Diagram — Hospital DB', subject: 'DBMS', deadline: 'Mar 30', status: 'submitted' },
-              { title: 'Process Scheduling Sim', subject: 'OS', deadline: 'Mar 28', status: 'late' },
-            ].map((a, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', background: 'var(--bg-elevated)', borderRadius: '8px' }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '12px', fontWeight: '500', marginBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.title}</div>
-                  <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{a.subject} · Due {a.deadline}</div>
+          {assignments && assignments.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {assignments.slice(0, 4).map((a) => (
+                <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', background: 'var(--bg-elevated)', borderRadius: '8px' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '12px', fontWeight: '500', marginBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.title}</div>
+                    <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{a.subject} · Due {new Date(a.deadline).toLocaleDateString()}</div>
+                  </div>
+                  <span style={{
+                    padding: '2px 8px', borderRadius: '99px', fontSize: '10px', fontWeight: '600', whiteSpace: 'nowrap',
+                    background: a.submission_status === 'submitted' ? '#E1F5EE' : a.submission_status === 'late' ? '#FCEBEB' : '#FAEEDA',
+                    color: a.submission_status === 'submitted' ? '#0F6E56' : a.submission_status === 'late' ? '#A32D2D' : '#854F0B',
+                  }}>
+                    {a.submission_status || 'pending'}
+                  </span>
                 </div>
-                <span className={a.status === 'submitted' ? 'badge-green' : a.status === 'late' ? 'badge-red' : 'badge-yellow'} style={{ padding: '2px 8px', borderRadius: '99px', fontSize: '10px', fontWeight: '600', whiteSpace: 'nowrap' }}>
-                  {a.status}
-                </span>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-slate-500 text-sm text-center py-8">No assignments yet</div>
+          )}
         </div>
       </div>
     </div>

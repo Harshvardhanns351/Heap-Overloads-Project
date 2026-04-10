@@ -1,14 +1,7 @@
-import React, { useState } from 'react';
-import { MOCK_STUDENTS } from '../../store';
+import React, { useState, useEffect } from 'react';
+import useAppStore from '../../store';
 import { PageHeader, Modal } from '../../components/UI';
-import { Plus, Shield, GraduationCap, Brain, Search, UserX, CheckCircle2 } from 'lucide-react';
-
-const ALL_USERS = [
-  ...MOCK_STUDENTS.map(s => ({ id: s.id, name: s.name, email: s.email, role: 'student', active: true })),
-  { id: 10, name: 'Dr. Priya Menon', email: 'priya@college.edu', role: 'teacher', active: true },
-  { id: 11, name: 'Prof. Ramesh Kumar', email: 'ramesh@college.edu', role: 'teacher', active: true },
-  { id: 20, name: 'Admin', email: 'admin@college.edu', role: 'admin', active: true },
-];
+import { Plus, Shield, GraduationCap, Brain, Search, Loader2 } from 'lucide-react';
 
 const ROLE_CONFIG = {
   student: { icon: GraduationCap, color: '#4f8ef7', label: 'Student' },
@@ -17,25 +10,42 @@ const ROLE_CONFIG = {
 };
 
 export default function AdminUsers() {
-  const [users, setUsers] = useState(ALL_USERS);
+  const { students, fetchStudents } = useAppStore();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
   const [createOpen, setCreateOpen] = useState(false);
-  const [form, setForm] = useState({ name: '', email: '', role: 'student' });
+  const [form, setForm] = useState({ name: '', email: '', role: 'student', password: 'password' });
+  const [creating, setCreating] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const filtered = users.filter((u) => {
-    const matchSearch = u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase());
+  useEffect(() => { fetchStudents().finally(() => setLoading(false)); }, []);
+
+  const filtered = students.filter((u) => {
+    const matchSearch = u.name?.toLowerCase().includes(search.toLowerCase()) || u.email?.toLowerCase().includes(search.toLowerCase());
     const matchRole = filter === 'all' || u.role === filter;
     return matchSearch && matchRole;
   });
 
-  const toggle = (id) => setUsers(u => u.map(x => x.id === id ? { ...x, active: !x.active } : x));
-  const handleCreate = (e) => {
+  const handleCreate = async (e) => {
     e.preventDefault();
-    setUsers(u => [...u, { ...form, id: Date.now(), active: true }]);
-    setCreateOpen(false);
-    setForm({ name: '', email: '', role: 'student' });
+    setCreating(true);
+    try {
+      await fetch('http://localhost:8000/api/auth/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+        body: JSON.stringify(form),
+      });
+      await fetchStudents();
+      setCreateOpen(false);
+      setForm({ name: '', email: '', role: 'student', password: 'password' });
+    } catch (err) {
+      alert('Failed to create user: ' + err.message);
+    } finally {
+      setCreating(false);
+    }
   };
+
+  if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-violet-500" /></div>;
 
   return (
     <div className="fade-in-up">
@@ -60,61 +70,56 @@ export default function AdminUsers() {
       </div>
 
       <div className="card" style={{ overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ background: 'var(--bg-elevated)' }}>
-              {['User', 'Email', 'Role', 'Status', ''].map((h) => (
-                <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)' }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((u) => {
-              const rc = ROLE_CONFIG[u.role];
-              const Icon = rc.icon;
-              return (
-                <tr key={u.id} className="table-row" style={{ opacity: u.active ? 1 : 0.5 }}>
-                  <td style={{ padding: '11px 14px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: `${rc.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <Icon size={14} color={rc.color} />
+        {filtered.length === 0 ? (
+          <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>No users found</div>
+        ) : (
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ background: 'var(--bg-elevated)' }}>
+                {['User', 'Email', 'Role', 'Class'].map((h) => (
+                  <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((u) => {
+                const rc = ROLE_CONFIG[u.role] || ROLE_CONFIG.student;
+                const Icon = rc.icon;
+                return (
+                  <tr key={u.id} className="table-row">
+                    <td style={{ padding: '11px 14px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: `${rc.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <Icon size={14} color={rc.color} />
+                        </div>
+                        <span style={{ fontSize: '13px', fontWeight: '500' }}>{u.name}</span>
                       </div>
-                      <span style={{ fontSize: '13px', fontWeight: '500' }}>{u.name}</span>
-                    </div>
-                  </td>
-                  <td style={{ padding: '11px 14px', fontSize: '12px', color: 'var(--text-secondary)' }}>{u.email}</td>
-                  <td style={{ padding: '11px 14px' }}>
-                    <span style={{ fontSize: '11px', padding: '2px 9px', borderRadius: '99px', background: `${rc.color}15`, color: rc.color, fontWeight: '600', border: `1px solid ${rc.color}25` }}>{rc.label}</span>
-                  </td>
-                  <td style={{ padding: '11px 14px' }}>
-                    <span className={u.active ? 'badge-green' : 'badge-red'} style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '99px', fontWeight: '600' }}>
-                      {u.active ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
-                  <td style={{ padding: '11px 14px' }}>
-                    {u.role !== 'admin' && (
-                      <button onClick={() => toggle(u.id)} className={u.active ? 'btn btn-danger' : 'btn btn-ghost'} style={{ fontSize: '11px', padding: '4px 10px', gap: '4px' }}>
-                        {u.active ? <><UserX size={11} /> Deactivate</> : <><CheckCircle2 size={11} /> Activate</>}
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                    </td>
+                    <td style={{ padding: '11px 14px', fontSize: '12px', color: 'var(--text-secondary)' }}>{u.email}</td>
+                    <td style={{ padding: '11px 14px' }}>
+                      <span style={{ fontSize: '11px', padding: '2px 9px', borderRadius: '99px', background: `${rc.color}15`, color: rc.color, fontWeight: '600', border: `1px solid ${rc.color}25` }}>{rc.label}</span>
+                    </td>
+                    <td style={{ padding: '11px 14px', fontSize: '12px', color: 'var(--text-muted)' }}>{u.class_id || '—'}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
       </div>
 
       <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Create New User">
         <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <div>
-            <label style={{ fontSize: '11px', fontWeight: '500', color: 'var(--text-secondary)', display: 'block', marginBottom: '5px' }}>Full Name</label>
-            <input className="input" placeholder="John Doe" value={form.name} onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))} required />
-          </div>
-          <div>
-            <label style={{ fontSize: '11px', fontWeight: '500', color: 'var(--text-secondary)', display: 'block', marginBottom: '5px' }}>Email</label>
-            <input className="input" type="email" placeholder="john@college.edu" value={form.email} onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))} required />
-          </div>
+          {[
+            { label: 'Full Name', key: 'name', type: 'text', placeholder: 'John Doe' },
+            { label: 'Email', key: 'email', type: 'email', placeholder: 'john@college.edu' },
+            { label: 'Password', key: 'password', type: 'text', placeholder: 'Initial password' },
+          ].map(({ label, key, type, placeholder }) => (
+            <div key={key}>
+              <label style={{ fontSize: '11px', fontWeight: '500', color: 'var(--text-secondary)', display: 'block', marginBottom: '5px' }}>{label}</label>
+              <input className="input" type={type} placeholder={placeholder} value={form[key]} onChange={(e) => setForm(f => ({ ...f, [key]: e.target.value }))} required />
+            </div>
+          ))}
           <div>
             <label style={{ fontSize: '11px', fontWeight: '500', color: 'var(--text-secondary)', display: 'block', marginBottom: '5px' }}>Role</label>
             <select className="input" value={form.role} onChange={(e) => setForm(f => ({ ...f, role: e.target.value }))}>
@@ -125,7 +130,7 @@ export default function AdminUsers() {
           </div>
           <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
             <button type="button" className="btn btn-ghost" onClick={() => setCreateOpen(false)}>Cancel</button>
-            <button type="submit" className="btn btn-primary"><Plus size={13} /> Create</button>
+            <button type="submit" className="btn btn-primary" disabled={creating}>{creating ? 'Creating...' : <><Plus size={13} /> Create</>}</button>
           </div>
         </form>
       </Modal>

@@ -1,21 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import useAppStore from '../../store';
 import { PageHeader, Tabs } from '../../components/UI';
-import { Plus, BookOpen, Clock, CheckCircle2, AlertTriangle, Users } from 'lucide-react';
-
-const STATUS_COLOR = { pending: '#f59e0b', submitted: '#22c55e', late: '#ef4444' };
+import { Plus, BookOpen, Clock, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
 
 export default function TeacherAssignments() {
-  const { assignments } = useAppStore();
+  const { assignments, fetchAssignments, currentUser } = useAppStore();
   const [tab, setTab] = useState('list');
-  const [form, setForm] = useState({ title: '', subject: 'DSA', description: '', deadline: '' });
+  const [form, setForm] = useState({ title: '', subject: 'DSA', description: '', deadline: '', class_id: 'CSE-A' });
+  const [creating, setCreating] = useState(false);
   const [created, setCreated] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const handleCreate = (e) => {
-    e.preventDefault();
-    setCreated(true);
-    setTimeout(() => { setCreated(false); setTab('list'); }, 1800);
-  };
+  useEffect(() => { fetchAssignments().finally(() => setLoading(false)); }, []);
 
   const getDaysLeft = (deadline) => {
     const diff = Math.ceil((new Date(deadline) - new Date()) / (1000 * 60 * 60 * 24));
@@ -23,6 +19,27 @@ export default function TeacherAssignments() {
     if (diff === 0) return { text: 'Due today', color: '#f59e0b' };
     return { text: `${diff}d left`, color: diff < 2 ? '#f59e0b' : 'var(--text-muted)' };
   };
+
+  const handleCreate = async (e) => {
+    e.preventDefault();
+    setCreating(true);
+    try {
+      await fetch('http://localhost:8000/api/assignments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+        body: JSON.stringify({ ...form, deadline: new Date(form.deadline).toISOString() }),
+      });
+      await fetchAssignments();
+      setCreated(true);
+      setTimeout(() => { setCreated(false); setTab('list'); }, 1800);
+    } catch (err) {
+      alert('Failed: ' + err.message);
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-violet-500" /></div>;
 
   return (
     <div className="fade-in-up">
@@ -35,6 +52,7 @@ export default function TeacherAssignments() {
 
       {tab === 'list' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {assignments.length === 0 && <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>No assignments yet</div>}
           {assignments.map((a) => {
             const { text, color } = getDaysLeft(a.deadline);
             return (
@@ -47,26 +65,12 @@ export default function TeacherAssignments() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
                       <span style={{ fontSize: '13px', fontWeight: '600' }}>{a.title}</span>
                       <span className="badge-blue" style={{ fontSize: '10px', padding: '1px 8px', borderRadius: '99px' }}>{a.subject}</span>
-                      <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{a.class}</span>
+                      <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{a.class_id}</span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: '11px', color, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <Clock size={10} /> {text}
-                      </span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <Users size={10} color="var(--text-muted)" />
-                        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{a.submissionRate}% submitted</span>
-                        <div style={{ width: '60px', background: 'var(--bg-elevated)', borderRadius: '99px', height: '4px', overflow: 'hidden' }}>
-                          <div style={{ height: '100%', width: `${a.submissionRate}%`, background: a.submissionRate > 75 ? '#22c55e' : a.submissionRate > 40 ? '#f59e0b' : '#ef4444', borderRadius: '99px' }} />
-                        </div>
-                      </div>
-                    </div>
+                    <span style={{ fontSize: '11px', color, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Clock size={10} /> {text}
+                    </span>
                   </div>
-                  {a.submissionRate < 50 && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', color: '#f59e0b', fontWeight: '600' }}>
-                      <AlertTriangle size={11} /> Low rate
-                    </div>
-                  )}
                 </div>
               </div>
             );
@@ -79,8 +83,7 @@ export default function TeacherAssignments() {
           {created ? (
             <div style={{ textAlign: 'center', padding: '32px' }}>
               <CheckCircle2 size={40} color="#22c55e" style={{ marginBottom: '12px' }} />
-              <div style={{ fontSize: '15px', fontWeight: '600', marginBottom: '4px' }}>Assignment created!</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Students will see it on their dashboard.</div>
+              <div style={{ fontSize: '15px', fontWeight: '600' }}>Assignment created!</div>
             </div>
           ) : (
             <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -96,15 +99,23 @@ export default function TeacherAssignments() {
                   </select>
                 </div>
                 <div>
-                  <label style={{ fontSize: '11px', fontWeight: '500', color: 'var(--text-secondary)', display: 'block', marginBottom: '5px' }}>Deadline</label>
-                  <input className="input" type="datetime-local" value={form.deadline} onChange={(e) => setForm(f => ({ ...f, deadline: e.target.value }))} required />
+                  <label style={{ fontSize: '11px', fontWeight: '500', color: 'var(--text-secondary)', display: 'block', marginBottom: '5px' }}>Class</label>
+                  <select className="input" value={form.class_id} onChange={(e) => setForm(f => ({ ...f, class_id: e.target.value }))}>
+                    {['CSE-A', 'CSE-B'].map(c => <option key={c}>{c}</option>)}
+                  </select>
                 </div>
+              </div>
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: '500', color: 'var(--text-secondary)', display: 'block', marginBottom: '5px' }}>Deadline</label>
+                <input className="input" type="datetime-local" value={form.deadline} onChange={(e) => setForm(f => ({ ...f, deadline: e.target.value }))} required />
               </div>
               <div>
                 <label style={{ fontSize: '11px', fontWeight: '500', color: 'var(--text-secondary)', display: 'block', marginBottom: '5px' }}>Description</label>
                 <textarea className="input" rows={4} placeholder="Assignment instructions..." value={form.description} onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))} style={{ resize: 'vertical' }} />
               </div>
-              <button className="btn btn-primary" type="submit" style={{ alignSelf: 'flex-start' }}><Plus size={13} /> Create Assignment</button>
+              <button className="btn btn-primary" type="submit" disabled={creating} style={{ alignSelf: 'flex-start' }}>
+                {creating ? 'Creating...' : <><Plus size={13} /> Create Assignment</>}
+              </button>
             </form>
           )}
         </div>

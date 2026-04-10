@@ -1,32 +1,34 @@
-import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useState, useRef, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import useAppStore from '../store';
 import {
-  LayoutDashboard, Map, MessageSquare, FileText, Code2,
+  LayoutDashboard, Map, MessageSquare, FileText,
   AlertCircle, BookOpen, Users, BarChart3, LogOut,
-  Bell, Brain, ChevronDown, Shield
+  Bell, Brain, ChevronDown, UserCircle2
 } from 'lucide-react';
 
 const STUDENT_NAV = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { path: '/roadmap', icon: Map, label: 'My Roadmap' },
-  { path: '/mentor', icon: MessageSquare, label: 'AI Mentor' },
-  { path: '/documents', icon: FileText, label: 'Documents' },
-  { path: '/coding', icon: Code2, label: 'Coding Profile' },
-  { path: '/disputes', icon: AlertCircle, label: 'Disputes' },
+  { path: '/profile',   icon: UserCircle2,     label: 'My Profile' },
+  { path: '/roadmap',   icon: Map,             label: 'My Roadmap' },
+  { path: '/mentor',    icon: MessageSquare,   label: 'AI Mentor'  },
+  { path: '/documents', icon: FileText,        label: 'Documents'  },
+  { path: '/disputes',  icon: AlertCircle,     label: 'Disputes'   },
 ];
 
 const TEACHER_NAV = [
-  { path: '/teacher/classes', icon: Users, label: 'My Classes' },
+  { path: '/teacher/classes',   icon: Users,     label: 'My Classes'  },
+  { path: '/teacher/students',  icon: UserCircle2, label: 'Students'  },
   { path: '/teacher/assignments', icon: BookOpen, label: 'Assignments' },
-  { path: '/teacher/attendance', icon: BarChart3, label: 'Attendance' },
-  { path: '/teacher/alerts', icon: Bell, label: 'Risk Alerts' },
+  { path: '/teacher/attendance', icon: BarChart3, label: 'Attendance'  },
+  { path: '/teacher/alerts',    icon: Bell,      label: 'Risk Alerts' },
 ];
 
 const ADMIN_NAV = [
-  { path: '/admin/analytics', icon: BarChart3, label: 'Analytics' },
-  { path: '/admin/disputes', icon: AlertCircle, label: 'Disputes' },
-  { path: '/admin/users', icon: Users, label: 'User Management' },
+  { path: '/admin/analytics', icon: BarChart3,   label: 'Analytics'       },
+  { path: '/admin/students',  icon: UserCircle2, label: 'Students'        },
+  { path: '/admin/disputes',  icon: AlertCircle, label: 'Disputes'        },
+  { path: '/admin/users',     icon: Users,       label: 'User Management' },
 ];
 
 function NavItem({ path, icon: Icon, label }) {
@@ -47,7 +49,18 @@ function NavItem({ path, icon: Icon, label }) {
 
 export default function Layout({ children }) {
   const { currentUser, role, logout } = useAppStore();
-  const [notifOpen, setNotifOpen] = useState(false);
+  const navigate = useNavigate();
+  const [notifOpen,    setNotifOpen]    = useState(false);
+  const [profileOpen,  setProfileOpen]  = useState(false);
+  const profileRef = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => { if (profileRef.current && !profileRef.current.contains(e.target)) setProfileOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const profilePath = role === 'teacher' ? '/teacher/profile' : role === 'admin' ? '/admin/profile' : '/profile';
 
   const navItems = role === 'student' ? STUDENT_NAV : role === 'teacher' ? TEACHER_NAV : ADMIN_NAV;
   
@@ -72,7 +85,7 @@ export default function Layout({ children }) {
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-sky-600 flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.5)]">
               <Brain size={22} className="text-white" />
             </div>
-            <span className="text-xl font-bold font-space tracking-tight text-white">EduPulse</span>
+            <span className="text-xl font-bold font-space tracking-tight text-white">Veloris</span>
           </div>
           <div className="mt-4 flex items-center gap-2">
             <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold border flex items-center gap-1.5 ${roleColorCls}`}>
@@ -91,7 +104,7 @@ export default function Layout({ children }) {
 
         {/* User Card */}
         <div className="p-4 border-t border-white/10">
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors cursor-pointer" onClick={() => navigate(profilePath)}>
             <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${roleColorCls}`}>
               {currentUser?.avatar}
             </div>
@@ -99,9 +112,9 @@ export default function Layout({ children }) {
               <div className="text-sm font-bold text-slate-200 truncate">{currentUser?.name}</div>
               <div className="text-xs text-slate-400 truncate">{currentUser?.email}</div>
             </div>
-            <button 
-              onClick={logout} 
-              className="p-2 -mr-1 text-slate-400 hover:text-rose-400 hover:bg-rose-400/10 rounded-lg transition-colors group" 
+            <button
+              onClick={(e) => { e.stopPropagation(); logout(); }}
+              className="p-2 -mr-1 text-slate-400 hover:text-rose-400 hover:bg-rose-400/10 rounded-lg transition-colors group"
               title="Logout"
             >
               <LogOut size={16} className="group-hover:-translate-x-0.5 transition-transform" />
@@ -143,15 +156,37 @@ export default function Layout({ children }) {
             <div className="h-6 w-px bg-white/10" />
             
             {/* User Profile Mini */}
-            <div className="flex items-center gap-3 cursor-pointer group">
-              <div className="text-right hidden md:block">
-                <div className="text-sm font-bold text-slate-200 group-hover:text-white transition-colors">{currentUser?.name?.split(' ')[0]}</div>
-                <div className="text-[10px] text-slate-400 tracking-wider uppercase">{currentUser?.rollNo || roleLabel}</div>
+            <div ref={profileRef} style={{ position: 'relative' }}>
+              <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setProfileOpen(o => !o)}>
+                <div className="text-right hidden md:block">
+                  <div className="text-sm font-bold text-slate-200 group-hover:text-white transition-colors">{currentUser?.name?.split(' ')[0]}</div>
+                  <div className="text-[10px] text-slate-400 tracking-wider uppercase">{currentUser?.rollNo || roleLabel}</div>
+                </div>
+                <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold border shadow-lg ${role === 'student' ? 'border-sky-500/30' : 'border-violet-500/30'} ${roleColorCls}`}>
+                  {currentUser?.avatar}
+                </div>
+                <ChevronDown size={14} className="text-slate-500 group-hover:text-slate-300 transition-colors" />
               </div>
-              <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold border shadow-lg ${role === 'student' ? 'border-sky-500/30' : 'border-violet-500/30'} ${roleColorCls}`}>
-                {currentUser?.avatar}
-              </div>
-              <ChevronDown size={14} className="text-slate-500 group-hover:text-slate-300 transition-colors" />
+              {profileOpen && (
+                <div style={{ position: 'absolute', right: 0, top: 'calc(100% + 8px)', background: 'var(--bg-elevated)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', minWidth: '160px', zIndex: 50, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}>
+                  <button onClick={() => { navigate(profilePath); setProfileOpen(false); }} style={{ display: 'block', width: '100%', padding: '10px 16px', textAlign: 'left', background: 'none', border: 'none', color: 'var(--text-primary)', fontSize: '13px', cursor: 'pointer' }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'none'}>
+                    👤 View Profile
+                  </button>
+                  <button onClick={() => { setProfileOpen(false); }} style={{ display: 'block', width: '100%', padding: '10px 16px', textAlign: 'left', background: 'none', border: 'none', color: 'var(--text-primary)', fontSize: '13px', cursor: 'pointer' }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'none'}>
+                    ⚙️ Settings
+                  </button>
+                  <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
+                  <button onClick={() => { logout(); setProfileOpen(false); }} style={{ display: 'block', width: '100%', padding: '10px 16px', textAlign: 'left', background: 'none', border: 'none', color: '#ef4444', fontSize: '13px', cursor: 'pointer' }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.08)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'none'}>
+                    🚪 Logout
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </header>
