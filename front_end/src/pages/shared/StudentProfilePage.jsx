@@ -3,7 +3,7 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import {
   ExternalLink, Check, RefreshCw, Loader2, Clock, Trophy, Link2,
   Edit3, X, Save, Camera, UserCircle2, Eye, EyeOff, ChevronRight,
-  Briefcase, Plus, Trash2, CheckCircle, AlertTriangle,
+  Briefcase, Plus, Trash2, CheckCircle, AlertTriangle, Flame, Zap,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
@@ -727,6 +727,237 @@ function InternshipsTab({ internships: initialInternships, isOwn, viewerRole, on
   );
 }
 
+// ── Activity Heatmap ─────────────────────────────────────────────────────────
+/**
+ * Builds a full-year activity map from all platform submissions.
+ * Returns { dateMap, currentStreak, longestStreak, totalDays, totalEvents }
+ */
+function buildActivityMap(codingData) {
+  const dateMap = {};
+
+  const addDate = (isoStr, count = 1) => {
+    if (!isoStr) return;
+    const d = isoStr.slice(0, 10); // "YYYY-MM-DD"
+    dateMap[d] = (dateMap[d] || 0) + count;
+  };
+
+  const platforms = codingData?.platforms || [];
+  platforms.forEach(p => {
+    (p.recent_submissions || []).forEach(s => addDate(s.time));
+  });
+
+  // Also use summary recent_submissions
+  (codingData?.summary?.recent_submissions || []).forEach(s => addDate(s.time));
+
+  // Compute streaks
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  let currentStreak = 0, longestStreak = 0, tempStreak = 0;
+  // Walk backwards from today
+  for (let i = 0; i < 365; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    if (dateMap[key]) {
+      tempStreak++;
+      if (i === 0 || currentStreak > 0) currentStreak = tempStreak;
+    } else {
+      if (i === 0) currentStreak = 0; // no activity today
+      longestStreak = Math.max(longestStreak, tempStreak);
+      tempStreak = 0;
+    }
+  }
+  longestStreak = Math.max(longestStreak, tempStreak);
+
+  const totalDays   = Object.keys(dateMap).length;
+  const totalEvents = Object.values(dateMap).reduce((a, b) => a + b, 0);
+
+  return { dateMap, currentStreak, longestStreak, totalDays, totalEvents };
+}
+
+/** Generate the 52-week grid of dates ending today */
+function buildWeekGrid() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  // Start from 364 days ago (52 weeks)
+  const start = new Date(today);
+  start.setDate(start.getDate() - 363);
+  // Align to Sunday
+  start.setDate(start.getDate() - start.getDay());
+
+  const weeks = [];
+  let week = [];
+  const cursor = new Date(start);
+  while (cursor <= today) {
+    week.push(new Date(cursor));
+    if (week.length === 7) { weeks.push(week); week = []; }
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  if (week.length) weeks.push(week);
+  return weeks;
+}
+
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function ActivityHeatmap({ codingData }) {
+  const { dateMap, currentStreak, longestStreak, totalDays, totalEvents } = buildActivityMap(codingData);
+  const weeks = buildWeekGrid();
+  const [tooltip, setTooltip] = useState(null);
+
+  const getColor = (count) => {
+    if (!count) return 'rgba(255,255,255,0.05)';
+    if (count >= 5) return '#22c55e';
+    if (count >= 3) return '#16a34a';
+    if (count >= 2) return '#15803d';
+    return '#166534';
+  };
+
+  // Month labels — find first week of each month
+  const monthLabels = [];
+  weeks.forEach((week, wi) => {
+    const firstDay = week.find(d => d);
+    if (firstDay && firstDay.getDate() <= 7) {
+      monthLabels.push({ wi, label: MONTHS[firstDay.getMonth()] });
+    }
+  });
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      {/* Streak stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+        {[
+          { label: 'Current Streak', value: `${currentStreak}d`, icon: Flame, color: currentStreak > 0 ? '#f59e0b' : '#64748b', glow: currentStreak > 0 },
+          { label: 'Longest Streak', value: `${longestStreak}d`, icon: Trophy, color: '#a855f7', glow: false },
+          { label: 'Active Days',    value: totalDays,            icon: Zap,    color: '#22c55e', glow: false },
+          { label: 'Total Events',   value: totalEvents,          icon: CheckCircle, color: '#4f8ef7', glow: false },
+        ].map(({ label, value, icon: Icon, color, glow }) => (
+          <div key={label} style={{
+            padding: '16px', borderRadius: '12px',
+            background: `${color}10`, border: `1px solid ${color}25`,
+            boxShadow: glow ? `0 0 20px ${color}30` : 'none',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+              <Icon size={14} style={{ color, animation: glow ? 'pulse 1.5s ease-in-out infinite' : 'none' }} />
+              <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</span>
+            </div>
+            <div style={{ fontSize: '26px', fontWeight: '800', color, fontFamily: 'Space Grotesk, sans-serif' }}>{value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Heatmap grid */}
+      <div className="card" style={{ padding: '20px', overflowX: 'auto' }}>
+        <div style={{ fontSize: '13px', fontWeight: '600', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Flame size={14} style={{ color: '#f59e0b' }} />
+          Activity — Past Year
+        </div>
+
+        {/* Month labels */}
+        <div style={{ display: 'flex', gap: '3px', marginBottom: '4px', paddingLeft: '24px' }}>
+          {weeks.map((week, wi) => {
+            const ml = monthLabels.find(m => m.wi === wi);
+            return (
+              <div key={wi} style={{ width: '11px', fontSize: '9px', color: '#64748b', flexShrink: 0 }}>
+                {ml ? ml.label : ''}
+              </div>
+            );
+          })}
+        </div>
+
+        <div style={{ display: 'flex', gap: '2px' }}>
+          {/* Day labels */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginRight: '4px' }}>
+            {['S','M','T','W','T','F','S'].map((d, i) => (
+              <div key={i} style={{ height: '11px', fontSize: '8px', color: '#64748b', lineHeight: '11px' }}>{i % 2 === 1 ? d : ''}</div>
+            ))}
+          </div>
+
+          {/* Week columns */}
+          {weeks.map((week, wi) => (
+            <div key={wi} style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              {week.map((day, di) => {
+                const key   = day.toISOString().slice(0, 10);
+                const count = dateMap[key] || 0;
+                const isFuture = day > new Date();
+                return (
+                  <div
+                    key={di}
+                    style={{
+                      width: '11px', height: '11px', borderRadius: '2px',
+                      background: isFuture ? 'transparent' : getColor(count),
+                      cursor: count > 0 ? 'pointer' : 'default',
+                      transition: 'transform 0.1s',
+                      position: 'relative',
+                    }}
+                    onMouseEnter={e => {
+                      if (!isFuture) {
+                        e.currentTarget.style.transform = 'scale(1.4)';
+                        setTooltip({ key, count, x: e.clientX, y: e.clientY });
+                      }
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.transform = 'scale(1)';
+                      setTooltip(null);
+                    }}
+                  />
+                );
+              })}
+            </div>
+          ))}
+        </div>
+
+        {/* Legend */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '12px', justifyContent: 'flex-end' }}>
+          <span style={{ fontSize: '9px', color: '#64748b' }}>Less</span>
+          {[0, 1, 2, 3, 5].map(n => (
+            <div key={n} style={{ width: '11px', height: '11px', borderRadius: '2px', background: getColor(n) }} />
+          ))}
+          <span style={{ fontSize: '9px', color: '#64748b' }}>More</span>
+        </div>
+      </div>
+
+      {/* Tooltip */}
+      {tooltip && (
+        <div style={{
+          position: 'fixed', zIndex: 9999,
+          left: tooltip.x + 12, top: tooltip.y - 36,
+          background: '#0f0f2e', border: '1px solid rgba(255,255,255,0.15)',
+          borderRadius: '6px', padding: '6px 10px',
+          fontSize: '11px', color: '#e2e8f0', pointerEvents: 'none',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
+        }}>
+          <b>{tooltip.count}</b> {tooltip.count === 1 ? 'event' : 'events'} on {tooltip.key}
+        </div>
+      )}
+
+      {/* Monthly bar chart */}
+      <div className="card" style={{ padding: '20px' }}>
+        <div style={{ fontSize: '13px', fontWeight: '600', marginBottom: '16px' }}>Monthly Activity</div>
+        <ResponsiveContainer width="100%" height={120}>
+          <BarChart data={(() => {
+            const months = {};
+            Object.entries(dateMap).forEach(([date, count]) => {
+              const m = date.slice(0, 7);
+              months[m] = (months[m] || 0) + count;
+            });
+            return Object.entries(months).sort().slice(-12).map(([m, v]) => ({
+              month: MONTHS[parseInt(m.slice(5, 7)) - 1],
+              events: v,
+            }));
+          })()}>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+            <XAxis dataKey="month" tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} tickLine={false} />
+            <Tooltip contentStyle={{ background: '#0f0f2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '11px' }} />
+            <Bar dataKey="events" fill="#22c55e" radius={[3, 3, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
 // ── Overview Tab ─────────────────────────────────────────────────────────────
 function OverviewTab({ coding, attendance, academics, internships, tier, onTabSwitch }) {
   const attPct = attendance?.overall_percentage ?? null;
@@ -782,10 +1013,33 @@ function OverviewTab({ coding, attendance, academics, internships, tier, onTabSw
         </div>
       </div>
 
-      {/* Row 2 — activity + internships */}
+      {/* Row 2 — heatmap preview + internships */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
         <div className="card" style={{ padding: '20px' }}>
-          <div style={{ fontSize: '12px', fontWeight: '600', marginBottom: '12px' }}>Recent Activity</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <div style={{ fontSize: '12px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Flame size={13} style={{ color: '#f59e0b' }} /> Activity Heatmap
+            </div>
+            <button onClick={() => onTabSwitch('activity')} style={{ fontSize: '11px', color: '#5B5BD6', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>View Full →</button>
+          </div>
+          {/* Mini streak stats */}
+          {(() => {
+            const { currentStreak, longestStreak, totalDays } = buildActivityMap(coding);
+            return (
+              <div style={{ display: 'flex', gap: '16px', marginBottom: '12px' }}>
+                {[
+                  { label: 'Current', value: `${currentStreak}d 🔥`, color: currentStreak > 0 ? '#f59e0b' : '#64748b' },
+                  { label: 'Longest', value: `${longestStreak}d`, color: '#a855f7' },
+                  { label: 'Active Days', value: totalDays, color: '#22c55e' },
+                ].map(({ label, value, color }) => (
+                  <div key={label} style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '16px', fontWeight: '700', color, fontFamily: 'Space Grotesk,sans-serif' }}>{value}</div>
+                    <div style={{ fontSize: '9px', color: '#64748b' }}>{label}</div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
           <RecentList items={recentActivity} />
         </div>
         <div className="card" style={{ padding: '20px' }}>
@@ -975,6 +1229,7 @@ export default function StudentProfilePage({ viewMode }) {
 
   const TABS = [
     { id: 'overview',    label: 'Overview'       },
+    { id: 'activity',    label: '🔥 Activity'    },
     { id: 'coding',      label: 'Coding'         },
     { id: 'academics',   label: 'Academics'      },
     { id: 'attendance',  label: 'Attendance'     },
@@ -1113,6 +1368,9 @@ export default function StudentProfilePage({ viewMode }) {
       {activeTab === 'overview' && (
         <OverviewTab coding={coding} attendance={attendance} academics={academics}
           internships={internships} tier={tier} onTabSwitch={setActiveTab} />
+      )}
+      {activeTab === 'activity' && (
+        <ActivityHeatmap codingData={coding} />
       )}
       {activeTab === 'coding' && (
         <CodingTab codingData={coding} isOwnProfile={isOwnProfile} onRefresh={fetchData} />
