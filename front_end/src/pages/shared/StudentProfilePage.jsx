@@ -3,7 +3,7 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import {
   ExternalLink, Check, RefreshCw, Loader2, Clock, Trophy, Link2,
   Edit3, X, Save, Camera, UserCircle2, Eye, EyeOff, ChevronRight,
-  Briefcase, Plus, Trash2, CheckCircle, AlertTriangle,
+  Briefcase, Plus, Trash2, CheckCircle, AlertTriangle, Flame, Zap,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
@@ -727,6 +727,306 @@ function InternshipsTab({ internships: initialInternships, isOwn, viewerRole, on
   );
 }
 
+// ── Activity Heatmap ─────────────────────────────────────────────────────────
+
+const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+/** Collect ALL submission dates from every platform + summary */
+function collectAllDates(codingData) {
+  const dates = {};
+  const add = (isoStr) => {
+    if (!isoStr) return;
+    const d = isoStr.slice(0, 10);
+    dates[d] = (dates[d] || 0) + 1;
+  };
+  (codingData?.platforms || []).forEach(p => (p.recent_submissions || []).forEach(s => add(s.time)));
+  (codingData?.summary?.recent_submissions || []).forEach(s => add(s.time));
+  return dates;
+}
+
+/** Build Sunday-aligned week grid */
+function buildYearGrid(year) {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const isCurrentYear = year === today.getFullYear();
+
+  // Jan 1 of the year
+  const jan1 = new Date(year, 0, 1);
+  // Dec 31 or today (whichever is earlier)
+  const dec31 = isCurrentYear ? today : new Date(year, 11, 31);
+
+  // Start the grid on the Sunday on or before Jan 1
+  const gridStart = new Date(jan1);
+  gridStart.setDate(gridStart.getDate() - gridStart.getDay()); // back to Sunday
+
+  const weeks = [];
+  let week = [];
+  const cur = new Date(gridStart);
+
+  while (cur <= dec31) {
+    // Use null for days before Jan 1 (padding) or after today
+    const inYear = cur.getFullYear() === year;
+    week.push(inYear ? new Date(cur) : null);
+    if (week.length === 7) { weeks.push(week); week = []; }
+    cur.setDate(cur.getDate() + 1);
+  }
+  // Pad last week
+  if (week.length > 0) {
+    while (week.length < 7) week.push(null);
+    weeks.push(week);
+  }
+  return weeks;
+}
+
+/** Compute month label positions — one label per month, placed at the first week that starts in that month */
+function getMonthLabels(weeks, year) {
+  const labels = {}; // weekIndex → month string
+  const seen = new Set();
+  weeks.forEach((week, wi) => {
+    // Find first non-null day in this week that belongs to the year
+    const firstDay = week.find(d => d && d.getFullYear() === year);
+    if (!firstDay) return;
+    const m = firstDay.getMonth();
+    // Only label if this is the first week we see this month AND the month starts in this week
+    if (!seen.has(m) && firstDay.getDate() <= 7) {
+      seen.add(m);
+      labels[wi] = MONTHS_SHORT[m];
+    }
+  });
+  return labels;
+}
+
+const CELL = 13;
+const GAP  = 3;
+
+function HeatCell({ day, count, today, onHover, onLeave }) {
+  if (!day) return <div style={{ width: CELL, height: CELL, flexShrink: 0 }} />;
+  const isFuture = day > today;
+  const isToday  = day.toISOString().slice(0, 10) === today.toISOString().slice(0, 10);
+
+  const bg = isFuture ? 'transparent'
+    : count === 0 ? '#161b22'
+    : count === 1 ? '#0e4429'
+    : count <= 3  ? '#006d32'
+    : count <= 6  ? '#26a641'
+    :               '#39d353';
+
+  return (
+    <div
+      style={{
+        width: CELL, height: CELL, borderRadius: '3px',
+        background: bg,
+        border: isToday ? '1px solid #39d353' : '1px solid rgba(255,255,255,0.04)',
+        cursor: count > 0 ? 'pointer' : 'default',
+        flexShrink: 0,
+        transition: 'transform 0.1s, filter 0.1s',
+      }}
+      onMouseEnter={e => { e.currentTarget.style.filter = 'brightness(1.4)'; onHover(day, count, e); }}
+      onMouseLeave={e => { e.currentTarget.style.filter = 'brightness(1)'; onLeave(); }}
+    />
+  );
+}
+
+function ActivityHeatmap({ codingData, userId, isOwn }) {
+  const currentYear = new Date().getFullYear();
+  const availableYears = [currentYear, currentYear-1, currentYear-2, currentYear-3, currentYear-4];
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [tooltip, setTooltip] = useState(null);
+
+  // Build date map from all platform recent_submissions already in codingData
+  // (API-based full calendar is fetched separately and merged if available)
+  const [extraDates, setExtraDates] = useState({});
+
+  useEffect(() => {
+    // Try to fetch full heatmap from API — merge on top of local data
+    const req = isOwn
+      ? api.coding.getHeatmap?.()
+      : (userId ? api.coding.getStudentHeatmap?.(userId) : null);
+    if (!req) return;
+    req
+      .then(data => { if (data?.dates) setExtraDates(data.dates); })
+      .catch(() => {}); // silently ignore — local data is the fallback
+  }, [userId, isOwn]); // eslint-disable-line
+
+  // Merge local recent_submissions + API extra dates
+  const allDates = {};
+  const addDate = (iso) => { if (!iso) return; const d = iso.slice(0,10); allDates[d]=(allDates[d]||0)+1; };
+  try {
+    (codingData?.platforms||[]).forEach(p => (p.recent_submissions||[]).forEach(s => addDate(s.time)));
+    (codingData?.summary?.recent_submissions||[]).forEach(s => addDate(s.time));
+    Object.entries(extraDates).forEach(([d,c]) => { allDates[d] = (allDates[d]||0) + c; });
+  } catch(e) { /* ignore */ }
+
+  // Filter to selected year
+  const dateMap = {};
+  Object.entries(allDates).forEach(([d,c]) => {
+    if (d.startsWith(String(selectedYear))) dateMap[d] = c;
+  });
+
+  // Compute streaks from full data
+  const today = new Date(); today.setHours(0,0,0,0);
+  let cur = 0, longest = 0, tmp = 0;
+  for (let i = 0; i < 730; i++) {
+    const d = new Date(today); d.setDate(d.getDate()-i);
+    const k = d.toISOString().slice(0,10);
+    if (allDates[k]) { tmp++; if (i===0||cur>0) cur=tmp; }
+    else { if (i===0) cur=0; longest=Math.max(longest,tmp); tmp=0; }
+  }
+  longest = Math.max(longest, tmp);
+
+  const weeks       = buildYearGrid(selectedYear);
+  const monthLabels = getMonthLabels(weeks, selectedYear);
+  const yearTotal   = Object.values(dateMap).reduce((a,b)=>a+b, 0);
+  const totalDays   = Object.keys(dateMap).length;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+
+      {/* ── Streak stat cards ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px' }}>
+        {[
+          { label: 'Current Streak', value: `${cur} days`,     icon: '🔥', color: cur > 0 ? '#f59e0b' : '#475569', glow: cur > 0 },
+          { label: 'Longest Streak', value: `${longest} days`, icon: '🏆', color: '#a855f7', glow: false },
+          { label: 'Active Days',    value: totalDays,          icon: '⚡', color: '#22c55e', glow: false },
+          { label: 'Total Events',   value: yearTotal,          icon: '📌', color: '#4f8ef7', glow: false },
+        ].map(({ label, value, icon, color, glow }) => (
+          <div key={label} style={{
+            padding: '16px 18px', borderRadius: '12px',
+            background: `${color}12`, border: `1px solid ${color}28`,
+            boxShadow: glow ? `0 0 24px ${color}35` : 'none',
+          }}>
+            <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>
+              {icon} {label}
+            </div>
+            <div style={{ fontSize: '24px', fontWeight: '800', color, fontFamily: 'Space Grotesk,sans-serif' }}>{value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── GitHub-style heatmap ── */}
+      <div style={{
+        background: '#0d1117', border: '1px solid #30363d',
+        borderRadius: '12px', padding: '20px 24px',
+      }}>
+        {/* Header row */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <div style={{ fontSize: '13px', color: '#e6edf3', fontWeight: '600' }}>
+            <span style={{ color: '#e6edf3', fontWeight: '700' }}>{yearTotal.toLocaleString()}</span>
+            <span style={{ color: '#8b949e', fontWeight: '400' }}> contributions in {selectedYear}</span>
+          </div>
+          {/* Year selector */}
+          <div style={{ display: 'flex', gap: '4px' }}>
+            {availableYears.map(y => (
+              <button key={y} onClick={() => setSelectedYear(y)} style={{
+                padding: '3px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '600',
+                cursor: 'pointer', border: '1px solid',
+                background: y === selectedYear ? '#388bfd' : 'transparent',
+                borderColor: y === selectedYear ? '#388bfd' : '#30363d',
+                color: y === selectedYear ? '#fff' : '#8b949e',
+                transition: 'all 0.15s',
+              }}>{y}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* Grid */}
+        <div style={{ overflowX: 'auto' }}>
+          <div style={{ display: 'inline-flex', gap: 0 }}>
+            {/* Day-of-week labels */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: GAP, marginRight: '6px', paddingTop: `${CELL + GAP + 4}px` }}>
+              {['','Mon','','Wed','','Fri',''].map((d, i) => (
+                <div key={i} style={{ height: CELL, fontSize: '10px', color: '#8b949e', lineHeight: `${CELL}px`, textAlign: 'right', whiteSpace: 'nowrap' }}>{d}</div>
+              ))}
+            </div>
+
+            {/* Weeks */}
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {/* Month labels row */}
+              <div style={{ display: 'flex', gap: GAP, marginBottom: '4px', height: CELL }}>
+                {weeks.map((_, wi) => (
+                  <div key={wi} style={{ width: CELL, fontSize: '10px', color: '#8b949e', whiteSpace: 'nowrap', overflow: 'visible', flexShrink: 0 }}>
+                    {monthLabels[wi] || ''}
+                  </div>
+                ))}
+              </div>
+
+              {/* Cell grid — weeks × days */}
+              <div style={{ display: 'flex', gap: GAP }}>
+                {weeks.map((week, wi) => (
+                  <div key={wi} style={{ display: 'flex', flexDirection: 'column', gap: GAP }}>
+                    {week.map((day, di) => {
+                      const key   = day ? day.toISOString().slice(0,10) : null;
+                      const count = key ? (dateMap[key] || 0) : 0;
+                      return (
+                        <HeatCell
+                          key={di} day={day} count={count} today={today}
+                          onHover={(d, c, e) => setTooltip({ date: d.toISOString().slice(0,10), count: c, x: e.clientX, y: e.clientY })}
+                          onLeave={() => setTooltip(null)}
+                        />
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer: legend */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px', marginTop: '12px' }}>
+          <span style={{ fontSize: '11px', color: '#8b949e' }}>Less</span>
+          {['#161b22','#0e4429','#006d32','#26a641','#39d353'].map((c,i) => (
+            <div key={i} style={{ width: CELL, height: CELL, borderRadius: '3px', background: c, border: '1px solid rgba(255,255,255,0.06)' }} />
+          ))}
+          <span style={{ fontSize: '11px', color: '#8b949e' }}>More</span>
+        </div>
+      </div>
+
+      {/* Tooltip */}
+      {tooltip && (
+        <div style={{
+          position: 'fixed', zIndex: 9999, pointerEvents: 'none',
+          left: tooltip.x + 14, top: tooltip.y - 42,
+          background: '#1c2128', border: '1px solid #444c56',
+          borderRadius: '6px', padding: '6px 12px',
+          fontSize: '12px', color: '#e6edf3',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
+        }}>
+          <b style={{ color: '#39d353' }}>{tooltip.count} {tooltip.count === 1 ? 'contribution' : 'contributions'}</b>
+          {' on '}
+          {new Date(tooltip.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+        </div>
+      )}
+
+      {/* Monthly bar chart */}
+      <div style={{ background: '#0d1117', border: '1px solid #30363d', borderRadius: '12px', padding: '20px 24px' }}>
+        <div style={{ fontSize: '13px', color: '#e6edf3', fontWeight: '600', marginBottom: '16px' }}>Monthly Contributions</div>
+        <ResponsiveContainer width="100%" height={130}>
+          <BarChart data={(() => {
+            const months = {};
+            Object.entries(dateMap).forEach(([date, count]) => {
+              const m = date.slice(0, 7);
+              months[m] = (months[m] || 0) + count;
+            });
+            return Object.entries(months).sort().map(([m, v]) => ({
+              month: MONTHS_SHORT[parseInt(m.slice(5,7)) - 1],
+              contributions: v,
+            }));
+          })()}>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+            <XAxis dataKey="month" tick={{ fill: '#8b949e', fontSize: 10 }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fill: '#8b949e', fontSize: 10 }} axisLine={false} tickLine={false} />
+            <Tooltip
+              contentStyle={{ background: '#1c2128', border: '1px solid #444c56', borderRadius: '8px', fontSize: '11px', color: '#e6edf3' }}
+              cursor={{ fill: 'rgba(255,255,255,0.04)' }}
+            />
+            <Bar dataKey="contributions" fill="#26a641" radius={[3,3,0,0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
 // ── Overview Tab ─────────────────────────────────────────────────────────────
 function OverviewTab({ coding, attendance, academics, internships, tier, onTabSwitch }) {
   const attPct = attendance?.overall_percentage ?? null;
@@ -782,10 +1082,45 @@ function OverviewTab({ coding, attendance, academics, internships, tier, onTabSw
         </div>
       </div>
 
-      {/* Row 2 — activity + internships */}
+      {/* Row 2 — heatmap preview + internships */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
         <div className="card" style={{ padding: '20px' }}>
-          <div style={{ fontSize: '12px', fontWeight: '600', marginBottom: '12px' }}>Recent Activity</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <div style={{ fontSize: '12px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Flame size={13} style={{ color: '#f59e0b' }} /> Activity Heatmap
+            </div>
+            <button onClick={() => onTabSwitch('activity')} style={{ fontSize: '11px', color: '#5B5BD6', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>View Full →</button>
+          </div>
+          {/* Mini streak stats — derived from recent submissions */}
+          {(() => {
+            const allDates = {};
+            (coding?.platforms||[]).forEach(p=>(p.recent_submissions||[]).forEach(s=>{ if(s.time) allDates[s.time.slice(0,10)]=1; }));
+            (coding?.summary?.recent_submissions||[]).forEach(s=>{ if(s.time) allDates[s.time.slice(0,10)]=1; });
+            const today = new Date(); today.setHours(0,0,0,0);
+            let cur=0, longest=0, tmp=0;
+            for(let i=0;i<365;i++){
+              const d=new Date(today); d.setDate(d.getDate()-i);
+              const k=d.toISOString().slice(0,10);
+              if(allDates[k]){tmp++;if(i===0||cur>0)cur=tmp;}
+              else{if(i===0)cur=0;longest=Math.max(longest,tmp);tmp=0;}
+            }
+            longest=Math.max(longest,tmp);
+            const totalDays=Object.keys(allDates).length;
+            return (
+              <div style={{ display: 'flex', gap: '16px', marginBottom: '12px' }}>
+                {[
+                  { label: 'Current', value: `${cur}d 🔥`, color: cur > 0 ? '#f59e0b' : '#64748b' },
+                  { label: 'Longest', value: `${longest}d`, color: '#a855f7' },
+                  { label: 'Active Days', value: totalDays, color: '#22c55e' },
+                ].map(({ label, value, color }) => (
+                  <div key={label} style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '16px', fontWeight: '700', color, fontFamily: 'Space Grotesk,sans-serif' }}>{value}</div>
+                    <div style={{ fontSize: '9px', color: '#64748b' }}>{label}</div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
           <RecentList items={recentActivity} />
         </div>
         <div className="card" style={{ padding: '20px' }}>
@@ -975,6 +1310,7 @@ export default function StudentProfilePage({ viewMode }) {
 
   const TABS = [
     { id: 'overview',    label: 'Overview'       },
+    { id: 'activity',    label: '🔥 Activity'    },
     { id: 'coding',      label: 'Coding'         },
     { id: 'academics',   label: 'Academics'      },
     { id: 'attendance',  label: 'Attendance'     },
@@ -1113,6 +1449,9 @@ export default function StudentProfilePage({ viewMode }) {
       {activeTab === 'overview' && (
         <OverviewTab coding={coding} attendance={attendance} academics={academics}
           internships={internships} tier={tier} onTabSwitch={setActiveTab} />
+      )}
+      {activeTab === 'activity' && (
+        <ActivityHeatmap codingData={coding} userId={userId} isOwn={isOwnProfile} />
       )}
       {activeTab === 'coding' && (
         <CodingTab codingData={coding} isOwnProfile={isOwnProfile} onRefresh={fetchData} />

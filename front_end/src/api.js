@@ -68,6 +68,26 @@ export const api = {
   
   assignments: {
     list: () => fetch(`${API_BASE}/assignments/`, { headers: getHeaders() }).then(handleResponse),
+    create: (payload) => fetch(`${API_BASE}/assignments`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(payload),
+    }).then(handleResponse),
+    update: (id, payload) => fetch(`${API_BASE}/assignments/${id}`, {
+      method: 'PATCH',
+      headers: getHeaders(),
+      body: JSON.stringify(payload),
+    }).then(handleResponse),
+    remove: (id) => fetch(`${API_BASE}/assignments/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    }).then((resp) => {
+      if (resp.status === 204) return null;
+      return handleResponse(resp);
+    }),
+    listSubmissions: (id) => fetch(`${API_BASE}/assignments/${id}/submissions`, {
+      headers: getHeaders(),
+    }).then(handleResponse),
   },
   
   marks: {
@@ -98,6 +118,35 @@ export const api = {
     getClass: (classId, day) => fetch(`${API_BASE}/attendance/class/${classId}${day ? `?day=${day}` : ''}`, { headers: getHeaders() }).then(handleResponse),
     getDefaulters: (classId) => fetch(`${API_BASE}/attendance/defaulters/${classId}`, { headers: getHeaders() }).then(handleResponse),
     export: (classId) => fetch(`${API_BASE}/attendance/export/${classId}`, { headers: getHeaders() }).then(handleResponse),
+    importReport: (file) => {
+      const token = localStorage.getItem('token');
+      const formData = new FormData();
+      formData.append('file', file);
+      return fetch(`${API_BASE}/attendance/report/import`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        body: formData,
+      }).then(handleResponse);
+    },
+    exportReport: async (format, rows, sourceFile) => {
+      const token = localStorage.getItem('token');
+      const resp = await fetch(`${API_BASE}/attendance/report/export`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ format, rows, source_file: sourceFile }),
+      });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({ detail: 'Export failed' }));
+        throw new Error(err.detail || 'Export failed');
+      }
+      return {
+        blob: await resp.blob(),
+        filename: resp.headers.get('Content-Disposition')?.match(/filename="?([^"]+)"?/)?.[1] || `attendance_defaulters.${format}`,
+      };
+    },
   },
   
   alerts: {
@@ -113,6 +162,8 @@ export const api = {
     getProfiles: () => fetch(`${API_BASE}/coding/me`, { headers: getHeaders() }).then(handleResponse),
     getSummary: () => fetch(`${API_BASE}/coding/me/summary`, { headers: getHeaders() }).then(handleResponse),
     getScore: () => fetch(`${API_BASE}/coding/me/score`, { headers: getHeaders() }).then(handleResponse),
+    getHeatmap: () => fetch(`${API_BASE}/coding/me/heatmap`, { headers: getHeaders() }).then(handleResponse),
+    getStudentHeatmap: (userId) => fetch(`${API_BASE}/coding/heatmap/${userId}`, { headers: getHeaders() }).then(handleResponse),
     getLeaderboard: () => fetch(`${API_BASE}/coding/leaderboard`, { headers: getHeaders() }).then(handleResponse),
     syncLeetcode: (username) => fetch(`${API_BASE}/coding/leetcode/${username}`, { headers: getHeaders() }).then(handleResponse),
     syncGithub: (username) => fetch(`${API_BASE}/coding/github/${username}`, { headers: getHeaders() }).then(handleResponse),

@@ -27,5 +27,9 @@ class UserRead(SQLModel):
     name: str
     email: str
     role: str
+    class_id: Optional[str] = None
+    semester: Optional[int] = None
+    branch: Optional[str] = None
+    goal: Optional[str] = None
     created_at: datetime
 
