@@ -744,7 +744,7 @@ function collectAllDates(codingData) {
   return dates;
 }
 
-/** Build Sunday-aligned week grid
+/** Build Sunday-aligned week grid */
 function buildYearGrid(year) {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const isCurrentYear = year === today.getFullYear();
