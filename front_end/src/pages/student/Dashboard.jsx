@@ -26,7 +26,7 @@ export default function StudentDashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
+        <Loader2 className="w-8 h-8 animate-spin" style={{color:'#606060'}} />
       </div>
     );
   }
@@ -58,7 +58,7 @@ export default function StudentDashboard() {
   return (
     <div className="fade-in-up">
       <PageHeader
-        title={`Good morning, ${name} 👋`}
+        title={`Good morning, ${name}`}
         subtitle="Here's your academic snapshot for today."
       />
 
@@ -76,7 +76,7 @@ export default function StudentDashboard() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
         <StatCard label="Wellbeing Risk" value={riskLevel} sub={riskScore ? `Score: ${riskScore.score}/100` : 'Calculated nightly'} color={riskColor} icon={Activity} />
-        <StatCard label="Roadmap Progress" value={`${completedNodes}/${totalNodes}`} sub="Nodes completed" color="#8b5cf6" icon={TrendingUp} />
+        <StatCard label="Roadmap Progress" value={`${completedNodes}/${totalNodes}`} sub="Nodes completed" color="#a0a0a0" icon={TrendingUp} />
         <StatCard label="Study Time" value={`${studyHours}h`} sub="This week (sprints + coding)" color="#f59e0b" icon={Timer} />
         <StatCard label="Problems Solved" value={totalProblems || pendingAssignments} sub={totalProblems ? "Across all platforms" : (overdueAssignments > 0 ? `${overdueAssignments} overdue` : 'All on track')} color={totalProblems ? '#22c55e' : (pendingAssignments > 0 ? '#ef4444' : '#22c55e')} icon={totalProblems ? Code2 : BookOpen} />
       </div>
@@ -90,7 +90,7 @@ export default function StudentDashboard() {
               <RadarChart data={radarData}>
                 <PolarGrid stroke="rgba(255,255,255,0.05)" />
                 <PolarAngleAxis dataKey="subject" tick={{ fill: '#8b8ba0', fontSize: 11 }} />
-                <Radar dataKey="score" stroke="#4f8ef7" fill="#4f8ef7" fillOpacity={0.15} strokeWidth={2} dot={{ fill: '#4f8ef7', r: 3 }} />
+                <Radar dataKey="score" stroke="#808080" fill="#808080" fillOpacity={0.15} strokeWidth={2} dot={{ fill: '#808080', r: 3 }} />
               </RadarChart>
             </ResponsiveContainer>
           ) : (
@@ -103,7 +103,7 @@ export default function StudentDashboard() {
           <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '16px' }}>Sprints + coding platforms</div>
           <div className="flex items-center justify-center" style={{ height: '120px' }}>
             <div className="text-center">
-              <div style={{ fontSize: '52px', fontWeight: '500', color: '#8b5cf6', fontFamily: 'Space Grotesk, sans-serif' }}>{studyHours}</div>
+              <div style={{ fontSize: '52px', fontWeight: '500', color: '#e0e0e0', fontFamily: 'Space Grotesk, sans-serif' }}>{studyHours}</div>
               <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>hours this week</div>
               {sprintStats?.total_sprints > 0 && (
                 <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>{sprintStats.total_sprints} sprints · {codingHours}h coding</div>
