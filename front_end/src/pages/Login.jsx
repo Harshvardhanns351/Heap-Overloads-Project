@@ -1,168 +1,114 @@
 import React, { useState } from 'react';
 import useAppStore from '../store';
-import { Brain, GraduationCap, Shield, Eye, EyeOff, Code2, Cpu } from 'lucide-react';
+import { Brain, GraduationCap, Shield, Eye, EyeOff } from 'lucide-react';
 
 const ROLES = [
-  { key: 'student', label: 'Student', icon: GraduationCap, color: 'sky', border: 'border-sky-500/40', bg: 'bg-sky-500/10', glow: 'shadow-[0_0_20px_rgba(14,165,233,0.3)]', text: 'text-sky-400', desc: 'View roadmap, mentor chat, documents' },
-  { key: 'teacher', label: 'Teacher', icon: Brain, color: 'violet', border: 'border-violet-500/40', bg: 'bg-violet-500/10', glow: 'shadow-[0_0_20px_rgba(139,92,246,0.3)]', text: 'text-violet-400', desc: 'Class analytics, risk alerts, assignments' },
-  { key: 'admin', label: 'Admin', icon: Shield, color: 'teal', border: 'border-teal-500/40', bg: 'bg-teal-500/10', glow: 'shadow-[0_0_20px_rgba(20,184,166,0.3)]', text: 'text-teal-400', desc: 'Org-wide insights, disputes, user mgmt' },
+  { key: 'student', label: 'Student',  icon: GraduationCap, desc: 'Roadmap, mentor chat, documents' },
+  { key: 'teacher', label: 'Faculty',  icon: Brain,          desc: 'Classes, analytics, risk alerts' },
+  { key: 'admin',   label: 'Admin',    icon: Shield,         desc: 'Org-wide insights, user management' },
 ];
 
+const DEMO_EMAILS = { student: 'rahul@college.edu', teacher: 'priya@college.edu', admin: 'admin@college.edu' };
+
 export default function Login() {
-  const login = useAppStore((s) => s.login);
-  const [selectedRole, setSelectedRole] = useState(ROLES[0]);
-  const [showPass, setShowPass] = useState(false);
-  const [email, setEmail] = useState('rahul@college.edu');
+  const login = useAppStore(s => s.login);
+  const [role, setRole] = useState('student');
+  const [email, setEmail] = useState(DEMO_EMAILS.student);
   const [password, setPassword] = useState('password');
+  const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const roleEmails = { student: 'rahul@college.edu', teacher: 'priya@college.edu', admin: 'admin@college.edu' };
-
-  const handleRoleSelect = (roleObj) => {
-    setSelectedRole(roleObj);
-    setEmail(roleEmails[roleObj.key]);
+  const handleRoleSelect = (key) => {
+    setRole(key);
+    setEmail(DEMO_EMAILS[key]);
   };
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
-    try {
-      await login(email, password);
-    } catch (err) {
-      alert(err.message || 'Login failed');
-    } finally {
-      setLoading(false);
-    }
+    try { await login(email, password); }
+    catch (err) { alert(err.message || 'Login failed'); }
+    finally { setLoading(false); }
   };
 
   return (
-    <div className="min-h-screen bg-[#030014] flex items-center justify-center p-6 relative overflow-hidden font-inter">
-      
-      {/* Premium background effects */}
-      <div className="absolute top-[-20%] left-[-10%] w-[800px] h-[800px] bg-violet-600/10 blur-[150px] rounded-full pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-sky-600/10 blur-[150px] rounded-full pointer-events-none" />
-      
-      {/* Subtle grid pattern overlay */}
-      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay pointer-events-none z-0" />
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none z-0 mask-image:linear-gradient(to_bottom,white,transparent)" />
-      
-      <div className="w-full max-w-md relative z-10 fade-in-up">
-        
-        {/* Brand Header */}
-        <div className="text-center mb-10 flex flex-col items-center">
-          <div className="inline-flex items-center gap-3 mb-2 px-6 py-2 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md shadow-2xl">
-            <div className="w-10 h-10 bg-gradient-to-br from-violet-600 via-purple-500 to-sky-500 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.6)]">
-              <Brain size={24} className="text-white" />
+    <div style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', fontFamily: 'Inter, sans-serif' }}>
+      <div style={{ width: '100%', maxWidth: '400px' }} className="fade-in-up">
+
+        {/* Brand */}
+        <div style={{ textAlign: 'center', marginBottom: '36px' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Brain size={20} style={{ color: '#e0e0e0' }} />
             </div>
-            <span className="text-3xl font-bold font-space tracking-tight text-white">Veloris</span>
+            <span style={{ fontSize: '22px', fontWeight: '800', fontFamily: 'Space Grotesk, sans-serif', color: '#f0f0f0' }}>Veloris</span>
           </div>
-          <p className="text-slate-400 font-medium text-sm mt-3 tracking-wide">
-            AI-powered Academic Intelligence
-          </p>
+          <p style={{ fontSize: '13px', color: '#505050', margin: 0 }}>AI-powered Academic Intelligence</p>
         </div>
 
-        {/* Auth Card */}
-        <div className="premium-card p-8">
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-white mb-2">Welcome Back</h2>
-            <p className="text-slate-400 text-sm">Select your portal role to continue</p>
-          </div>
+        {/* Card */}
+        <div style={{ background: '#111111', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', padding: '28px' }}>
+          <h2 style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: '700', color: '#f0f0f0' }}>Sign in</h2>
+          <p style={{ margin: '0 0 24px', fontSize: '12px', color: '#505050' }}>Select your role to continue</p>
 
-          <div className="flex flex-col gap-3 mb-8">
-            {ROLES.map((role) => {
-              const isSelected = selectedRole.key === role.key;
+          {/* Role selector */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
+            {ROLES.map(r => {
+              const active = role === r.key;
               return (
-                <button
-                  key={role.key}
-                  onClick={() => handleRoleSelect(role)}
-                  type="button"
-                  className={`flex items-center gap-4 p-4 rounded-xl border transition-all duration-300 ${
-                    isSelected 
-                      ? `${role.border} ${role.bg} ${role.glow}` 
-                      : 'border-white/5 bg-white/5 hover:bg-white/10 hover:border-white/20 text-slate-400'
-                  }`}
+                <button key={r.key} type="button" onClick={() => handleRoleSelect(r.key)} style={{
+                  display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px',
+                  borderRadius: '9px', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
+                  background: active ? 'rgba(255,255,255,0.07)' : 'transparent',
+                  border: `1px solid ${active ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.06)'}`,
+                  transition: 'all 0.15s',
+                }}
+                  onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
+                  onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent'; }}
                 >
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${isSelected ? role.bg + ' ' + role.text + ' border ' + role.border : 'bg-slate-800 text-slate-500'}`}>
-                    <role.icon size={20} />
+                  <div style={{ width: '32px', height: '32px', borderRadius: '7px', background: active ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <r.icon size={16} style={{ color: active ? '#e0e0e0' : '#505050' }} />
                   </div>
-                  <div className="text-left flex-1">
-                    <div className={`font-bold text-sm ${isSelected ? 'text-white' : 'text-slate-300'}`}>
-                      {role.label}
-                    </div>
-                    <div className="text-xs text-slate-500 mt-0.5 leading-snug">
-                      {role.desc}
-                    </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '13px', fontWeight: '600', color: active ? '#f0f0f0' : '#808080' }}>{r.label}</div>
+                    <div style={{ fontSize: '11px', color: '#404040', marginTop: '1px' }}>{r.desc}</div>
                   </div>
-                  
-                  {/* Active Indicator Radio */}
-                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${isSelected ? role.border : 'border-slate-600'}`}>
-                    <div className={`w-2.5 h-2.5 rounded-full transition-all ${isSelected ? 'bg-current ' + role.text + ' scale-100' : 'bg-transparent scale-0'}`} />
+                  <div style={{ width: '16px', height: '16px', borderRadius: '50%', border: `2px solid ${active ? '#e0e0e0' : '#303030'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    {active && <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#e0e0e0' }} />}
                   </div>
                 </button>
               );
             })}
           </div>
 
-          <form onSubmit={handleLogin} className="flex flex-col gap-5">
+          {/* Form */}
+          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div>
-              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-2">
-                <Cpu size={14} /> System ID / Email
-              </label>
-              <input 
-                className="input-premium" 
-                type="email" 
-                value={email} 
-                onChange={(e) => setEmail(e.target.value)} 
-                required
-              />
+              <label style={{ fontSize: '11px', fontWeight: '600', color: '#505050', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '6px' }}>Email</label>
+              <input className="input" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
             </div>
-            
             <div>
-              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-2">
-                <Code2 size={14} /> Security Token
-              </label>
-              <div className="relative">
-                <input 
-                  className="input-premium pr-12" 
-                  type={showPass ? 'text' : 'password'} 
-                  value={password} 
-                  onChange={(e) => setPassword(e.target.value)} 
-                  required
-                />
-                <button 
-                  type="button" 
-                  onClick={() => setShowPass(!showPass)} 
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
-                >
-                  {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
+              <label style={{ fontSize: '11px', fontWeight: '600', color: '#505050', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '6px' }}>Password</label>
+              <div style={{ position: 'relative' }}>
+                <input className="input" type={showPass ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required style={{ paddingRight: '40px' }} />
+                <button type="button" onClick={() => setShowPass(v => !v)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#505050', display: 'flex' }}>
+                  {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
               </div>
             </div>
-
-            <button 
-              className={`btn-premium w-full h-[52px] mt-4 ${selectedRole.glow.replace('0_0_20px', '0_8px_32px')}`} 
-              type="submit" 
-              disabled={loading}
-              style={{
-                background: selectedRole.key === 'student' ? 'linear-gradient(135deg, #0284c7, #38bdf8)' : 
-                            selectedRole.key === 'teacher' ? 'linear-gradient(135deg, #7c3aed, #a78bfa)' :
-                            'linear-gradient(135deg, #0d9488, #2dd4bf)'
-              }}
-            >
-              {loading ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <span className="text-[15px] font-bold tracking-wide">Initialize Interface</span>
-              )}
+            <button type="submit" disabled={loading} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', height: '42px', marginTop: '6px', fontSize: '13px' }}>
+              {loading
+                ? <div style={{ width: '16px', height: '16px', border: '2px solid rgba(0,0,0,0.2)', borderTopColor: '#0a0a0a', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                : 'Sign In'}
             </button>
           </form>
         </div>
 
-        <p className="text-center text-slate-500 text-xs mt-8 font-medium tracking-wide">
-          Intelligence Core v2.0.4<br/>
-          <span className="opacity-60">Authentication tokens pre-filled for demo</span>
+        <p style={{ textAlign: 'center', fontSize: '11px', color: '#303030', marginTop: '20px' }}>
+          Demo credentials pre-filled
         </p>
       </div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
