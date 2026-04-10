@@ -8,12 +8,13 @@ import {
 } from 'lucide-react';
 
 const STUDENT_NAV = [
-  { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { path: '/profile',   icon: UserCircle2,     label: 'My Profile' },
-  { path: '/roadmap',   icon: Map,             label: 'My Roadmap' },
-  { path: '/mentor',    icon: MessageSquare,   label: 'AI Mentor'  },
-  { path: '/documents', icon: FileText,        label: 'Documents'  },
-  { path: '/disputes',  icon: AlertCircle,     label: 'Disputes'   },
+  { path: '/dashboard',   icon: LayoutDashboard, label: 'Dashboard'   },
+  { path: '/profile',     icon: UserCircle2,     label: 'My Profile'  },
+  { path: '/roadmap',     icon: Map,             label: 'My Roadmap'  },
+  { path: '/assignments', icon: BookOpen,        label: 'Assignments' },
+  { path: '/mentor',      icon: MessageSquare,   label: 'AI Mentor'   },
+  { path: '/documents',   icon: FileText,        label: 'Documents'   },
+  { path: '/disputes',    icon: AlertCircle,     label: 'Disputes'    },
 ];
 
 const TEACHER_NAV = [

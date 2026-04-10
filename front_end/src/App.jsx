@@ -10,6 +10,7 @@ import Roadmap from './pages/student/Roadmap';
 import Mentor from './pages/student/Mentor';
 import Documents from './pages/student/Documents';
 import Disputes from './pages/student/Disputes';
+import StudentAssignments from './pages/student/Assignments';
 
 // Shared
 import StudentProfilePage from './pages/shared/StudentProfilePage';
@@ -34,6 +35,7 @@ function StudentRoutes() {
       <Routes>
         <Route path="/dashboard" element={<StudentDashboard />} />
         <Route path="/roadmap" element={<Roadmap />} />
+        <Route path="/assignments" element={<StudentAssignments />} />
         <Route path="/mentor" element={<Mentor />} />
         <Route path="/documents" element={<Documents />} />
         <Route path="/disputes" element={<Disputes />} />
