@@ -13,7 +13,7 @@ export default function Login() {
   const [selectedRole, setSelectedRole] = useState(ROLES[0]);
   const [showPass, setShowPass] = useState(false);
   const [email, setEmail] = useState('rahul@college.edu');
-  const [password, setPassword] = useState('password123');
+  const [password, setPassword] = useState('password');
   const [loading, setLoading] = useState(false);
 
   const roleEmails = { student: 'rahul@college.edu', teacher: 'priya@college.edu', admin: 'admin@college.edu' };
@@ -28,14 +28,12 @@ export default function Login() {
     setLoading(true);
     try {
       await login(email, password);
-      // Success is handled by store updating state and triggering re-render/redirect
     } catch (err) {
       alert(err.message || 'Login failed');
     } finally {
       setLoading(false);
     }
   };
-
 
   return (
     <div className="min-h-screen bg-[#030014] flex items-center justify-center p-6 relative overflow-hidden font-inter">

@@ -7,12 +7,18 @@ Key ideas:
 - Students never see risk labels; teachers receive factual alerts
 """
 
+import os
 import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
+# Initialize logging and scheduler first
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+scheduler = AsyncIOScheduler()
 
 from app.database import engine, create_db
 from app.api.routers.users import router as users_router
@@ -32,11 +38,37 @@ from app.api.routers.sprints import router as sprints_router
 from app.api.routers.exams import router as exams_router
 from app.api.routers.peer_notes import router as peer_notes_router
 from app.api.routers.digest import router as digest_router
+from app.api.routers.profile import router as profile_router
 from app.auth.router import router as auth_router
 from app.scheduler import run_wellbeing_check
 
 
-app = FastAPI(title="Veloris API", version="1.0.0")
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Hackathon-friendly: create tables on startup.
+    # For production: generate and apply Alembic migrations instead.
+    try:
+        create_db()
+        logger.info("Database tables verified/created.")
+    except Exception as e:
+        logger.error(f"Failed to create database tables: {e}")
+        # We continue so the app doesn't crash if DB is temporarily down,
+        # but you might want to exit depending on requirements.
+
+    # Schedule nightly wellbeing check at midnight
+    scheduler.add_job(run_wellbeing_check, "cron", hour=0, minute=0)
+    scheduler.start()
+    logger.info("Scheduler started with nightly wellbeing check")
+    
+    yield
+    
+    # Shutdown
+    scheduler.shutdown()
+    logger.info("Scheduler shut down")
+
+app = FastAPI(title="Veloris API", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -52,30 +84,10 @@ app.add_middleware(
 )
 
 # Serve uploaded files (documents/submissions) from disk.
-import os
-
 uploads_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
 if not os.path.exists(uploads_dir):
     os.makedirs(uploads_dir)
 app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
-
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-scheduler = AsyncIOScheduler()
-
-
-@app.on_event("startup")
-async def _startup() -> None:
-    # Hackathon-friendly: create tables on startup.
-    # For production: generate and apply Alembic migrations instead.
-    create_db()
-
-    # Schedule nightly wellbeing check at midnight
-    scheduler.add_job(run_wellbeing_check, "cron", hour=0, minute=0)
-    scheduler.start()
-    logger.info("Scheduler started with nightly wellbeing check")
 
 
 @app.get("/api/health")
@@ -101,6 +113,7 @@ app.include_router(sprints_router, prefix="/api/sprints", tags=["sprints"])
 app.include_router(exams_router, prefix="/api/exams", tags=["exams"])
 app.include_router(peer_notes_router, prefix="/api/peer-notes", tags=["peer-notes"])
 app.include_router(digest_router, prefix="/api/digest", tags=["digest"])
+app.include_router(profile_router, prefix="/api/profile", tags=["profile"])
 
 
 if __name__ == "__main__":

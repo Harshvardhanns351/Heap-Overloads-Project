@@ -1,20 +1,28 @@
 import { create } from 'zustand';
 import { api } from './api';
 
-const MOCK_STUDENTS = [
-  { id: 1, name: "Rahul Sharma", email: "rahul@college.edu", roll_no: "CS21A001", class_id: "CSE-A", section: "A", attendance: 88, riskLevel: "green", riskScore: 25, lastActive: "2h ago", nudge: "Great progress on your roadmap! Keep it up.", codingStats: { solved: 45, streak: 12 }, marks: { DSA: 78, OS: 65, DBMS: 82, CN: 71, ML: 58 } },
-  { id: 2, name: "Priya Singh", email: "priya@college.edu", roll_no: "CS21A002", class_id: "CSE-A", section: "A", attendance: 62, riskLevel: "red", riskScore: 85, lastActive: "5 days ago", nudge: "Your activity has dropped. Let's get back on track!", codingStats: { solved: 120, streak: 0 }, marks: { DSA: 55, OS: 48, DBMS: 62, CN: 51, ML: 45 } },
-  { id: 3, name: "Amit Kumar", email: "amit@college.edu", roll_no: "CS21A003", class_id: "CSE-A", section: "A", attendance: 92, riskLevel: "green", riskScore: 15, lastActive: "1h ago", nudge: null, codingStats: { solved: 200, streak: 45 }, marks: { DSA: 88, OS: 75, DBMS: 91, CN: 82, ML: 79 } },
-  { id: 4, name: "Sneha Reddy", email: "sneha@college.edu", roll_no: "CS21A004", class_id: "CSE-A", section: "A", attendance: 71, riskLevel: "yellow", riskScore: 55, lastActive: "1 day ago", nudge: "Attendance is slightly down. Don't miss tomorrow's class!", codingStats: { solved: 85, streak: 8 }, marks: { DSA: 68, OS: 72, DBMS: 75, CN: 65, ML: 62 } },
-  { id: 5, name: "Vikram Patel", email: "vikram@college.edu", roll_no: "CS21B001", class_id: "CSE-B", section: "B", attendance: 95, riskLevel: "green", riskScore: 10, lastActive: "30m ago", nudge: null, codingStats: { solved: 310, streak: 60 }, marks: { DSA: 92, OS: 88, DBMS: 95, CN: 90, ML: 85 } },
-];
-
-export { MOCK_STUDENTS };
+// Kept for StudentDetail legacy reference — will be removed once fully migrated
+export const MOCK_STUDENTS = [];
 
 const useAppStore = create((set, get) => ({
   // Auth
-  currentUser: JSON.parse(localStorage.getItem('user') || 'null'),
-  role: localStorage.getItem('role') || null,
+  currentUser: (() => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || 'null');
+      const token = localStorage.getItem('token');
+      // If user is set but token is missing, clear everything
+      if (user && !token) {
+        localStorage.removeItem('user');
+        localStorage.removeItem('role');
+        return null;
+      }
+      return user;
+    } catch { return null; }
+  })(),
+  role: (() => {
+    const token = localStorage.getItem('token');
+    return token ? (localStorage.getItem('role') || null) : null;
+  })(),
   isInitializing: false,
 
   setAuth: (user, token) => {
@@ -40,11 +48,13 @@ const useAppStore = create((set, get) => ({
   roadmapNodes: [],
   expandedNode: null,
   setExpandedNode: (id) => set((s) => ({ expandedNode: s.expandedNode === id ? null : id })),
-  
+
   fetchRoadmap: async () => {
     try {
       const data = await api.roadmap.getMe();
-      set({ roadmapNodes: data.nodes });
+      // Support both {roadmap: {nodes}, nodes} shapes
+      const nodes = data.nodes || data.roadmap?.nodes || [];
+      set({ roadmapNodes: nodes });
     } catch (err) {
       console.error('Failed to fetch roadmap', err);
     }
@@ -52,7 +62,7 @@ const useAppStore = create((set, get) => ({
 
   markNodeComplete: async (id) => {
     try {
-      await api.roadmap.updateNode(id, 'complete');
+      await api.roadmap.updateNode(id, 'completed');
       await get().fetchRoadmap();
     } catch (err) {
       console.error('Failed to update node', err);
@@ -83,7 +93,7 @@ const useAppStore = create((set, get) => ({
 
   // Chat
   chatMessages: [
-    { role: 'assistant', content: "Hi! I'm your AI mentor. I can help with your roadmap, explain concepts, or analyze your performance. What's on your mind?" }
+    { role: 'assistant', content: "Hi! I'm your AI mentor. I can help with your roadmap, explain concepts, or analyse your performance. What's on your mind?" }
   ],
   addChatMessage: (msg) => set((s) => ({ chatMessages: [...s.chatMessages, msg] })),
 
@@ -91,19 +101,32 @@ const useAppStore = create((set, get) => ({
   disputes: [],
   fetchDisputes: async () => {
     try {
-      const data = await api.disputes.listMine();
+      const role = get().role;
+      const data = role === 'admin'
+        ? await api.disputes.listAll()
+        : await api.disputes.listMine();
       set({ disputes: data });
     } catch (err) {
       console.error('Failed to fetch disputes', err);
     }
   },
-  
+
   createDispute: async (category, title, description) => {
     try {
       await api.disputes.create(category, title, description);
       await get().fetchDisputes();
     } catch (err) {
       console.error('Failed to create dispute', err);
+      throw err;
+    }
+  },
+
+  updateDisputeStatus: async (id, status, resolution) => {
+    try {
+      await api.disputes.updateStatus(id, status, resolution);
+      await get().fetchDisputes();
+    } catch (err) {
+      console.error('Failed to update dispute', err);
       throw err;
     }
   },
@@ -118,7 +141,7 @@ const useAppStore = create((set, get) => ({
       console.error('Failed to fetch alerts', err);
     }
   },
-  
+
   markAlertRead: async (id) => {
     try {
       await api.alerts.markRead(id);
@@ -127,7 +150,7 @@ const useAppStore = create((set, get) => ({
       console.error('Failed to mark alert as read', err);
     }
   },
-  
+
   // Attendance
   attendance: [],
   defaulters: [],
@@ -139,7 +162,7 @@ const useAppStore = create((set, get) => ({
       console.error('Failed to fetch attendance', err);
     }
   },
-  
+
   fetchDefaulters: async (classId) => {
     try {
       const data = await api.attendance.getDefaulters(classId);
@@ -160,14 +183,14 @@ const useAppStore = create((set, get) => ({
     }
   },
 
-  // Analytics - Peer Radar
-  radarData: null,
-  fetchRadarData: async () => {
+  // Marks
+  marks: [],
+  fetchMarks: async () => {
     try {
-      const data = await api.analytics.getMyRadar();
-      set({ radarData: data });
+      const data = await api.marks.getMine();
+      set({ marks: data });
     } catch (err) {
-      console.error('Failed to fetch radar data', err);
+      console.error('Failed to fetch marks', err);
     }
   },
 
@@ -233,14 +256,14 @@ const useAppStore = create((set, get) => ({
     }
   },
 
-  // Marks
-  marks: [],
-  fetchMarks: async () => {
+  // Analytics
+  radarData: null,
+  fetchRadarData: async () => {
     try {
-      const data = await api.marks.getMine();
-      set({ marks: data });
+      const data = await api.analytics.getMyRadar();
+      set({ radarData: data });
     } catch (err) {
-      console.error('Failed to fetch marks', err);
+      console.error('Failed to fetch radar data', err);
     }
   },
 
@@ -263,14 +286,6 @@ const useAppStore = create((set, get) => ({
       throw err;
     }
   },
-  upvotePeerNote: async (noteId, classId, subject, topic) => {
-    try {
-      await api.peerNotes.vote(noteId);
-      await get().fetchPeerNotes(classId, subject, topic);
-    } catch (err) {
-      console.error('Failed to upvote note', err);
-    }
-  },
 
   // Class Digest
   classDigest: null,
@@ -282,21 +297,82 @@ const useAppStore = create((set, get) => ({
       console.error('Failed to fetch class digest', err);
     }
   },
-  
+
+  // Coding
+  codingSummary: null,
+  fetchCodingSummary: async () => {
+    try {
+      const data = await api.coding.getSummary();
+      set({ codingSummary: data });
+    } catch (err) {
+      console.error('Failed to fetch coding summary', err);
+    }
+  },
+
+  velorisScore: null,
+  fetchVelorisScore: async () => {
+    try {
+      const data = await api.coding.getScore();
+      set({ velorisScore: data });
+    } catch (err) {
+      console.error('Failed to fetch veloris score', err);
+    }
+  },
+
+  leaderboard: [],
+  leaderboardLoading: false,
+  fetchLeaderboard: async () => {
+    set({ leaderboardLoading: true });
+    try {
+      const data = await api.coding.getLeaderboard();
+      set({ leaderboard: data.leaderboard || [] });
+    } catch (err) {
+      console.error('Failed to fetch leaderboard', err);
+    } finally {
+      set({ leaderboardLoading: false });
+    }
+  },
+
+  // Profile
+  profile: null,
+  profileLoading: false,
+  fetchProfile: async () => {
+    set({ profileLoading: true });
+    try {
+      const data = await api.profile.getMyProfile();
+      set({ profile: data, profileLoading: false });
+    } catch { set({ profileLoading: false }); }
+  },
+  updateProfileLocal: (updates) =>
+    set(s => ({ profile: s.profile ? { ...s.profile, user: { ...s.profile.user, ...updates } } : s.profile })),
+
+  // Student list (teacher/admin)
+  studentsList: [],
+  studentsListLoading: false,
+  fetchStudentsList: async (params = {}) => {
+    set({ studentsListLoading: true });
+    try {
+      const data = await api.profile.getStudentsList(params);
+      set({ studentsList: data.students || [], studentsListLoading: false });
+    } catch { set({ studentsListLoading: false }); }
+  },
+
   // Initialization
   initialize: async () => {
     const role = get().role;
     if (!role) return;
-    
     if (role === 'student') {
       await get().fetchRoadmap();
       await get().fetchAssignments();
-    } else {
+    } else if (role === 'teacher') {
       await get().fetchStudents();
+      await get().fetchAlerts();
+    } else if (role === 'admin') {
+      await get().fetchStudents();
+      await get().fetchDisputes();
     }
-  }
+  },
 }));
 
 export default useAppStore;
 export { useAppStore };
-

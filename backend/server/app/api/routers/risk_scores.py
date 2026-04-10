@@ -6,6 +6,8 @@ from sqlmodel import select
 from app.database import get_session
 from app.models import RiskScore
 from app.schemas.risk_score import RiskScoreCreate, RiskScoreRead, RiskScoreUpdate
+from app.auth.deps import get_current_user
+from app.models import User
 
 router = APIRouter()
 
@@ -18,6 +20,22 @@ def _to_risk_score_read(r: RiskScore) -> RiskScoreRead:
         level=r.level,
         created_at=r.created_at,
     )
+
+
+@router.get("/me", response_model=Optional[RiskScoreRead])
+def get_my_risk_score(
+    current_user: User = Depends(get_current_user),
+    session=Depends(get_session),
+):
+    item = session.exec(
+        select(RiskScore)
+        .where(RiskScore.student_id == current_user.id)
+        .order_by(RiskScore.created_at.desc())
+        .limit(1)
+    ).first()
+    if not item:
+        return None
+    return _to_risk_score_read(item)
 
 
 @router.get("/", response_model=List[RiskScoreRead])
