@@ -1,28 +1,28 @@
 import React from 'react';
-import { SignIn } from '@clerk/react';
+import { SignUp } from '@clerk/react';
 import { dark } from '@clerk/themes';
 import logo from '../assets/veloris-logo.png';
-import { Brain, Map } from 'lucide-react';
+import { Shield, Activity, Users, Database } from 'lucide-react';
 
-export default function Login() {
+export default function SignUpPage() {
   return (
-    <div className="flex min-h-screen bg-[#0a0a0a] font-inter">
+    <div className="flex min-h-screen bg-[#0a0a0a] font-inter flex-row-reverse">
       
-      {/* Left Form Panel */}
-      <div className="w-full lg:w-[500px] shrink-0 flex flex-col justify-center px-8 sm:px-16 relative bg-[#0a0a0a] z-10 border-r border-white/[0.05]">
+      {/* Right Form Panel (Reversed for SignUp to look dynamic) */}
+      <div className="w-full lg:w-[500px] shrink-0 flex flex-col justify-center px-8 sm:px-16 relative bg-[#0a0a0a] z-10 border-l border-white/[0.05]">
         
-        {/* Top Left Logo */}
-        <div className="absolute top-10 left-8 sm:left-16 flex items-center gap-2 cursor-pointer" onClick={() => window.location.href='/'}>
-          <img src={logo} alt="Veloris Logo" className="w-[28px] h-[28px] object-contain opacity-90 filter grayscale" />
+        {/* Top Right Logo */}
+        <div className="absolute top-10 right-8 sm:right-16 flex items-center gap-2 cursor-pointer" onClick={() => window.location.href='/'}>
           <span className="text-xl font-bold font-space tracking-tight text-white">Veloris</span>
+          <img src={logo} alt="Veloris Logo" className="w-[28px] h-[28px] object-contain opacity-90 filter grayscale" />
         </div>
 
         {/* Auth Component Container */}
         <div className="w-full mt-16 sm:mt-0">
-          <SignIn 
+          <SignUp 
             routing="path" 
-            path="/login" 
-            signUpUrl="/signup"
+            path="/signup" 
+            signInUrl="/login"
             appearance={{
               baseTheme: dark,
               elements: {
@@ -51,8 +51,8 @@ export default function Login() {
         </div>
       </div>
 
-      {/* Right Marketing Panel */}
-      <div className="hidden lg:flex flex-1 relative overflow-hidden bg-[#030303] flex-col justify-center p-24">
+      {/* Left Marketing Panel */}
+      <div className="hidden lg:flex flex-1 relative overflow-hidden bg-[#030303] flex-col justify-center items-end p-24 text-right">
         
         {/* Abaka-style Wireframe Grid */}
         <div 
@@ -64,43 +64,43 @@ export default function Login() {
             WebkitMaskImage: 'radial-gradient(circle at center, black 0%, transparent 80%)',
           }}
         />
-        
+
         {/* Decorative elements */}
-        <div className="absolute top-1/4 right-1/4 w-[400px] h-[400px] bg-white/[0.02] border border-white/[0.05] rounded-full blur-none pointer-events-none fade-in-up" />
-        <div className="absolute bottom-1/4 left-1/4 w-[300px] h-[300px] bg-white/[0.01] border border-white/[0.03] rounded-full blur-none pointer-events-none fade-in-up" style={{ animationDelay: '0.1s' }} />
+        <div className="absolute top-1/4 right-3/4 w-[400px] h-[400px] bg-white/[0.02] border border-white/[0.05] rounded-full blur-none pointer-events-none fade-in-up" />
+        <div className="absolute top-1/2 left-1/4 w-[300px] h-[300px] bg-white/[0.01] border border-white/[0.03] rounded-full blur-none pointer-events-none fade-in-up" style={{ animationDelay: '0.1s' }} />
 
         {/* Floating animated assets */}
-        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-[20%] right-[10%] opacity-60" style={{ animation: 'float 6s ease-in-out infinite' }}>
+        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none text-left">
+          <div className="absolute top-[25%] left-[15%] opacity-60" style={{ animation: 'float 7s ease-in-out infinite' }}>
             <div className="flex items-center gap-3 px-4 py-2 border border-white/10 bg-[#0a0a0a]/80 backdrop-blur-md rounded-none">
-              <Map size={16} className="text-white/70" />
-              <span className="text-[11px] font-space text-white/70 tracking-widest uppercase font-semibold">Dynamic Roadmaps</span>
+              <span className="text-[11px] font-space text-white/70 tracking-widest uppercase font-semibold">Predictive Risk Scoring</span>
+              <Activity size={16} className="text-white/70" />
             </div>
           </div>
-          <div className="absolute top-[40%] right-[25%] opacity-40" style={{ animation: 'float 8s ease-in-out infinite 1.5s' }}>
+          <div className="absolute top-[50%] left-[8%] opacity-40" style={{ animation: 'float 9s ease-in-out infinite 1.5s' }}>
             <div className="flex items-center gap-3 px-4 py-2 border border-white/10 bg-[#0a0a0a]/80 backdrop-blur-md rounded-none">
-              <Brain size={16} className="text-white/70" />
-              <span className="text-[11px] font-space text-white/70 tracking-widest uppercase font-semibold">AI Peer Intelligence</span>
+              <span className="text-[11px] font-space text-white/70 tracking-widest uppercase font-semibold">Immutable Audit Trails</span>
+              <Shield size={16} className="text-white/70" />
             </div>
           </div>
         </div>
 
         <div className="relative z-10 max-w-xl fade-in-up" style={{ animationDelay: '0.2s' }}>
           <h2 className="text-[44px] lg:text-[56px] font-bold font-space text-white mb-6 leading-[1.05] tracking-tight">
-            Personalized Trajectories,<br />Unprecedented Outcomes
+            Proactive Interventions,<br />Absolute Transparency
           </h2>
-          <p className="text-lg text-white/40 mb-10 leading-relaxed max-w-md">
-            Deploy AI-powered mentors and dynamic learning roadmaps that adapt in real-time to granular student performance signals.
+          <p className="text-lg text-white/40 mb-10 leading-relaxed ml-auto max-w-md">
+            Unify your academic operations with enterprise-grade risk parsing, immutable dispute resolution, and institution-wide attendance analytics.
           </p>
           
-          <div className="grid grid-cols-2 gap-6 max-w-md border-l border-white/10 pl-8">
-             <div className="fade-in-up" style={{ animationDelay: '0.4s' }}>
-               <div className="text-[32px] font-space font-bold text-white mb-1">98%</div>
-               <div className="text-[10px] text-white/40 uppercase tracking-widest font-semibold">Prediction Accuracy</div>
+          <div className="flex flex-col gap-4 items-end mt-8 border-r border-white/10 pr-6 fade-in-up" style={{ animationDelay: '0.4s' }}>
+             <div className="flex items-center gap-3 text-white/50 text-sm font-semibold">
+                <span>Real-Time Sync</span>
+                <Database size={14} className="text-white/30" />
              </div>
-             <div className="fade-in-up" style={{ animationDelay: '0.5s' }}>
-               <div className="text-[32px] font-space font-bold text-white mb-1">&lt;24h</div>
-               <div className="text-[10px] text-white/40 uppercase tracking-widest font-semibold">Risk Detection Cycle</div>
+             <div className="flex items-center gap-3 text-white/50 text-sm font-semibold">
+                <span>Multi-role Architecture</span>
+                <Users size={14} className="text-white/30" />
              </div>
           </div>
         </div>

@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Show, useUser } from '@clerk/react';
 import useAppStore from './store';
 import Layout from './components/Layout';
 import Login from './pages/Login';
+import SignUp from './pages/SignUp';
+import Landing from './pages/Landing';
 
 // Student pages
 import StudentDashboard from './pages/student/Dashboard';
@@ -81,22 +84,40 @@ function AdminRoutes() {
 
 export default function App() {
   const { currentUser, role } = useAppStore();
-
-  if (!currentUser) {
-    return (
-      <BrowserRouter>
-        <Routes>
-          <Route path="*" element={<Login />} />
-        </Routes>
-      </BrowserRouter>
-    );
-  }
+  const { isSignedIn, user } = useUser();
+  
+  // Sync Clerk auth state to Zustand mock store
+  useEffect(() => {
+    if (isSignedIn && user && !currentUser) {
+      useAppStore.setState({ 
+        currentUser: { id: user.id, name: user.fullName || 'System User', email: user.primaryEmailAddress?.emailAddress },
+        role: 'student' // Default to student portal
+      });
+    }
+  }, [isSignedIn, user, currentUser]);
 
   return (
-    <BrowserRouter>
-      {role === 'student' && <StudentRoutes />}
-      {role === 'teacher' && <TeacherRoutes />}
-      {role === 'admin' && <AdminRoutes />}
-    </BrowserRouter>
+    <>
+      <Show when="signed-out">
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Landing />} />
+            <Route path="/login/*" element={<Login />} />
+            <Route path="/signup/*" element={<SignUp />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </Show>
+
+      <Show when="signed-in">
+        {currentUser && (
+          <BrowserRouter>
+            {role === 'student' && <StudentRoutes />}
+            {role === 'teacher' && <TeacherRoutes />}
+            {role === 'admin' && <AdminRoutes />}
+          </BrowserRouter>
+        )}
+      </Show>
+    </>
   );
 }

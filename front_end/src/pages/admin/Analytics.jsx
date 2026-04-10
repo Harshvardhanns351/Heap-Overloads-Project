@@ -45,8 +45,8 @@ export default function AdminAnalytics() {
 
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
-        <StatCard label="Total Students" value={totalStudents} sub="Active this semester" color="#4f8ef7" icon={Users} />
-        <StatCard label="Average Attendance" value={`${avgAttendance}%`} sub="Across all classes" color="#8b5cf6" icon={TrendingUp} trend={-4} />
+        <StatCard label="Total Students" value={totalStudents} sub="Active this semester" color="#ffffff" icon={Users} />
+        <StatCard label="Average Attendance" value={`${avgAttendance}%`} sub="Across all classes" color="#ffffff" icon={TrendingUp} trend={-4} />
         <StatCard label="At-Risk Students" value={atRiskCount} sub="Risk score > 70" color="#ef4444" icon={AlertTriangle} />
         <StatCard label="Open Disputes" value={2} sub="Pending admin action" color="#f59e0b" icon={CheckCircle2} />
       </div>
@@ -83,15 +83,15 @@ export default function AdminAnalytics() {
             <AreaChart data={attendanceTrend}>
               <defs>
                 <linearGradient id="attGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#4f8ef7" stopOpacity={0.2} />
-                  <stop offset="95%" stopColor="#4f8ef7" stopOpacity={0} />
+                  <stop offset="5%" stopColor="rgba(255,255,255,0.15)" stopOpacity={1} />
+                  <stop offset="95%" stopColor="rgba(255,255,255,0)" stopOpacity={1} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
               <XAxis dataKey="month" tick={{ fill: '#8b8ba0', fontSize: 10 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: '#8b8ba0', fontSize: 10 }} axisLine={false} tickLine={false} domain={[60, 100]} />
               <Tooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '12px' }} />
-              <Area type="monotone" dataKey="avg" stroke="#4f8ef7" fill="url(#attGrad)" strokeWidth={2} />
+              <Area type="monotone" dataKey="avg" stroke="rgba(255,255,255,0.4)" fill="url(#attGrad)" strokeWidth={1.5} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -106,7 +106,7 @@ export default function AdminAnalytics() {
             <XAxis dataKey="branch" tick={{ fill: '#8b8ba0', fontSize: 11 }} axisLine={false} tickLine={false} />
             <YAxis tick={{ fill: '#8b8ba0', fontSize: 10 }} axisLine={false} tickLine={false} domain={[60, 100]} />
             <Tooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '12px' }} />
-            <Bar dataKey="avg" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="avg" fill="rgba(255,255,255,0.15)" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>

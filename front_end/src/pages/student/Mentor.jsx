@@ -9,10 +9,10 @@ function Message({ msg }) {
     <div style={{ display: 'flex', gap: '10px', flexDirection: isUser ? 'row-reverse' : 'row', marginBottom: '16px' }}>
       <div style={{
         width: '28px', height: '28px', borderRadius: '50%', flexShrink: 0,
-        background: isUser ? 'rgba(79,142,247,0.2)' : 'rgba(139,92,246,0.2)',
+        background: 'rgba(255,255,255,0.06)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
-        {isUser ? <User size={13} color="#4f8ef7" /> : <Sparkles size={13} color="#8b5cf6" />}
+        {isUser ? <User size={13} color="rgba(255,255,255,0.5)" /> : <Sparkles size={13} color="rgba(255,255,255,0.5)" />}
       </div>
       <div className={isUser ? 'chat-user' : 'chat-ai'} style={{ maxWidth: '75%', padding: '10px 14px', fontSize: '13px', lineHeight: '1.6', color: 'var(--text-primary)' }}>
         {msg.content.split(/(\*\*[^*]+\*\*)/).map((part, i) =>
@@ -96,12 +96,12 @@ export default function Mentor() {
           {chatMessages.map((msg, i) => <Message key={i} msg={msg} />)}
           {loading && (
             <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
-              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(139,92,246,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Sparkles size={13} color="#8b5cf6" />
+              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Sparkles size={13} color="rgba(255,255,255,0.5)" />
               </div>
               <div className="chat-ai" style={{ padding: '12px 14px', display: 'flex', gap: '5px', alignItems: 'center' }}>
                 {[0, 1, 2].map((i) => (
-                  <div key={i} style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#8b5cf6', opacity: 0.7, animation: `bounce 1s infinite ${i * 0.15}s` }} />
+                  <div key={i} style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'rgba(255,255,255,0.4)', opacity: 0.7, animation: `bounce 1s infinite ${i * 0.15}s` }} />
                 ))}
               </div>
             </div>

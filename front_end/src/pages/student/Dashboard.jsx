@@ -48,7 +48,7 @@ export default function StudentDashboard() {
   }).length || 0;
 
   const riskLevel = riskScore?.level || 'GREEN';
-  const riskColor = riskLevel === 'RED' ? '#ef4444' : riskLevel === 'YELLOW' ? '#f59e0b' : '#22c55e';
+  const riskColor = riskLevel === 'RED' ? 'var(--status-err)' : riskLevel === 'YELLOW' ? 'var(--status-warn)' : 'var(--status-ok)';
   const sprintHours = Math.round((sprintStats?.this_week_minutes || 0) / 60);
   const codingHours = codingSummary?.total_weekly_hours || 0;
   const studyHours = +(sprintHours + codingHours).toFixed(1);
@@ -63,22 +63,22 @@ export default function StudentDashboard() {
       />
 
       {currentUser?.pending_nudge && (
-        <div style={{ padding: '14px 18px', marginBottom: '24px', display: 'flex', alignItems: 'flex-start', gap: '12px', background: '#FAEEDA', borderRadius: '12px', borderLeft: '4px solid #EF9F27' }}>
-          <div style={{ width: '32px', height: '32px', background: 'rgba(239,159,39,0.2)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Zap size={15} color="#EF9F27" />
+        <div style={{ padding: '14px 18px', marginBottom: '24px', display: 'flex', alignItems: 'flex-start', gap: '12px', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', borderLeft: '3px solid rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ width: '30px', height: '30px', background: 'rgba(255,255,255,0.06)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Zap size={14} color="rgba(255,255,255,0.5)" />
           </div>
           <div>
-            <div style={{ fontSize: '11px', fontWeight: '600', color: '#854F0B', marginBottom: '2px' }}>Your Veloris nudge</div>
-            <div style={{ fontSize: '13px', color: '#1a1a1a', lineHeight: '1.5' }}>{currentUser.pending_nudge}</div>
+            <div style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Your Veloris nudge</div>
+            <div style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>{currentUser.pending_nudge}</div>
           </div>
         </div>
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
         <StatCard label="Wellbeing Risk" value={riskLevel} sub={riskScore ? `Score: ${riskScore.score}/100` : 'Calculated nightly'} color={riskColor} icon={Activity} />
-        <StatCard label="Roadmap Progress" value={`${completedNodes}/${totalNodes}`} sub="Nodes completed" color="#8b5cf6" icon={TrendingUp} />
-        <StatCard label="Study Time" value={`${studyHours}h`} sub="This week (sprints + coding)" color="#f59e0b" icon={Timer} />
-        <StatCard label="Problems Solved" value={totalProblems || pendingAssignments} sub={totalProblems ? "Across all platforms" : (overdueAssignments > 0 ? `${overdueAssignments} overdue` : 'All on track')} color={totalProblems ? '#22c55e' : (pendingAssignments > 0 ? '#ef4444' : '#22c55e')} icon={totalProblems ? Code2 : BookOpen} />
+        <StatCard label="Roadmap Progress" value={`${completedNodes}/${totalNodes}`} sub="Nodes completed" color="rgba(255,255,255,0.5)" icon={TrendingUp} />
+        <StatCard label="Study Time" value={`${studyHours}h`} sub="This week (sprints + coding)" color="rgba(255,255,255,0.5)" icon={Timer} />
+        <StatCard label="Problems Solved" value={totalProblems || pendingAssignments} sub={totalProblems ? "Across all platforms" : (overdueAssignments > 0 ? `${overdueAssignments} overdue` : 'All on track')} color={totalProblems ? 'var(--accent)' : (pendingAssignments > 0 ? 'var(--status-err)' : 'var(--status-ok)')} icon={totalProblems ? Code2 : BookOpen} />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
@@ -90,7 +90,7 @@ export default function StudentDashboard() {
               <RadarChart data={radarData}>
                 <PolarGrid stroke="rgba(255,255,255,0.05)" />
                 <PolarAngleAxis dataKey="subject" tick={{ fill: '#8b8ba0', fontSize: 11 }} />
-                <Radar dataKey="score" stroke="#4f8ef7" fill="#4f8ef7" fillOpacity={0.15} strokeWidth={2} dot={{ fill: '#4f8ef7', r: 3 }} />
+                <Radar dataKey="score" stroke="rgba(255,255,255,0.5)" fill="rgba(255,255,255,0.05)" fillOpacity={1} strokeWidth={1.5} dot={{ fill: 'rgba(255,255,255,0.6)', r: 3 }} />
               </RadarChart>
             </ResponsiveContainer>
           ) : (
@@ -103,7 +103,7 @@ export default function StudentDashboard() {
           <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '16px' }}>Sprints + coding platforms</div>
           <div className="flex items-center justify-center" style={{ height: '120px' }}>
             <div className="text-center">
-              <div style={{ fontSize: '52px', fontWeight: '500', color: '#8b5cf6', fontFamily: 'Space Grotesk, sans-serif' }}>{studyHours}</div>
+              <div style={{ fontSize: '52px', fontWeight: '500', color: 'rgba(255,255,255,0.7)', fontFamily: 'Space Grotesk, sans-serif' }}>{studyHours}</div>
               <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>hours this week</div>
               {sprintStats?.total_sprints > 0 && (
                 <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>{sprintStats.total_sprints} sprints · {codingHours}h coding</div>
@@ -136,9 +136,9 @@ export default function StudentDashboard() {
                 <div key={sub}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                     <span style={{ fontSize: '12px', fontWeight: '500' }}>{sub}</span>
-                    <span style={{ fontSize: '12px', color: score < 60 ? '#ef4444' : score < 75 ? '#f59e0b' : '#22c55e', fontWeight: '600' }}>{score}%</span>
+                    <span style={{ fontSize: '12px', color: score < 60 ? 'var(--status-err)' : score < 75 ? 'var(--status-warn)' : 'var(--status-ok)', fontWeight: '600' }}>{score}%</span>
                   </div>
-                  <ProgressBar value={score} color={score < 60 ? '#ef4444' : score < 75 ? '#f59e0b' : '#22c55e'} height={5} />
+                  <ProgressBar value={score} color={score < 60 ? 'var(--status-err)' : score < 75 ? 'var(--status-warn)' : 'var(--status-ok)'} height={5} />
                 </div>
               ))}
             </div>
@@ -157,11 +157,7 @@ export default function StudentDashboard() {
                     <div style={{ fontSize: '12px', fontWeight: '500', marginBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.title}</div>
                     <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{a.subject} · Due {new Date(a.deadline).toLocaleDateString()}</div>
                   </div>
-                  <span style={{
-                    padding: '2px 8px', borderRadius: '99px', fontSize: '10px', fontWeight: '600', whiteSpace: 'nowrap',
-                    background: a.submission_status === 'submitted' ? '#E1F5EE' : a.submission_status === 'late' ? '#FCEBEB' : '#FAEEDA',
-                    color: a.submission_status === 'submitted' ? '#0F6E56' : a.submission_status === 'late' ? '#A32D2D' : '#854F0B',
-                  }}>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold whitespace-nowrap ${a.submission_status === 'submitted' ? 'badge-green' : a.submission_status === 'late' ? 'badge-red' : 'badge-yellow'}`}>
                     {a.submission_status || 'pending'}
                   </span>
                 </div>

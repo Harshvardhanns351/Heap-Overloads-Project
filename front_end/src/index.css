@@ -1,74 +1,280 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700;800;900&display=swap');
 @import "tailwindcss";
 
 @layer base {
   :root {
-    --bg-primary: #030014;
-    --text-primary: #f8fafc;
-    --text-secondary: #94a3b8;
-    --text-muted: #64748b;
+    --bg-primary:   #0a0a0a;
+    --bg-card:      #111111;
+    --bg-elevated:  #161616;
+    --border:       rgba(255,255,255,0.07);
+    --border-hover: rgba(167,139,250,0.25);
+    --text-primary:   #f5f5f5;
+    --text-secondary: #888888;
+    --text-muted:     #555555;
+    --accent:         #a78bfa;
+    --accent-dim:     #7c3aed;
+    --accent-bg:      rgba(167,139,250,0.08);
+    --accent-border:  rgba(167,139,250,0.25);
+    /* Semantic status — used ONLY where meaning matters */
+    --status-ok:      #34d399;
+    --status-warn:    #fbbf24;
+    --status-err:     #f87171;
   }
 
   body {
     background-color: var(--bg-primary);
     color: var(--text-primary);
     -webkit-font-smoothing: antialiased;
+    font-family: 'Inter', sans-serif;
   }
 
-  /* Custom Scrollbar */
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.2);
-  }
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
 }
 
 @layer components {
-  /* Premium Glassmorphism */
-  .glass {
-    @apply bg-white/5 border border-white/10 backdrop-blur-xl shadow-lg;
-  }
+
+  /* ── Layout shells ── */
   .glass-panel {
-    @apply bg-[#0a0a2a]/80 border border-white/5 backdrop-blur-2xl shadow-2xl;
+    background: rgba(255,255,255,0.02);
+    border-color: var(--border);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
   }
   .glass-elevated {
-    @apply bg-white/5 border border-white/20 backdrop-blur-2xl transition-all duration-300;
+    background: rgba(255,255,255,0.025);
+    border-color: var(--border);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+    transition: all 0.3s;
   }
 
-  /* Core UI */
-  .btn-premium {
-    @apply relative overflow-hidden rounded-xl bg-gradient-to-r from-violet-600 to-sky-600 px-6 py-2.5 font-semibold text-white shadow-lg transition-all duration-300 hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2;
+  /* ── Cards ── */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    transition: border-color 0.2s;
   }
-  .input-premium {
-    @apply w-full rounded-xl border border-white/10 bg-[#05051a]/50 backdrop-blur-md px-4 py-3 text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-violet-500/50 focus:bg-white/5 focus:outline-none focus:ring-2 focus:ring-violet-500/20;
-  }
+  .card:hover { border-color: var(--border-hover); }
+
   .premium-card {
-    @apply relative overflow-hidden rounded-2xl border border-white/5 bg-[#0a0a2a]/60 p-6 backdrop-blur-xl transition-all duration-300 hover:border-white/10 hover:bg-[#0a0a2a]/80;
+    position: relative;
+    overflow: hidden;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    padding: 20px;
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    transition: all 0.25s;
   }
+  .premium-card:hover {
+    border-color: var(--border-hover);
+    background: var(--bg-elevated);
+  }
+
+  /* ── Inputs ── */
+  .input, .input-premium {
+    width: 100%;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.03);
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .input:focus, .input-premium:focus {
+    border-color: rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.05);
+  }
+  .input::placeholder, .input-premium::placeholder { color: var(--text-muted); }
+
+  /* ── Buttons ── */
+  .btn-premium {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: 10px;
+    background: var(--accent);
+    color: #0a0a0a;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 10px 20px;
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+  }
+  .btn-premium:hover { opacity: 0.88; transform: translateY(-1px); }
+  .btn-premium:active { transform: scale(0.97); }
+
+  .btn, .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 7px 14px;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s, background 0.2s;
+  }
+  .btn:hover, .btn-ghost:hover {
+    border-color: var(--border-hover);
+    color: var(--text-primary);
+    background: rgba(255,255,255,0.04);
+  }
+
+  /* ── Landing page buttons ── */
+  .landing-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 8px;
+    background: var(--accent);
+    color: #0a0a0a;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 11px 24px;
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+  }
+  .landing-btn-primary:hover { opacity: 0.85; transform: translateY(-1px); }
+
+  .landing-btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 8px;
+    border: 1px solid var(--accent-border);
+    background: transparent;
+    color: rgba(167,139,250,0.7);
+    font-weight: 600;
+    font-size: 13px;
+    padding: 11px 24px;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .landing-btn-ghost:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* ── Nav items ── */
   .nav-item-premium {
-    @apply flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-400 transition-all duration-300 hover:bg-white/5 hover:text-white;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-radius: 8px;
+    padding: 9px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: background 0.2s, color 0.2s;
+  }
+  .nav-item-premium:hover {
+    background: rgba(255,255,255,0.04);
+    color: var(--text-secondary);
   }
   .nav-item-premium.active {
-    @apply bg-gradient-to-r from-violet-500/10 to-transparent border-l-2 border-violet-500 text-violet-300;
+    background: var(--accent-bg);
+    color: var(--text-primary);
+    border-left: 2px solid var(--accent);
   }
+
+  /* ── Stat card (coding profile mini cards) ── */
+  .stat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    transition: border-color 0.2s;
+  }
+  .stat-card:hover { border-color: var(--border-hover); }
+
+  /* ── btn-primary alias ── */
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 8px;
+    background: var(--accent);
+    color: #0a0a0a;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 7px 14px;
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+  }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ── Badges — semantic status only ── */
+  .badge-red    { background: rgba(248,113,113,0.1);  color: var(--status-err);  border: 1px solid rgba(248,113,113,0.2); }
+  .badge-yellow { background: rgba(251,191,36,0.1);  color: var(--status-warn); border: 1px solid rgba(251,191,36,0.2); }
+  .badge-green  { background: rgba(52,211,153,0.1);  color: var(--status-ok);   border: 1px solid rgba(52,211,153,0.2); }
+  .badge-accent { background: var(--accent-bg);       color: var(--accent);      border: 1px solid var(--accent-border); }
+
+  /* ── Chat bubbles ── */
+  .chat-user {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 14px 4px 14px 14px;
+  }
+  .chat-ai {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 4px 14px 14px 14px;
+  }
+
+  /* ── Table ── */
+  .table-header { border-bottom: 1px solid var(--border); }
+  .table-row {
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    transition: background 0.15s;
+  }
+  .table-row:hover { background: rgba(255,255,255,0.025); }
+
+  /* ── Custom scrollbar ── */
+  .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+  .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+  .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 4px; }
 }
 
 @layer utilities {
   .fade-in-up {
-    animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: fadeInUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
   @keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .font-space { font-family: 'Space Grotesk', sans-serif; }
+  .font-inter { font-family: 'Inter', sans-serif; }
+
+  /* ── Logo Animation ── */
+  .logo-float {
+    animation: floatLogo 4s ease-in-out infinite;
+    filter: drop-shadow(0 0 8px rgba(167,139,250, 0.4));
+  }
+  @keyframes floatLogo {
+    0%, 100% { transform: translateY(0); filter: drop-shadow(0 0 6px rgba(167,139,250, 0.3)); }
+    50% { transform: translateY(-3px) scale(1.03); filter: drop-shadow(0 0 12px rgba(167,139,250, 0.8)); }
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
   }
 }
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap');
