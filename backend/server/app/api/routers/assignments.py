@@ -1,6 +1,7 @@
 import json
 import os
-from datetime import datetime, timezone
+import shutil
+from datetime import datetime
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
@@ -15,6 +16,14 @@ router = APIRouter()
 
 
 class AssignmentCreate(BaseModel):
+    title: str
+    description: str = ""
+    deadline: datetime
+    subject: str
+    class_id: str
+
+
+class AssignmentUpdate(BaseModel):
     title: str
     description: str = ""
     deadline: datetime
@@ -59,6 +68,21 @@ def _ensure_submission_dir(assignment_id: int, student_id: int) -> str:
     base = os.path.join("uploads", "assignments", str(assignment_id), str(student_id))
     os.makedirs(base, exist_ok=True)
     return base
+
+
+def _assignment_upload_dir(assignment_id: int) -> str:
+    return os.path.join("uploads", "assignments", str(assignment_id))
+
+
+def _ensure_teacher_can_manage_assignment(current_user: User, assignment: Assignment) -> None:
+    if current_user.role != "teacher":
+        return
+
+    allowed = _teacher_allowed_class_ids(current_user)
+    if allowed and assignment.class_id not in allowed:
+        raise HTTPException(status_code=403, detail="Teacher not assigned to this class")
+    if assignment.teacher_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not allowed")
 
 
 @router.post(
@@ -170,6 +194,81 @@ def list_assignments(
     ]
 
 
+@router.patch(
+    "/{assignment_id}",
+    response_model=AssignmentOut,
+    dependencies=[Depends(role_required(["teacher", "admin"]))],
+)
+def update_assignment(
+    assignment_id: int,
+    payload: AssignmentUpdate,
+    current_user: User = Depends(get_current_user),
+    session=Depends(get_session),
+):
+    assignment = session.get(Assignment, assignment_id)
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+
+    _ensure_teacher_can_manage_assignment(current_user, assignment)
+
+    if current_user.role == "teacher":
+        allowed = _teacher_allowed_class_ids(current_user)
+        if allowed and payload.class_id not in allowed:
+            raise HTTPException(status_code=403, detail="Teacher not assigned to this class")
+
+    assignment.title = payload.title
+    assignment.description = payload.description or ""
+    assignment.deadline = payload.deadline
+    assignment.subject = payload.subject
+    assignment.class_id = payload.class_id
+
+    session.add(assignment)
+    session.commit()
+    session.refresh(assignment)
+
+    return AssignmentOut(
+        id=assignment.id,
+        teacher_id=assignment.teacher_id,
+        class_id=assignment.class_id,
+        subject=assignment.subject,
+        title=assignment.title,
+        description=assignment.description,
+        deadline=assignment.deadline,
+        created_at=assignment.created_at,
+        submission_status=None,
+    )
+
+
+@router.delete(
+    "/{assignment_id}",
+    status_code=204,
+    dependencies=[Depends(role_required(["teacher", "admin"]))],
+)
+def delete_assignment(
+    assignment_id: int,
+    current_user: User = Depends(get_current_user),
+    session=Depends(get_session),
+):
+    assignment = session.get(Assignment, assignment_id)
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+
+    _ensure_teacher_can_manage_assignment(current_user, assignment)
+
+    submissions = session.exec(
+        select(AssignmentSubmission).where(AssignmentSubmission.assignment_id == assignment_id)
+    ).all()
+    for submission in submissions:
+        session.delete(submission)
+
+    session.delete(assignment)
+    session.commit()
+
+    upload_dir = _assignment_upload_dir(assignment_id)
+    if os.path.isdir(upload_dir):
+        shutil.rmtree(upload_dir, ignore_errors=True)
+
+
 @router.post(
     "/{assignment_id}/submit",
     response_model=SubmissionOut,
@@ -250,13 +349,7 @@ def list_submissions(
     if not assignment:
         raise HTTPException(status_code=404, detail="Assignment not found")
 
-    if current_user.role == "teacher":
-        allowed = _teacher_allowed_class_ids(current_user)
-        if allowed and assignment.class_id not in allowed:
-            raise HTTPException(status_code=403, detail="Teacher not assigned to this class")
-        if assignment.teacher_id != current_user.id:
-            # Teacher can only view their own created assignments (simple enforcement)
-            raise HTTPException(status_code=403, detail="Not allowed")
+    _ensure_teacher_can_manage_assignment(current_user, assignment)
 
     subs = session.exec(
         select(AssignmentSubmission)
