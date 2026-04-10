@@ -112,6 +112,8 @@ export const api = {
   coding: {
     getProfiles: () => fetch(`${API_BASE}/coding/me`, { headers: getHeaders() }).then(handleResponse),
     getSummary: () => fetch(`${API_BASE}/coding/me/summary`, { headers: getHeaders() }).then(handleResponse),
+    getScore: () => fetch(`${API_BASE}/coding/me/score`, { headers: getHeaders() }).then(handleResponse),
+    getLeaderboard: () => fetch(`${API_BASE}/coding/leaderboard`, { headers: getHeaders() }).then(handleResponse),
     syncLeetcode: (username) => fetch(`${API_BASE}/coding/leetcode/${username}`, { headers: getHeaders() }).then(handleResponse),
     syncGithub: (username) => fetch(`${API_BASE}/coding/github/${username}`, { headers: getHeaders() }).then(handleResponse),
     syncCodeforces: (handle) => fetch(`${API_BASE}/coding/codeforces/${handle}`, { headers: getHeaders() }).then(handleResponse),

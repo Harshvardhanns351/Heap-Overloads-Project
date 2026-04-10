@@ -10,7 +10,7 @@ import json
 
 from app.database import get_session
 from app.models import CodingProfile, User
-from app.auth.deps import get_current_user
+from app.auth.deps import get_current_user, role_required
 from ai_engine.leetcode_fetcher import fetch_leetcode_stats
 from ai_engine.platform_fetchers import (
     fetch_github_stats,
@@ -19,6 +19,81 @@ from ai_engine.platform_fetchers import (
 )
 
 router = APIRouter()
+
+
+# ── Veloris Score ─────────────────────────────────────────────────────────────
+# Weighted composite score 0–1000 across all linked platforms.
+# Weights: LC 35% | CF 25% | CC 15% | GH 15% | Activity 10%
+
+def compute_veloris_score(profiles: list) -> dict:
+    lc = next((p for p in profiles if p.platform == "leetcode"), None)
+    cf = next((p for p in profiles if p.platform == "codeforces"), None)
+    cc = next((p for p in profiles if p.platform == "codechef"), None)
+    gh = next((p for p in profiles if p.platform == "github"), None)
+
+    # A) LeetCode DSA Score (max 350): easy×1 + medium×3 + hard×7, raw cap 1000
+    lc_raw = 0
+    if lc:
+        lc_raw = min((lc.easy or 0) * 1 + (lc.medium or 0) * 3 + (lc.hard or 0) * 7, 1000)
+    lc_score = (lc_raw / 1000) * 350
+
+    # B) Codeforces Score (max 250): rating/3000
+    cf_score = 0
+    if cf and cf.cf_rating:
+        cf_score = min(cf.cf_rating / 3000, 1.0) * 250
+
+    # C) CodeChef Score (max 150): rating/3000
+    cc_score = 0
+    if cc and cc.cc_rating:
+        cc_score = min(cc.cc_rating / 3000, 1.0) * 150
+
+    # D) GitHub Dev Score (max 150): (commits×0.5 + repos×2) raw cap 500
+    gh_score = 0
+    if gh:
+        gh_raw = min((gh.total_commits_year or 0) * 0.5 + (gh.public_repos or 0) * 2, 500)
+        gh_score = (gh_raw / 500) * 150
+
+    # E) Activity Recency Bonus (max 100): step function
+    activity_score = 0
+    last_activity = None
+    for p in profiles:
+        if p.last_activity_at:
+            dt = p.last_activity_at
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            if last_activity is None or dt > last_activity:
+                last_activity = dt
+    if last_activity:
+        days = (datetime.now(timezone.utc) - last_activity).days
+        if days <= 1:   activity_score = 100
+        elif days <= 3: activity_score = 80
+        elif days <= 7: activity_score = 60
+        elif days <= 14: activity_score = 40
+        elif days <= 30: activity_score = 20
+        else:            activity_score = 0
+
+    total = max(0, min(1000, round(lc_score + cf_score + cc_score + gh_score + activity_score)))
+
+    # Tier + color
+    if total < 200:   tier, tier_color = "Beginner", "#94a3b8"
+    elif total < 400: tier, tier_color = "Learner",  "#22c55e"
+    elif total < 600: tier, tier_color = "Coder",    "#3b82f6"
+    elif total < 800: tier, tier_color = "Expert",   "#a855f7"
+    elif total < 950: tier, tier_color = "Elite",    "#f59e0b"
+    else:             tier, tier_color = "Legend",   "#ef4444"
+
+    return {
+        "veloris_score": total,
+        "tier": tier,
+        "tier_color": tier_color,
+        "breakdown": {
+            "lc": round(lc_score),
+            "cf": round(cf_score),
+            "cc": round(cc_score),
+            "gh": round(gh_score),
+            "activity": round(activity_score),
+        },
+    }
 
 
 def _get_or_create(session, student_id: int, platform: str, username: str) -> CodingProfile:
@@ -216,6 +291,71 @@ def get_coding_summary(
         "recent_submissions": all_recent[:8],
         "platforms": [_serialize(p) for p in profiles],
     }
+
+
+@router.get("/me/score")
+def get_my_score(
+    current_user: User = Depends(get_current_user),
+    session=Depends(get_session),
+):
+    profiles = session.exec(
+        select(CodingProfile).where(CodingProfile.student_id == current_user.id)
+    ).all()
+    return compute_veloris_score(list(profiles))
+
+
+@router.get("/leaderboard")
+def get_leaderboard(
+    current_user: User = Depends(get_current_user),
+    session=Depends(get_session),
+):
+    """Class-wide leaderboard — all students with at least one linked platform."""
+    students = session.exec(select(User).where(User.role == "student")).all()
+    all_profiles = session.exec(select(CodingProfile)).all()
+
+    # Group profiles by student
+    by_student: dict[int, list] = {}
+    for p in all_profiles:
+        by_student.setdefault(p.student_id, []).append(p)
+
+    rows = []
+    for student in students:
+        profs = by_student.get(student.id, [])
+        if not profs:
+            continue
+        score_data = compute_veloris_score(profs)
+        platforms_linked = [p.platform for p in profs]
+        lc_p = next((p for p in profs if p.platform == "leetcode"), None)
+        cf_p = next((p for p in profs if p.platform == "codeforces"), None)
+        last_act = None
+        for p in profs:
+            if p.last_activity_at:
+                dt = p.last_activity_at
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
+                if last_act is None or dt > last_act:
+                    last_act = dt
+        rows.append({
+            "student_id": student.id,
+            "name": student.name,
+            "branch": student.branch or "",
+            "semester": student.semester or 0,
+            "veloris_score": score_data["veloris_score"],
+            "tier": score_data["tier"],
+            "tier_color": score_data["tier_color"],
+            "breakdown": score_data["breakdown"],
+            "platforms_linked": platforms_linked,
+            "problems_solved": sum((p.solved_total or 0) + (p.cf_problems_solved or 0) + (p.cc_problems_solved or 0) for p in profs),
+            "cf_rating": cf_p.cf_rating if cf_p else 0,
+            "last_activity_at": last_act.isoformat() if last_act else None,
+            "is_me": student.id == current_user.id,
+        })
+
+    rows.sort(key=lambda x: x["veloris_score"], reverse=True)
+    for i, row in enumerate(rows):
+        row["rank"] = i + 1
+
+    return {"leaderboard": rows, "total": len(rows)}
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────

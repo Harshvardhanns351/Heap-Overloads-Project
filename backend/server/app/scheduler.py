@@ -79,9 +79,42 @@ async def process_student_wellbeing(session, student: User):
         marks_trend_decline_percent=marks_trend,
     )
 
+    # Coding inactivity / engagement adjustment
+    coding_delta = 0.0
+    if coding_profiles:
+        # Find most recent coding activity
+        coding_last = None
+        for cp in coding_profiles:
+            if cp.last_activity_at:
+                dt = cp.last_activity_at
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
+                if coding_last is None or dt > coding_last:
+                    coding_last = dt
+
+        if coding_last:
+            days_inactive = (now - coding_last).days
+            if days_inactive <= 3:    coding_delta += 0.0
+            elif days_inactive <= 7:  coding_delta += 0.1
+            elif days_inactive <= 14: coding_delta += 0.2
+            else:                     coding_delta += 0.3
+
+        # Engagement bonus from Veloris score (import inline to avoid circular)
+        try:
+            from app.api.routers.coding import compute_veloris_score
+            vs = compute_veloris_score(list(coding_profiles))
+            vs_score = vs.get("veloris_score", 0)
+            if vs_score > 600:   coding_delta -= 0.1
+            elif vs_score > 400: coding_delta -= 0.05
+        except Exception:
+            pass
+
+    # Apply coding delta to score (scale: score is 0-100, delta is fraction)
+    adjusted_score = max(0, min(100, round(score + coding_delta * 20)))
+
     risk = RiskScore(
         student_id=student.id,
-        score=score,
+        score=adjusted_score,
         level=level,
     )
     session.add(risk)

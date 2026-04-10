@@ -309,6 +309,30 @@ const useAppStore = create((set, get) => ({
     }
   },
 
+  velorisScore: null,
+  fetchVelorisScore: async () => {
+    try {
+      const data = await api.coding.getScore();
+      set({ velorisScore: data });
+    } catch (err) {
+      console.error('Failed to fetch veloris score', err);
+    }
+  },
+
+  leaderboard: [],
+  leaderboardLoading: false,
+  fetchLeaderboard: async () => {
+    set({ leaderboardLoading: true });
+    try {
+      const data = await api.coding.getLeaderboard();
+      set({ leaderboard: data.leaderboard || [] });
+    } catch (err) {
+      console.error('Failed to fetch leaderboard', err);
+    } finally {
+      set({ leaderboardLoading: false });
+    }
+  },
+
   // Initialization
   initialize: async () => {
     const role = get().role;
