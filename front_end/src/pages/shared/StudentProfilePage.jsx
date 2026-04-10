@@ -730,67 +730,78 @@ function InternshipsTab({ internships: initialInternships, isOwn, viewerRole, on
 // ── Activity Heatmap ─────────────────────────────────────────────────────────
 
 const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-const DAY_LABELS   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
-/** Build dateMap + streaks from all platform submissions for a given year */
-function buildActivityMap(codingData, year) {
-  const dateMap = {};
-  const addDate = (isoStr) => {
+/** Collect ALL submission dates from every platform + summary */
+function collectAllDates(codingData) {
+  const dates = {};
+  const add = (isoStr) => {
     if (!isoStr) return;
     const d = isoStr.slice(0, 10);
-    if (!year || d.startsWith(String(year))) dateMap[d] = (dateMap[d] || 0) + 1;
+    dates[d] = (dates[d] || 0) + 1;
   };
-  (codingData?.platforms || []).forEach(p => (p.recent_submissions || []).forEach(s => addDate(s.time)));
-  (codingData?.summary?.recent_submissions || []).forEach(s => addDate(s.time));
-
-  // Streaks (always computed on full data regardless of year filter)
-  const allDates = {};
-  (codingData?.platforms || []).forEach(p => (p.recent_submissions || []).forEach(s => { if (s.time) allDates[s.time.slice(0,10)] = 1; }));
-  (codingData?.summary?.recent_submissions || []).forEach(s => { if (s.time) allDates[s.time.slice(0,10)] = 1; });
-
-  const today = new Date(); today.setHours(0,0,0,0);
-  let cur = 0, longest = 0, tmp = 0;
-  for (let i = 0; i < 730; i++) {
-    const d = new Date(today); d.setDate(d.getDate() - i);
-    const k = d.toISOString().slice(0,10);
-    if (allDates[k]) { tmp++; if (i === 0 || cur > 0) cur = tmp; }
-    else { if (i === 0) cur = 0; longest = Math.max(longest, tmp); tmp = 0; }
-  }
-  longest = Math.max(longest, tmp);
-
-  const totalDays   = Object.keys(dateMap).length;
-  const totalEvents = Object.values(dateMap).reduce((a,b) => a+b, 0);
-  return { dateMap, currentStreak: cur, longestStreak: longest, totalDays, totalEvents };
+  (codingData?.platforms || []).forEach(p => (p.recent_submissions || []).forEach(s => add(s.time)));
+  (codingData?.summary?.recent_submissions || []).forEach(s => add(s.time));
+  return dates;
 }
 
-/** Build 52-week Sunday-aligned grid for a given year */
+/** Build Sunday-aligned week grid
 function buildYearGrid(year) {
-  const isCurrentYear = year === new Date().getFullYear();
-  const end   = isCurrentYear ? new Date() : new Date(year, 11, 31);
-  const start = new Date(year, 0, 1);
-  // Align start to Sunday
-  start.setDate(start.getDate() - start.getDay());
-  end.setHours(23,59,59,999);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const isCurrentYear = year === today.getFullYear();
+
+  // Jan 1 of the year
+  const jan1 = new Date(year, 0, 1);
+  // Dec 31 or today (whichever is earlier)
+  const dec31 = isCurrentYear ? today : new Date(year, 11, 31);
+
+  // Start the grid on the Sunday on or before Jan 1
+  const gridStart = new Date(jan1);
+  gridStart.setDate(gridStart.getDate() - gridStart.getDay()); // back to Sunday
 
   const weeks = [];
   let week = [];
-  const cur = new Date(start);
-  while (cur <= end) {
-    week.push(new Date(cur));
+  const cur = new Date(gridStart);
+
+  while (cur <= dec31) {
+    // Use null for days before Jan 1 (padding) or after today
+    const inYear = cur.getFullYear() === year;
+    week.push(inYear ? new Date(cur) : null);
     if (week.length === 7) { weeks.push(week); week = []; }
     cur.setDate(cur.getDate() + 1);
   }
-  if (week.length) { while (week.length < 7) { week.push(null); } weeks.push(week); }
+  // Pad last week
+  if (week.length > 0) {
+    while (week.length < 7) week.push(null);
+    weeks.push(week);
+  }
   return weeks;
 }
 
-const CELL = 13; // px — cell size
-const GAP  = 3;  // px — gap between cells
+/** Compute month label positions — one label per month, placed at the first week that starts in that month */
+function getMonthLabels(weeks, year) {
+  const labels = {}; // weekIndex → month string
+  const seen = new Set();
+  weeks.forEach((week, wi) => {
+    // Find first non-null day in this week that belongs to the year
+    const firstDay = week.find(d => d && d.getFullYear() === year);
+    if (!firstDay) return;
+    const m = firstDay.getMonth();
+    // Only label if this is the first week we see this month AND the month starts in this week
+    if (!seen.has(m) && firstDay.getDate() <= 7) {
+      seen.add(m);
+      labels[wi] = MONTHS_SHORT[m];
+    }
+  });
+  return labels;
+}
+
+const CELL = 13;
+const GAP  = 3;
 
 function HeatCell({ day, count, today, onHover, onLeave }) {
-  if (!day) return <div style={{ width: CELL, height: CELL }} />;
+  if (!day) return <div style={{ width: CELL, height: CELL, flexShrink: 0 }} />;
   const isFuture = day > today;
-  const isToday  = day.toISOString().slice(0,10) === today.toISOString().slice(0,10);
+  const isToday  = day.toISOString().slice(0, 10) === today.toISOString().slice(0, 10);
 
   const bg = isFuture ? 'transparent'
     : count === 0 ? '#161b22'
@@ -815,26 +826,50 @@ function HeatCell({ day, count, today, onHover, onLeave }) {
   );
 }
 
-function ActivityHeatmap({ codingData }) {
+function ActivityHeatmap({ codingData, userId, isOwn }) {
   const currentYear = new Date().getFullYear();
   const availableYears = [currentYear, currentYear-1, currentYear-2, currentYear-3, currentYear-4];
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [tooltip, setTooltip] = useState(null);
+  const [heatmapDates, setHeatmapDates] = useState(null);
 
-  const { dateMap, currentStreak, longestStreak, totalDays, totalEvents } = buildActivityMap(codingData, selectedYear);
-  const weeks = buildYearGrid(selectedYear);
+  useEffect(() => {
+    setHeatmapDates(null);
+    const req = isOwn ? api.coding.getHeatmap() : api.coding.getStudentHeatmap(userId);
+    req
+      .then(data => setHeatmapDates(data?.dates || {}))
+      .catch(() => {
+        const fb = {};
+        const add = (iso) => { if (!iso) return; const d = iso.slice(0,10); fb[d]=(fb[d]||0)+1; };
+        (codingData?.platforms||[]).forEach(p=>(p.recent_submissions||[]).forEach(s=>add(s.time)));
+        (codingData?.summary?.recent_submissions||[]).forEach(s=>add(s.time));
+        setHeatmapDates(fb);
+      });
+  }, [userId, isOwn]); // eslint-disable-line
+
+  const dateMap = {};
+  if (heatmapDates) {
+    Object.entries(heatmapDates).forEach(([d,c]) => {
+      if (d.startsWith(String(selectedYear))) dateMap[d] = c;
+    });
+  }
+
   const today = new Date(); today.setHours(0,0,0,0);
-
-  // Month label positions
-  const monthLabels = [];
-  weeks.forEach((week, wi) => {
-    const firstReal = week.find(d => d && d.getFullYear() === selectedYear);
-    if (firstReal && firstReal.getDate() <= 7) {
-      monthLabels[wi] = MONTHS_SHORT[firstReal.getMonth()];
+  let cur = 0, longest = 0, tmp = 0;
+  if (heatmapDates) {
+    for (let i = 0; i < 730; i++) {
+      const d = new Date(today); d.setDate(d.getDate()-i);
+      const k = d.toISOString().slice(0,10);
+      if (heatmapDates[k]) { tmp++; if (i===0||cur>0) cur=tmp; }
+      else { if (i===0) cur=0; longest=Math.max(longest,tmp); tmp=0; }
     }
-  });
+    longest = Math.max(longest, tmp);
+  }
 
-  const yearTotal = Object.values(dateMap).reduce((a,b) => a+b, 0);
+  const weeks       = buildYearGrid(selectedYear);
+  const monthLabels = getMonthLabels(weeks, selectedYear);
+  const yearTotal   = Object.values(dateMap).reduce((a,b)=>a+b, 0);
+  const totalDays   = Object.keys(dateMap).length;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -842,10 +877,10 @@ function ActivityHeatmap({ codingData }) {
       {/* ── Streak stat cards ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px' }}>
         {[
-          { label: 'Current Streak', value: `${currentStreak} days`, icon: '🔥', color: currentStreak > 0 ? '#f59e0b' : '#475569', glow: currentStreak > 0 },
-          { label: 'Longest Streak', value: `${longestStreak} days`, icon: '🏆', color: '#a855f7', glow: false },
-          { label: 'Active Days',    value: totalDays,                icon: '⚡', color: '#22c55e', glow: false },
-          { label: 'Total Events',   value: totalEvents,              icon: '📌', color: '#4f8ef7', glow: false },
+          { label: 'Current Streak', value: heatmapDates ? `${cur} days`     : '…', icon: '🔥', color: cur > 0 ? '#f59e0b' : '#475569', glow: cur > 0 },
+          { label: 'Longest Streak', value: heatmapDates ? `${longest} days` : '…', icon: '🏆', color: '#a855f7', glow: false },
+          { label: 'Active Days',    value: heatmapDates ? totalDays          : '…', icon: '⚡', color: '#22c55e', glow: false },
+          { label: 'Total Events',   value: heatmapDates ? yearTotal          : '…', icon: '📌', color: '#4f8ef7', glow: false },
         ].map(({ label, value, icon, color, glow }) => (
           <div key={label} style={{
             padding: '16px 18px', borderRadius: '12px',
@@ -868,8 +903,14 @@ function ActivityHeatmap({ codingData }) {
         {/* Header row */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <div style={{ fontSize: '13px', color: '#e6edf3', fontWeight: '600' }}>
-            <span style={{ color: '#e6edf3', fontWeight: '700' }}>{yearTotal.toLocaleString()}</span>
-            <span style={{ color: '#8b949e', fontWeight: '400' }}> contributions in {selectedYear}</span>
+            {heatmapDates === null ? (
+              <span style={{ color: '#8b949e' }}>Loading contributions…</span>
+            ) : (
+              <>
+                <span style={{ color: '#e6edf3', fontWeight: '700' }}>{yearTotal.toLocaleString()}</span>
+                <span style={{ color: '#8b949e', fontWeight: '400' }}> contributions in {selectedYear}</span>
+              </>
+            )}
           </div>
           {/* Year selector */}
           <div style={{ display: 'flex', gap: '4px' }}>
@@ -1397,7 +1438,7 @@ export default function StudentProfilePage({ viewMode }) {
           internships={internships} tier={tier} onTabSwitch={setActiveTab} />
       )}
       {activeTab === 'activity' && (
-        <ActivityHeatmap codingData={coding} />
+        <ActivityHeatmap codingData={coding} userId={userId} isOwn={isOwnProfile} />
       )}
       {activeTab === 'coding' && (
         <CodingTab codingData={coding} isOwnProfile={isOwnProfile} onRefresh={fetchData} />
