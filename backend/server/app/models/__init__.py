@@ -9,3 +9,4 @@ from .assignment import Assignment, AssignmentSubmission
 from .coding_profile import CodingProfile
 from .roadmap import Roadmap, RoadmapNode
 from .teacher_alert import TeacherAlert
+from .internship import InternshipExperience

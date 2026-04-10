@@ -159,8 +159,14 @@ export const api = {
   },
   
   coding: {
-    getProfile: () => fetch(`${API_BASE}/coding/profile`, { headers: getHeaders() }).then(handleResponse),
-    sync: () => fetch(`${API_BASE}/coding/sync`, { method: 'POST', headers: getHeaders() }).then(handleResponse),
+    getProfiles: () => fetch(`${API_BASE}/coding/me`, { headers: getHeaders() }).then(handleResponse),
+    getSummary: () => fetch(`${API_BASE}/coding/me/summary`, { headers: getHeaders() }).then(handleResponse),
+    getScore: () => fetch(`${API_BASE}/coding/me/score`, { headers: getHeaders() }).then(handleResponse),
+    getLeaderboard: () => fetch(`${API_BASE}/coding/leaderboard`, { headers: getHeaders() }).then(handleResponse),
+    syncLeetcode: (username) => fetch(`${API_BASE}/coding/leetcode/${username}`, { headers: getHeaders() }).then(handleResponse),
+    syncGithub: (username) => fetch(`${API_BASE}/coding/github/${username}`, { headers: getHeaders() }).then(handleResponse),
+    syncCodeforces: (handle) => fetch(`${API_BASE}/coding/codeforces/${handle}`, { headers: getHeaders() }).then(handleResponse),
+    syncCodechef: (username) => fetch(`${API_BASE}/coding/codechef/${username}`, { headers: getHeaders() }).then(handleResponse),
   },
 
   users: {
@@ -240,5 +246,20 @@ export const api = {
 
   digest: {
     getClassDigest: (classId) => fetch(`${API_BASE}/digest/digest/${classId}`, { headers: getHeaders() }).then(handleResponse),
+  },
+
+  profile: {
+    getMyProfile: () => fetch(`${API_BASE}/profile/me`, { headers: getHeaders() }).then(handleResponse),
+    updateMyProfile: (data) => fetch(`${API_BASE}/profile/me`, { method: 'PATCH', headers: getHeaders(), body: JSON.stringify(data) }).then(handleResponse),
+    getStudentProfile: (userId) => fetch(`${API_BASE}/profile/student/${userId}`, { headers: getHeaders() }).then(handleResponse),
+    getStudentsList: (params = {}) => {
+      const q = new URLSearchParams(params).toString();
+      return fetch(`${API_BASE}/profile/students/list${q ? `?${q}` : ''}`, { headers: getHeaders() }).then(handleResponse);
+    },
+    getMyInternships: () => fetch(`${API_BASE}/profile/me/internships`, { headers: getHeaders() }).then(handleResponse),
+    addInternship: (data) => fetch(`${API_BASE}/profile/me/internships`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(data) }).then(handleResponse),
+    updateInternship: (id, data) => fetch(`${API_BASE}/profile/me/internships/${id}`, { method: 'PATCH', headers: getHeaders(), body: JSON.stringify(data) }).then(handleResponse),
+    deleteInternship: (id) => fetch(`${API_BASE}/profile/me/internships/${id}`, { method: 'DELETE', headers: getHeaders() }).then(r => { if (!r.ok && r.status !== 204) throw new Error('Delete failed'); }),
+    verifyInternship: (id) => fetch(`${API_BASE}/profile/internship/${id}/verify`, { method: 'PATCH', headers: getHeaders() }).then(handleResponse),
   },
 };

@@ -28,7 +28,7 @@ async def fetch_leetcode_stats(username: str) -> Optional[Dict[str, Any]]:
     
     try:
         async with httpx.AsyncClient(timeout=10) as client:
-            resp = client.post(url, json={"query": query, "variables": variables})
+            resp = await client.post(url, json={"query": query, "variables": variables})
             resp.raise_for_status()
             data = resp.json()
             

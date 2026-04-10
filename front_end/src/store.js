@@ -52,7 +52,9 @@ const useAppStore = create((set, get) => ({
   fetchRoadmap: async () => {
     try {
       const data = await api.roadmap.getMe();
-      set({ roadmapNodes: data.nodes || [] });
+      // Support both {roadmap: {nodes}, nodes} shapes
+      const nodes = data.nodes || data.roadmap?.nodes || [];
+      set({ roadmapNodes: nodes });
     } catch (err) {
       console.error('Failed to fetch roadmap', err);
     }
@@ -294,6 +296,65 @@ const useAppStore = create((set, get) => ({
     } catch (err) {
       console.error('Failed to fetch class digest', err);
     }
+  },
+
+  // Coding
+  codingSummary: null,
+  fetchCodingSummary: async () => {
+    try {
+      const data = await api.coding.getSummary();
+      set({ codingSummary: data });
+    } catch (err) {
+      console.error('Failed to fetch coding summary', err);
+    }
+  },
+
+  velorisScore: null,
+  fetchVelorisScore: async () => {
+    try {
+      const data = await api.coding.getScore();
+      set({ velorisScore: data });
+    } catch (err) {
+      console.error('Failed to fetch veloris score', err);
+    }
+  },
+
+  leaderboard: [],
+  leaderboardLoading: false,
+  fetchLeaderboard: async () => {
+    set({ leaderboardLoading: true });
+    try {
+      const data = await api.coding.getLeaderboard();
+      set({ leaderboard: data.leaderboard || [] });
+    } catch (err) {
+      console.error('Failed to fetch leaderboard', err);
+    } finally {
+      set({ leaderboardLoading: false });
+    }
+  },
+
+  // Profile
+  profile: null,
+  profileLoading: false,
+  fetchProfile: async () => {
+    set({ profileLoading: true });
+    try {
+      const data = await api.profile.getMyProfile();
+      set({ profile: data, profileLoading: false });
+    } catch { set({ profileLoading: false }); }
+  },
+  updateProfileLocal: (updates) =>
+    set(s => ({ profile: s.profile ? { ...s.profile, user: { ...s.profile.user, ...updates } } : s.profile })),
+
+  // Student list (teacher/admin)
+  studentsList: [],
+  studentsListLoading: false,
+  fetchStudentsList: async (params = {}) => {
+    set({ studentsListLoading: true });
+    try {
+      const data = await api.profile.getStudentsList(params);
+      set({ studentsList: data.students || [], studentsListLoading: false });
+    } catch { set({ studentsListLoading: false }); }
   },
 
   // Initialization

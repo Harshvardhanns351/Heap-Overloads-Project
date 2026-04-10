@@ -9,8 +9,8 @@ import { Activity, BookOpen, Code2, Zap, TrendingUp, Timer, Loader2 } from 'luci
 export default function StudentDashboard() {
   const {
     currentUser,
-    marks, riskScore, roadmapNodes, assignments, sprintStats,
-    fetchMarks, fetchRiskScore, fetchRoadmap, fetchSprintStats, fetchAssignments,
+    marks, riskScore, roadmapNodes, assignments, sprintStats, codingSummary,
+    fetchMarks, fetchRiskScore, fetchRoadmap, fetchSprintStats, fetchAssignments, fetchCodingSummary,
   } = useAppStore();
 
   const [loading, setLoading] = useState(true);
@@ -18,7 +18,7 @@ export default function StudentDashboard() {
   useEffect(() => {
     let cancelled = false;
     Promise.all([
-      fetchMarks(), fetchRiskScore(), fetchRoadmap(), fetchSprintStats(), fetchAssignments(),
+      fetchMarks(), fetchRiskScore(), fetchRoadmap(), fetchSprintStats(), fetchAssignments(), fetchCodingSummary(),
     ]).finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -49,7 +49,11 @@ export default function StudentDashboard() {
 
   const riskLevel = riskScore?.level || 'GREEN';
   const riskColor = riskLevel === 'RED' ? '#ef4444' : riskLevel === 'YELLOW' ? '#f59e0b' : '#22c55e';
-  const studyHours = Math.round((sprintStats?.this_week_minutes || 0) / 60);
+  const sprintHours = Math.round((sprintStats?.this_week_minutes || 0) / 60);
+  const codingHours = codingSummary?.total_weekly_hours || 0;
+  const studyHours = +(sprintHours + codingHours).toFixed(1);
+  const totalProblems = codingSummary?.total_problems_solved || 0;
+  const recentActivity = codingSummary?.recent_submissions?.slice(0, 3) || [];
 
   return (
     <div className="fade-in-up">
@@ -73,8 +77,8 @@ export default function StudentDashboard() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
         <StatCard label="Wellbeing Risk" value={riskLevel} sub={riskScore ? `Score: ${riskScore.score}/100` : 'Calculated nightly'} color={riskColor} icon={Activity} />
         <StatCard label="Roadmap Progress" value={`${completedNodes}/${totalNodes}`} sub="Nodes completed" color="#8b5cf6" icon={TrendingUp} />
-        <StatCard label="Study Time" value={`${studyHours}h`} sub="This week" color="#f59e0b" icon={Timer} />
-        <StatCard label="Pending Assignments" value={pendingAssignments} sub={overdueAssignments > 0 ? `${overdueAssignments} overdue` : 'All on track'} color={pendingAssignments > 0 ? '#ef4444' : '#22c55e'} icon={BookOpen} />
+        <StatCard label="Study Time" value={`${studyHours}h`} sub="This week (sprints + coding)" color="#f59e0b" icon={Timer} />
+        <StatCard label="Problems Solved" value={totalProblems || pendingAssignments} sub={totalProblems ? "Across all platforms" : (overdueAssignments > 0 ? `${overdueAssignments} overdue` : 'All on track')} color={totalProblems ? '#22c55e' : (pendingAssignments > 0 ? '#ef4444' : '#22c55e')} icon={totalProblems ? Code2 : BookOpen} />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
@@ -95,17 +99,31 @@ export default function StudentDashboard() {
         </div>
 
         <div className="card" style={{ padding: '20px' }}>
-          <div style={{ fontSize: '13px', fontWeight: '600', marginBottom: '4px' }}>Weekly Sprint Time</div>
-          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '16px' }}>Focus sessions this week</div>
-          <div className="flex items-center justify-center h-[200px]">
+          <div style={{ fontSize: '13px', fontWeight: '600', marginBottom: '4px' }}>Weekly Activity</div>
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '16px' }}>Sprints + coding platforms</div>
+          <div className="flex items-center justify-center" style={{ height: '120px' }}>
             <div className="text-center">
-              <div style={{ fontSize: '56px', fontWeight: '500', color: '#8b5cf6', fontFamily: 'Space Grotesk, sans-serif' }}>{studyHours}</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>hours focused</div>
+              <div style={{ fontSize: '52px', fontWeight: '500', color: '#8b5cf6', fontFamily: 'Space Grotesk, sans-serif' }}>{studyHours}</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>hours this week</div>
               {sprintStats?.total_sprints > 0 && (
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>{sprintStats.total_sprints} sprints completed</div>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>{sprintStats.total_sprints} sprints · {codingHours}h coding</div>
               )}
             </div>
           </div>
+          {recentActivity.length > 0 && (
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '12px', marginTop: '4px' }}>
+              <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Recent commits / submissions</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {recentActivity.map((s, i) => (
+                  <a key={i} href={s.url || '#'} target="_blank" rel="noreferrer"
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: 'var(--text-secondary)', textDecoration: 'none' }}>
+                    <span style={{ fontSize: '9px', padding: '1px 5px', borderRadius: '4px', background: 'rgba(255,255,255,0.06)', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{s.platform}</span>
+                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.title}</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
