@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import useAppStore from '../store';
+import logoImg from '../assets/logo.png';
 import {
   LayoutDashboard, Map, MessageSquare, FileText,
   AlertCircle, BookOpen, Users, BarChart3, LogOut,
-  Bell, Brain, ChevronDown, UserCircle2
+  Bell, ChevronDown, UserCircle2
 } from 'lucide-react';
 
 const STUDENT_NAV = [
@@ -68,9 +69,19 @@ export default function Layout({ children }) {
         {/* Logo */}
         <div style={{ padding: '20px 20px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Brain size={18} style={{ color: '#e0e0e0' }} />
-            </div>
+            <img
+              src={logoImg}
+              alt="Veloris"
+              style={{
+                width: '34px',
+                height: '34px',
+                objectFit: 'contain',
+                filter: 'grayscale(1) brightness(1.8)',
+                borderRadius: '6px',
+                WebkitMaskImage: 'radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%)',
+                maskImage: 'radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%)',
+              }}
+            />
             <span style={{ fontSize: '16px', fontWeight: '700', fontFamily: 'Space Grotesk, sans-serif', color: '#f0f0f0' }}>Veloris</span>
           </div>
           <div style={{ marginTop: '12px' }}>

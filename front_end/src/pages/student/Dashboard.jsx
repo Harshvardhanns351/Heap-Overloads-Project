@@ -58,7 +58,7 @@ export default function StudentDashboard() {
   return (
     <div className="fade-in-up">
       <PageHeader
-        title={`Good morning, ${name}`}
+        title={`Good evening, ${name}`}
         subtitle="Here's your academic snapshot for today."
       />
 

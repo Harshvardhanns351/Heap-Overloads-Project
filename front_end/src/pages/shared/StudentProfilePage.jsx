@@ -1259,6 +1259,7 @@ export default function StudentProfilePage({ viewMode }) {
         : await api.profile.getStudentProfile(userId);
       setData(result);
       setEditFields({
+        name:              result.user?.name              || '',
         bio:               result.user?.bio               || '',
         phone:             result.user?.phone             || '',
         linkedin_url:      result.user?.linkedin_url      || '',
@@ -1276,6 +1277,11 @@ export default function StudentProfilePage({ viewMode }) {
     try {
       await api.profile.updateMyProfile(editFields);
       setData(prev => ({ ...prev, user: { ...prev.user, ...editFields } }));
+      // keep localStorage in sync so navbar reflects new name immediately
+      if (editFields.name) {
+        const stored = JSON.parse(localStorage.getItem('user') || '{}');
+        localStorage.setItem('user', JSON.stringify({ ...stored, name: editFields.name }));
+      }
       setEditMode(false);
       setToast({ msg: 'Profile updated', type: 'success' });
     } catch { setToast({ msg: 'Failed to save', type: 'error' }); }
@@ -1290,7 +1296,12 @@ export default function StudentProfilePage({ viewMode }) {
     try {
       const res = await api.profile.uploadAvatar(fd);
       setData(prev => ({ ...prev, user: { ...prev.user, avatar_url: res.avatar_url } }));
-    } catch { setToast({ msg: 'Avatar upload failed', type: 'error' }); }
+      setToast({ msg: 'Avatar updated', type: 'success' });
+    } catch (err) {
+      setToast({ msg: err.message || 'Avatar upload failed', type: 'error' });
+    }
+    // reset so the same file can be re-selected if needed
+    e.target.value = '';
   };
 
   if (loading) return (
@@ -1310,12 +1321,12 @@ export default function StudentProfilePage({ viewMode }) {
 
   const TABS = [
     { id: 'overview',    label: 'Overview'       },
-    { id: 'activity',    label: '🔥 Activity'    },
+    { id: 'activity',    label: 'Activity'    },
     { id: 'coding',      label: 'Coding'         },
     { id: 'academics',   label: 'Academics'      },
     { id: 'attendance',  label: 'Attendance'     },
     { id: 'internships', label: 'Internships'    },
-    { id: 'leaderboard', label: '🏆 Leaderboard' },
+    { id: 'leaderboard', label: 'Leaderboard' },
   ];
 
   return (
@@ -1373,6 +1384,7 @@ export default function StudentProfilePage({ viewMode }) {
             {editMode ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
                 {[
+                  { key: 'name',         placeholder: 'Full name'                                          },
                   { key: 'linkedin_url', placeholder: 'LinkedIn URL (https://linkedin.com/in/...)' },
                   { key: 'github_url',   placeholder: 'GitHub URL (https://github.com/...)'       },
                   { key: 'phone',        placeholder: 'Phone'                                      },
@@ -1391,9 +1403,9 @@ export default function StudentProfilePage({ viewMode }) {
               </div>
             ) : (
               <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                {user.linkedin_url && <a href={user.linkedin_url} target="_blank" rel="noreferrer" style={{ fontSize: '11px', color: '#c0c0c0', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>🔗 LinkedIn <ExternalLink size={10} /></a>}
-                {user.github_url   && <a href={user.github_url}   target="_blank" rel="noreferrer" style={{ fontSize: '11px', color: '#8b949e', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>🐙 GitHub <ExternalLink size={10} /></a>}
-                {user.email        && <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>📧 {user.email}</span>}
+                {user.linkedin_url && <a href={user.linkedin_url} target="_blank" rel="noreferrer" style={{ fontSize: '11px', color: '#c0c0c0', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}> LinkedIn <ExternalLink size={10} /></a>}
+                {user.github_url   && <a href={user.github_url}   target="_blank" rel="noreferrer" style={{ fontSize: '11px', color: '#8b949e', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}> GitHub <ExternalLink size={10} /></a>}
+                {user.email        && <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}> {user.email}</span>}
                 {!isOwnProfile     && <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>👁 {user.profile_views ?? 0} views</span>}
               </div>
             )}

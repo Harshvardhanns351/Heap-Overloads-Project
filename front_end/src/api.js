@@ -257,6 +257,14 @@ export const api = {
   profile: {
     getMyProfile: () => fetch(`${API_BASE}/profile/me`, { headers: getHeaders() }).then(handleResponse),
     updateMyProfile: (data) => fetch(`${API_BASE}/profile/me`, { method: 'PATCH', headers: getHeaders(), body: JSON.stringify(data) }).then(handleResponse),
+    uploadAvatar: (formData) => {
+      const token = localStorage.getItem('token');
+      return fetch(`${API_BASE}/profile/me/avatar`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      }).then(handleResponse);
+    },
     getStudentProfile: (userId) => fetch(`${API_BASE}/profile/student/${userId}`, { headers: getHeaders() }).then(handleResponse),
     getStudentsList: (params = {}) => {
       const q = new URLSearchParams(params).toString();

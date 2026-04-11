@@ -6,7 +6,7 @@ import { PageHeader, Tabs } from '../../components/UI';
 import {
   AlertTriangle, Download, Upload, CheckCircle2,
   FileText, FileSpreadsheet, X, Users, TrendingDown
-} from 'lucide-react';
+} from 'lucide-react';  
 
 // Point pdf.js worker to the bundled worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
