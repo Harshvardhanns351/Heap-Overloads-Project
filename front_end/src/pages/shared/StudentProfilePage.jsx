@@ -3,7 +3,7 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import {
   ExternalLink, Check, RefreshCw, Loader2, Clock, Trophy, Link2,
   Edit3, X, Save, Camera, UserCircle2, Eye, EyeOff, ChevronRight,
-  Briefcase, Plus, Trash2, CheckCircle, AlertTriangle,
+  Briefcase, Plus, Trash2, CheckCircle, AlertTriangle, Flame, Zap, Activity,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
@@ -17,21 +17,21 @@ import useAppStore from '../../store';
 const PLATFORMS = [
   { id: 'leetcode',   label: 'LeetCode',   color: '#f59e0b', placeholder: 'your_username',  url: u => `https://leetcode.com/u/${u}` },
   { id: 'github',     label: 'GitHub',     color: '#8b949e', placeholder: 'github_username', url: u => `https://github.com/${u}` },
-  { id: 'codeforces', label: 'Codeforces', color: '#4f8ef7', placeholder: 'cf_handle',       url: u => `https://codeforces.com/profile/${u}` },
+  { id: 'codeforces', label: 'Codeforces', color: '#c0c0c0', placeholder: 'cf_handle',       url: u => `https://codeforces.com/profile/${u}` },
   { id: 'codechef',   label: 'CodeChef',   color: '#cd7f32', placeholder: 'cc_username',     url: u => `https://codechef.com/users/${u}` },
 ];
 
 const TIERS = [
   { min: 950, label: 'Legend',   color: '#ef4444' },
   { min: 800, label: 'Elite',    color: '#f59e0b' },
-  { min: 600, label: 'Expert',   color: '#a855f7' },
+  { min: 600, label: 'Expert',    color: '#a0a0a0' },
   { min: 400, label: 'Coder',    color: '#3b82f6' },
   { min: 200, label: 'Learner',  color: '#22c55e' },
   { min: 0,   label: 'Beginner', color: '#94a3b8' },
 ];
 
 const CF_RANK_COLORS = {
-  grandmaster: '#ff0000', master: '#ff8c00', 'candidate master': '#a855f7',
+  grandmaster: '#ff0000', master: '#ff8c00', 'candidate master': '#a0a0a0',
   expert: '#3b82f6', specialist: '#22d3ee', pupil: '#22c55e', newbie: '#94a3b8',
 };
 
@@ -71,7 +71,7 @@ function VelorisCard({ coding }) {
   const bd    = coding.breakdown ?? {};
   const segs  = [
     { label: 'LeetCode',   val: bd.lc ?? 0,       max: 350, color: '#f59e0b' },
-    { label: 'Codeforces', val: bd.cf ?? 0,       max: 250, color: '#4f8ef7' },
+    { label: 'Codeforces', val: bd.cf ?? 0,       max: 250, color: '#c0c0c0' },
     { label: 'CodeChef',   val: bd.cc ?? 0,       max: 150, color: '#cd7f32' },
     { label: 'GitHub',     val: bd.gh ?? 0,       max: 150, color: '#8b949e' },
     { label: 'Activity',   val: bd.activity ?? 0, max: 100, color: '#22c55e' },
@@ -81,7 +81,7 @@ function VelorisCard({ coding }) {
       style={{ padding: '16px 20px', marginBottom: '16px', cursor: 'pointer', border: `1px solid ${tier.color}30`, background: `linear-gradient(135deg,var(--bg-elevated),${tier.color}10)` }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
-          <div style={{ fontSize: '44px', fontWeight: '800', fontFamily: 'Space Grotesk,sans-serif', color: tier.color, lineHeight: 1 }}>{total}</div>
+          <div style={{ fontSize: '44px', fontWeight: '800', fontFamily: 'Space Grotesk,sans-serif', color: '#f0f0f0', lineHeight: 1 }}>{total}</div>
           <div>
             <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Veloris Score</div>
             <div style={{ marginTop: '3px', fontSize: '11px', fontWeight: '600', padding: '2px 8px', borderRadius: '12px', background: `${tier.color}20`, color: tier.color, border: `1px solid ${tier.color}40`, display: 'inline-block' }}>⚡ {tier.label}</div>
@@ -114,7 +114,7 @@ function VelorisCard({ coding }) {
 
 // ── Recent List ───────────────────────────────────────────────────────────────
 function RecentList({ items }) {
-  const PC = { leetcode: '#f59e0b', github: '#8b949e', codeforces: '#4f8ef7', codechef: '#cd7f32' };
+  const PC = { leetcode: '#f59e0b', github: '#8b949e', codeforces: '#c0c0c0', codechef: '#cd7f32' };
   if (!items?.length) return <div style={{ fontSize: '12px', color: 'var(--text-muted)', padding: '10px 0' }}>No recent activity</div>;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -200,7 +200,7 @@ function PlatformCard({ platform, profile, onLinked, onTabSwitch, isOwn }) {
         {sub && <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginBottom: '6px' }}>{sub}</div>}
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '3px' }}><Clock size={9} /> {timeAgo(profile.last_activity_at)}</span>
-          <span style={{ fontSize: '10px', color: profile.estimated_weekly_hours > 0 ? '#8b5cf6' : 'var(--text-muted)' }}>{safeH(profile.estimated_weekly_hours)}/wk</span>
+          <span style={{ fontSize: '10px', color: profile.estimated_weekly_hours > 0 ? '#a0a0a0' : 'var(--text-muted)' }}>{safeH(profile.estimated_weekly_hours)}/wk</span>
         </div>
       </div>
     );
@@ -240,7 +240,7 @@ function LCPanel({ p }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px' }}>
-        {[{l:'Total',v:total,c:'#4f8ef7'},{l:'Easy',v:p.easy??0,c:'#22c55e'},{l:'Medium',v:p.medium??0,c:'#f59e0b'},{l:'Hard',v:p.hard??0,c:'#ef4444'}].map(({l,v,c})=>(
+        {[{l:'Total',v:total,c:'#c0c0c0'},{l:'Easy',v:p.easy??0,c:'#22c55e'},{l:'Medium',v:p.medium??0,c:'#f59e0b'},{l:'Hard',v:p.hard??0,c:'#ef4444'}].map(({l,v,c})=>(
           <div key={l} className="stat-card" style={{textAlign:'center',padding:'14px'}}>
             <div style={{fontSize:'22px',fontWeight:'700',fontFamily:'Space Grotesk,sans-serif',color:c}}>{v}</div>
             <div style={{fontSize:'10px',color:'var(--text-muted)',marginTop:'2px'}}>{l}</div>
@@ -310,7 +310,7 @@ function CFPanel({ p }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px' }}>
-        {[{l:'Rating',v:p.cf_rating??'—',c:rc},{l:'Rank',v:p.cf_rank||'—',c:rc},{l:'Problems Solved',v:p.cf_problems_solved??0,c:'#4f8ef7'}].map(({l,v,c})=>(
+        {[{l:'Rating',v:p.cf_rating??'—',c:rc},{l:'Rank',v:p.cf_rank||'—',c:rc},{l:'Problems Solved',v:p.cf_problems_solved??0,c:'#c0c0c0'}].map(({l,v,c})=>(
           <div key={l} className="stat-card" style={{textAlign:'center',padding:'14px'}}>
             <div style={{fontSize:'20px',fontWeight:'700',fontFamily:'Space Grotesk,sans-serif',color:c}}>{v}</div>
             <div style={{fontSize:'10px',color:'var(--text-muted)',marginTop:'2px'}}>{l}</div>
@@ -320,7 +320,7 @@ function CFPanel({ p }) {
       <div className="card" style={{padding:'16px'}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'12px'}}>
           <div style={{fontSize:'12px',fontWeight:'600'}}>Recent AC Submissions</div>
-          <a href={`https://codeforces.com/profile/${p.username}`} target="_blank" rel="noreferrer" style={{fontSize:'11px',color:'#4f8ef7',display:'flex',alignItems:'center',gap:'4px',textDecoration:'none'}}>View on Codeforces <ExternalLink size={10}/></a>
+          <a href={`https://codeforces.com/profile/${p.username}`} target="_blank" rel="noreferrer" style={{fontSize:'11px',color:'#c0c0c0',display:'flex',alignItems:'center',gap:'4px',textDecoration:'none'}}>View on Codeforces <ExternalLink size={10}/></a>
         </div>
         <RecentList items={p.recent_submissions} />
       </div>
@@ -397,7 +397,7 @@ function LeaderboardTab({ highlightUserId }) {
               <div style={{ fontSize: '9px', color: tier.color, opacity: 0.7 }}>{tier.label}</div>
             </div>
             <div style={{ textAlign: 'center', fontSize: '12px', fontWeight: '600' }}>{row.problems_solved ?? '—'}</div>
-            <div style={{ textAlign: 'center', fontSize: '12px', color: '#4f8ef7', fontWeight: '600' }}>{row.cf_rating || '—'}</div>
+            <div style={{ textAlign: 'center', fontSize: '12px', color: '#c0c0c0', fontWeight: '600' }}>{row.cf_rating || '—'}</div>
             <div style={{ textAlign: 'right', fontSize: '10px', color: 'var(--text-muted)' }}>{timeAgo(row.last_activity_at)}</div>
           </div>
         );
@@ -499,7 +499,7 @@ function AcademicsTab({ academics }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px' }}>
         {[
-          { l: 'CGPA', v: academics.cgpa ?? '—', c: '#5B5BD6' },
+          { l: 'CGPA', v: academics.cgpa ?? '—', c: '#505050' },
           { l: 'Current SGPA', v: academics.current_sgpa ?? '—', c: '#22c55e' },
           { l: 'Semesters', v: academics.semesters?.length ?? 0, c: '#f59e0b' },
         ].map(({ l, v, c }) => (
@@ -519,7 +519,7 @@ function AcademicsTab({ academics }) {
               <XAxis dataKey="name" tick={{ fill: '#8b8ba0', fontSize: 10 }} axisLine={false} tickLine={false} />
               <YAxis domain={[0, 10]} tick={{ fill: '#8b8ba0', fontSize: 10 }} axisLine={false} tickLine={false} />
               <Tooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '11px' }} />
-              <Line type="monotone" dataKey="sgpa" stroke="#5B5BD6" strokeWidth={2} dot={{ fill: '#5B5BD6', r: 4 }} />
+              <Line type="monotone" dataKey="sgpa" stroke="#505050" strokeWidth={2} dot={{ fill: '#505050', r: 4 }} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -578,7 +578,6 @@ function InternshipsTab({ internships: initialInternships, isOwn, viewerRole, on
   useEffect(() => { setInternships(initialInternships || []); }, [initialInternships]);
 
   const resetForm = () => setForm({ company: '', role: '', start_date: '', end_date: '', description: '', tech_stack: '', currently_working: false });
-
   const openAdd = () => { resetForm(); setEditId(null); setShowForm(true); };
   const openEdit = (item) => {
     setForm({ company: item.company, role: item.role, start_date: item.start_date || '', end_date: item.end_date || '', description: item.description || '', tech_stack: item.tech_stack || '', currently_working: !item.end_date });
@@ -591,11 +590,8 @@ function InternshipsTab({ internships: initialInternships, isOwn, viewerRole, on
     setSaving(true);
     try {
       const payload = { company: form.company, role: form.role, start_date: form.start_date, end_date: form.currently_working ? null : (form.end_date || null), description: form.description || null, tech_stack: form.tech_stack || null };
-      if (editId) {
-        await api.profile.updateInternship(editId, payload);
-      } else {
-        await api.profile.addInternship(payload);
-      }
+      if (editId) { await api.profile.updateInternship(editId, payload); }
+      else { await api.profile.addInternship(payload); }
       const updated = await api.profile.getMyInternships();
       setInternships(updated);
       setShowForm(false); resetForm(); setEditId(null);
@@ -629,7 +625,7 @@ function InternshipsTab({ internships: initialInternships, isOwn, viewerRole, on
       </div>
 
       {showForm && (
-        <div className="card" style={{ padding: '20px', border: '1px solid rgba(91,91,214,0.3)' }}>
+        <div className="card" style={{ padding: '20px', border: '1px solid rgba(255,255,255,0.12)' }}>
           <div style={{ fontSize: '13px', fontWeight: '600', marginBottom: '16px' }}>{editId ? 'Edit' : 'Add'} Internship</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
             <div>
@@ -681,7 +677,7 @@ function InternshipsTab({ internships: initialInternships, isOwn, viewerRole, on
         <div key={item.id} className="card" style={{ padding: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
-              <div style={{ width: '44px', height: '44px', borderRadius: '10px', background: '#5B5BD620', border: '1px solid #5B5BD640', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: '700', color: '#5B5BD6', flexShrink: 0 }}>
+              <div style={{ width: '44px', height: '44px', borderRadius: '10px', background: '#50505020', border: '1px solid #50505040', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: '700', color: '#505050', flexShrink: 0 }}>
                 {item.company[0]?.toUpperCase()}
               </div>
               <div>
@@ -693,7 +689,7 @@ function InternshipsTab({ internships: initialInternships, isOwn, viewerRole, on
                 {item.tech_stack && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '8px' }}>
                     {item.tech_stack.split(',').map(t => t.trim()).filter(Boolean).map(t => (
-                      <span key={t} style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '4px', background: 'rgba(91,91,214,0.15)', color: '#5B5BD6', border: '1px solid rgba(91,91,214,0.25)' }}>{t}</span>
+                      <span key={t} style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '4px', background: 'rgba(255,255,255,0.08)', color: '#505050', border: '1px solid rgba(91,91,214,0.25)' }}>{t}</span>
                     ))}
                   </div>
                 )}
@@ -727,65 +723,241 @@ function InternshipsTab({ internships: initialInternships, isOwn, viewerRole, on
   );
 }
 
+// ── Activity Heatmap ─────────────────────────────────────────────────────────
+const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function buildYearGrid(year) {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const isCurrentYear = year === today.getFullYear();
+  const jan1 = new Date(year, 0, 1);
+  const dec31 = isCurrentYear ? today : new Date(year, 11, 31);
+  const gridStart = new Date(jan1);
+  gridStart.setDate(gridStart.getDate() - gridStart.getDay());
+  const weeks = [];
+  let week = [];
+  const cur = new Date(gridStart);
+  while (cur <= dec31) {
+    const inYear = cur.getFullYear() === year;
+    week.push(inYear ? new Date(cur) : null);
+    if (week.length === 7) { weeks.push(week); week = []; }
+    cur.setDate(cur.getDate() + 1);
+  }
+  if (week.length > 0) {
+    while (week.length < 7) week.push(null);
+    weeks.push(week);
+  }
+  return weeks;
+}
+
+function getMonthLabels(weeks, year) {
+  const labels = {};
+  const seen = new Set();
+  weeks.forEach((week, wi) => {
+    const firstDay = week.find(d => d && d.getFullYear() === year);
+    if (!firstDay) return;
+    const m = firstDay.getMonth();
+    if (!seen.has(m) && firstDay.getDate() <= 7) {
+      seen.add(m);
+      labels[wi] = MONTHS_SHORT[m];
+    }
+  });
+  return labels;
+}
+
+const CELL = 13;
+const GAP  = 3;
+
+function HeatCell({ day, count, today, onHover, onLeave }) {
+  if (!day) return <div style={{ width: CELL, height: CELL, flexShrink: 0 }} />;
+  const isFuture = day > today;
+  const isToday  = day.toISOString().slice(0, 10) === today.toISOString().slice(0, 10);
+  const bg = isFuture ? 'transparent'
+    : count === 0 ? 'rgba(255,255,255,0.03)'
+    : count === 1 ? 'rgba(91,91,214,0.3)'
+    : count <= 3  ? 'rgba(91,91,214,0.5)'
+    : count <= 6  ? 'rgba(91,91,214,0.7)'
+    :               'rgba(91,91,214,0.9)';
+
+  return (
+    <div
+      style={{
+        width: CELL, height: CELL, borderRadius: '3px',
+        background: bg,
+        border: isToday ? '1px solid #505050' : '1px solid rgba(255,255,255,0.04)',
+        cursor: count > 0 ? 'pointer' : 'default',
+        flexShrink: 0,
+        transition: 'transform 0.1s, filter 0.1s',
+      }}
+      onMouseEnter={e => { e.currentTarget.style.filter = 'brightness(1.4)'; onHover(day, count, e); }}
+      onMouseLeave={e => { e.currentTarget.style.filter = 'brightness(1)'; onLeave(); }}
+    />
+  );
+}
+
+function ActivityHeatmap({ codingData, userId, isOwn }) {
+  const currentYear = new Date().getFullYear();
+  const availableYears = [currentYear, currentYear-1, currentYear-2];
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [tooltip, setTooltip] = useState(null);
+  const [extraDates, setExtraDates] = useState({});
+
+  useEffect(() => {
+    const req = isOwn ? api.coding.getHeatmap?.() : (userId ? api.coding.getStudentHeatmap?.(userId) : null);
+    if (!req) return;
+    req.then(data => { if (data?.dates) setExtraDates(data.dates); }).catch(() => {});
+  }, [userId, isOwn]);
+
+  const allDates = {};
+  const addDate = (iso) => { if (!iso) return; const d = iso.slice(0,10); allDates[d]=(allDates[d]||0)+1; };
+  try {
+    (codingData?.platforms||[]).forEach(p => (p.recent_submissions||[]).forEach(s => addDate(s.time)));
+    (codingData?.summary?.recent_submissions||[]).forEach(s => addDate(s.time));
+    Object.entries(extraDates).forEach(([d,c]) => { allDates[d] = (allDates[d]||0) + c; });
+  } catch(e) {}
+
+  const dateMap = {};
+  Object.entries(allDates).forEach(([d,c]) => { if (d.startsWith(String(selectedYear))) dateMap[d] = c; });
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  let cur = 0, longest = 0, tmp = 0;
+  for (let i = 0; i < 730; i++) {
+    const d = new Date(today); d.setDate(d.getDate()-i);
+    const k = d.toISOString().slice(0,10);
+    if (allDates[k]) { tmp++; if (i===0||cur>0) cur=tmp; }
+    else { if (i===0) cur=0; longest=Math.max(longest,tmp); tmp=0; }
+  }
+  longest = Math.max(longest, tmp);
+
+  const weeks = buildYearGrid(selectedYear);
+  const monthLabels = getMonthLabels(weeks, selectedYear);
+  const yearTotal = Object.values(dateMap).reduce((a,b)=>a+b, 0);
+  const totalDays = Object.keys(dateMap).length;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px' }}>
+        {[
+          { label: 'Current Streak', value: `${cur} days`,     icon: '🔥', color: cur > 0 ? '#f59e0b' : '#64748b', glow: cur > 0 },
+          { label: 'Longest Streak', value: `${longest} days`, icon: '🏆', color: '#a0a0a0', glow: false },
+          { label: 'Active Days',    value: totalDays,          icon: '⚡', color: '#22c55e', glow: false },
+          { label: 'Total Events',   value: yearTotal,          icon: '📌', color: '#c0c0c0', glow: false },
+        ].map(({ label, value, icon, color, glow }) => (
+          <div key={label} className="stat-card" style={{ padding: '16px 18px', boxShadow: glow ? `0 0 24px ${color}15` : 'none' }}>
+            <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>{label}</div>
+            <div style={{ fontSize: '24px', fontWeight: '800', color, fontFamily: 'Space Grotesk,sans-serif' }}>{value}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="card" style={{ padding: '20px 24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <div style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: '600' }}>
+            <span style={{ fontWeight: '700' }}>{yearTotal.toLocaleString()}</span>
+            <span style={{ color: 'var(--text-muted)', fontWeight: '400' }}> contributions in {selectedYear}</span>
+          </div>
+          <div style={{ display: 'flex', gap: '4px' }}>
+            {availableYears.map(y => (
+              <button key={y} onClick={() => setSelectedYear(y)} className={`btn ${y === selectedYear ? 'btn-ghost' : ''}`} style={{ padding: '3px 10px', fontSize: '12px', border: y === selectedYear ? '1px solid var(--border)' : '1px solid transparent' }}>{y}</button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ overflowX: 'auto' }}>
+          <div style={{ display: 'inline-flex', gap: 0 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: GAP, marginRight: '6px', paddingTop: `${CELL + GAP + 4}px' }}>
+              {['','Mon','','Wed','','Fri',''].map((d, i) => (
+                <div key={i} style={{ height: CELL, fontSize: '10px', color: 'var(--text-muted)', lineHeight: `${CELL}px`, textAlign: 'right', whiteSpace: 'nowrap' }}>{d}</div>
+              ))}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', gap: GAP, marginBottom: '4px', height: CELL }}>
+                {weeks.map((_, wi) => (
+                  <div key={wi} style={{ width: CELL, fontSize: '10px', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'visible', flexShrink: 0 }}>{monthLabels[wi] || ''}</div>
+                ))}
+              </div>
+              <div style={{ display: 'flex', gap: GAP }}>
+                {weeks.map((week, wi) => (
+                  <div key={wi} style={{ display: 'flex', flexDirection: 'column', gap: GAP }}>
+                    {week.map((day, di) => {
+                      const key = day ? day.toISOString().slice(0,10) : null;
+                      const count = key ? (dateMap[key] || 0) : 0;
+                      return (
+                        <HeatCell key={di} day={day} count={count} today={today}
+                          onHover={(d, c, e) => setTooltip({ date: d.toISOString().slice(0,10), count: c, x: e.clientX, y: e.clientY })}
+                          onLeave={() => setTooltip(null)} />
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px', marginTop: '12px' }}>
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Less</span>
+          {['rgba(255,255,255,0.03)','rgba(91,91,214,0.3)','rgba(91,91,214,0.5)','rgba(91,91,214,0.7)','rgba(91,91,214,0.9)'].map((c,i) => (
+            <div key={i} style={{ width: CELL, height: CELL, borderRadius: '3px', background: c, border: '1px solid rgba(255,255,255,0.04)' }} />
+          ))}
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>More</span>
+        </div>
+      </div>
+
+      {tooltip && (
+        <div style={{ position: 'fixed', zIndex: 9999, pointerEvents: 'none', left: tooltip.x + 14, top: tooltip.y - 42, background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: '6px', padding: '6px 12px', fontSize: '12px', color: 'var(--text-primary)', boxShadow: '0 8px 24px rgba(0,0,0,0.6)' }}>
+          <b style={{ color: '#505050' }}>{tooltip.count} {tooltip.count === 1 ? 'contribution' : 'contributions'}</b> on {new Date(tooltip.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Overview Tab ─────────────────────────────────────────────────────────────
-function OverviewTab({ coding, attendance, academics, internships, tier, onTabSwitch }) {
+function OverviewTab({ coding, attendance, academics, internships, tier, onTabSwitch, userId, isOwn }) {
   const attPct = attendance?.overall_percentage ?? null;
-  const attColor = attPct == null ? '#94a3b8' : attPct >= 75 ? '#22c55e' : attPct >= 60 ? '#f59e0b' : '#ef4444';
+  const attColor = attPct == null ? 'var(--text-muted)' : attPct >= 75 ? 'var(--status-ok)' : attPct >= 60 ? 'var(--status-warn)' : 'var(--status-err)';
   const worstSubject = attendance?.by_subject?.slice(0, 1)[0] || null;
   const recentActivity = coding?.summary?.recent_submissions?.slice(0, 5) || [];
   const recentInternships = internships?.slice(0, 2) || [];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      {/* Row 1 — 3 snapshot cards */}
       <div className="profile-bento" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '16px' }}>
-        {/* Coding snapshot */}
         <div className="card" style={{ padding: '20px', border: `1px solid ${tier.color}25` }}>
-          <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Coding</div>
+          <div style={{ fontSize: '10px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Coding</div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', marginBottom: '8px' }}>
             <span style={{ fontSize: '36px', fontWeight: '800', color: tier.color, fontFamily: 'Space Grotesk,sans-serif', lineHeight: 1 }}>{coding?.veloris_score ?? 0}</span>
             <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '12px', background: `${tier.color}20`, color: tier.color, border: `1px solid ${tier.color}40` }}>⚡ {tier.label}</span>
           </div>
           <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px' }}>{coding?.summary?.total_problems_solved ?? 0} problems solved</div>
           <div style={{ display: 'flex', gap: '4px', height: '4px', borderRadius: '2px', overflow: 'hidden', marginBottom: '12px' }}>
-            {[['lc','#f59e0b',350],['cf','#4f8ef7',250],['cc','#cd7f32',150],['gh','#8b949e',150],['activity','#22c55e',100]].map(([k,c,max]) => (
+            {[['lc','#f59e0b',350],['cf','#c0c0c0',250],['cc','#cd7f32',150],['gh','#8b949e',150],['activity','#22c55e',100]].map(([k,c,max]) => (
               <div key={k} style={{ flex: max, background: (coding?.breakdown?.[k] ?? 0) > 0 ? c : 'rgba(255,255,255,0.06)' }} />
             ))}
           </div>
-          <button onClick={() => onTabSwitch('coding')} style={{ fontSize: '11px', color: '#5B5BD6', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>View Coding Details →</button>
+          <button onClick={() => onTabSwitch('coding')} className="btn-link" style={{ fontSize: '11px', color: '#505050' }}>View Coding Details →</button>
         </div>
 
-        {/* Attendance snapshot */}
         <div className="card" style={{ padding: '20px' }}>
-          <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Attendance</div>
-          <div style={{ fontSize: '36px', fontWeight: '800', color: attColor, fontFamily: 'Space Grotesk,sans-serif', lineHeight: 1, marginBottom: '6px' }}>
-            {attPct != null ? `${attPct}%` : '—'}
-          </div>
-          {worstSubject && (
-            <div style={{ fontSize: '10px', color: '#ef4444', marginBottom: '8px' }}>
-              ⚠ {worstSubject.subject}: {worstSubject.percentage}%
-            </div>
-          )}
-          <button onClick={() => onTabSwitch('attendance')} style={{ fontSize: '11px', color: '#5B5BD6', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>View Details →</button>
+          <div style={{ fontSize: '10px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Attendance</div>
+          <div style={{ fontSize: '36px', fontWeight: '800', color: attColor, fontFamily: 'Space Grotesk,sans-serif', lineHeight: 1, marginBottom: '6px' }}>{attPct != null ? `${attPct}%` : '—'}</div>
+          {worstSubject && <div style={{ fontSize: '10px', color: 'var(--status-err)', marginBottom: '8px' }}>⚠ {worstSubject.subject}: {worstSubject.percentage}%</div>}
+          <button onClick={() => onTabSwitch('attendance')} className="btn-link" style={{ fontSize: '11px', color: '#505050' }}>View Details →</button>
         </div>
 
-        {/* Academics snapshot */}
         <div className="card" style={{ padding: '20px' }}>
-          <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Academics</div>
-          <div style={{ fontSize: '36px', fontWeight: '800', color: '#4f8ef7', fontFamily: 'Space Grotesk,sans-serif', lineHeight: 1, marginBottom: '6px' }}>
-            {academics?.cgpa ?? '—'}
-          </div>
-          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '8px' }}>
-            SGPA: {academics?.current_sgpa ?? '—'}
-          </div>
-          <button onClick={() => onTabSwitch('academics')} style={{ fontSize: '11px', color: '#5B5BD6', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>View Details →</button>
+          <div style={{ fontSize: '10px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Academics</div>
+          <div style={{ fontSize: '36px', fontWeight: '800', color: 'var(--text-muted)', fontFamily: 'Space Grotesk,sans-serif', lineHeight: 1, marginBottom: '6px' }}>{academics?.cgpa ?? '—'}</div>
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '8px' }}>SGPA: {academics?.current_sgpa ?? '—'}</div>
+          <button onClick={() => onTabSwitch('academics')} className="btn-link" style={{ fontSize: '11px', color: '#505050' }}>View Details →</button>
         </div>
       </div>
 
-      {/* Row 2 — activity + internships */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
         <div className="card" style={{ padding: '20px' }}>
-          <div style={{ fontSize: '12px', fontWeight: '600', marginBottom: '12px' }}>Recent Activity</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <div style={{ fontSize: '12px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}><Activity size={13} style={{ color: '#808080' }} /> Activity Summary</div>
+            <button onClick={() => onTabSwitch('activity')} className="btn-link" style={{ fontSize: '11px', color: '#505050' }}>View Heatmap →</button>
+          </div>
           <RecentList items={recentActivity} />
         </div>
         <div className="card" style={{ padding: '20px' }}>
@@ -794,15 +966,15 @@ function OverviewTab({ coding, attendance, academics, internships, tier, onTabSw
             <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>No internships listed.</div>
           ) : recentInternships.map(item => (
             <div key={item.id} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', marginBottom: '12px' }}>
-              <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#5B5BD620', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: '700', color: '#5B5BD6', flexShrink: 0 }}>{item.company[0]?.toUpperCase()}</div>
+              <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: '700', color: '#505050', flexShrink: 0 }}>{item.company[0]?.toUpperCase()}</div>
               <div>
                 <div style={{ fontSize: '12px', fontWeight: '600' }}>{item.company}</div>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{item.role} · {item.start_date?.slice(0,7)} – {item.end_date?.slice(0,7) || 'Present'}</div>
-                {item.verified && <span style={{ fontSize: '9px', color: '#22c55e' }}>✓ Verified</span>}
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{item.role} · {item.start_date?.slice(0,7)}</div>
+                {item.verified && <span style={{ fontSize: '9px', color: 'var(--status-ok)' }}>✓ Verified</span>}
               </div>
             </div>
           ))}
-          <button onClick={() => onTabSwitch('internships')} style={{ fontSize: '11px', color: '#5B5BD6', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>View All →</button>
+          <button onClick={() => onTabSwitch('internships')} className="btn-link" style={{ fontSize: '11px', color: '#505050' }}>View All →</button>
         </div>
       </div>
     </div>
@@ -835,16 +1007,7 @@ function CodingTab({ codingData, isOwnProfile, onRefresh }) {
   };
 
   const linked = profiles.map(p => p.platform);
-  const lc = profiles.find(p => p.platform === 'leetcode');
-  const gh = profiles.find(p => p.platform === 'github');
-  const cf = profiles.find(p => p.platform === 'codeforces');
-  const cc = profiles.find(p => p.platform === 'codechef');
-
-  const TABS = [
-    { id: 'overview', label: 'Overview' },
-    ...PLATFORMS.filter(p => linked.includes(p.id)).map(p => ({ id: p.id, label: p.label })),
-    { id: 'leaderboard', label: '🏆 Leaderboard' },
-  ];
+  const TABS = [{ id: 'overview', label: 'Overview' }, ...PLATFORMS.filter(p => linked.includes(p.id)).map(p => ({ id: p.id, label: p.label })), { id: 'leaderboard', label: '🏆 Leaderboard' }];
 
   return (
     <div>
@@ -852,10 +1015,10 @@ function CodingTab({ codingData, isOwnProfile, onRefresh }) {
       {summary && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px', marginBottom: '20px' }}>
           {[
-            { label: 'Weekly Hours',    value: summary.total_weekly_hours > 0 ? `${summary.total_weekly_hours.toFixed(1)}h` : '0h', color: '#8b5cf6' },
-            { label: 'Problems Solved', value: summary.total_problems_solved ?? 0, color: '#22c55e' },
-            { label: 'Last Active',     value: timeAgo(summary.last_activity_at), color: (summary.days_since_activity ?? 99) > 7 ? '#ef4444' : '#f59e0b' },
-            { label: 'Platforms',       value: `${linked.length}/4`, color: '#4f8ef7' },
+            { label: 'Weekly Hours',    value: summary.total_weekly_hours > 0 ? `${summary.total_weekly_hours.toFixed(1)}h` : '0h', color: '#a0a0a0' },
+            { label: 'Problems Solved', value: summary.total_problems_solved ?? 0, color: 'var(--status-ok)' },
+            { label: 'Last Active',     value: timeAgo(summary.last_activity_at), color: (summary.days_since_activity ?? 99) > 7 ? 'var(--status-err)' : 'var(--status-warn)' },
+            { label: 'Platforms',       value: `${linked.length}/4`, color: 'var(--text-muted)' },
           ].map(({ label, value, color }) => (
             <div key={label} className="stat-card" style={{ padding: '14px' }}>
               <div style={{ fontSize: '20px', fontWeight: '700', fontFamily: 'Space Grotesk,sans-serif', color }}>{value}</div>
@@ -867,14 +1030,11 @@ function CodingTab({ codingData, isOwnProfile, onRefresh }) {
       <div style={{ display: 'flex', gap: '2px', marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.06)', overflowX: 'auto' }}>
         {TABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            style={{ padding: '8px 14px', fontSize: '12px', background: 'transparent', border: 'none', borderBottom: tab === t.id ? '2px solid #5B5BD6' : '2px solid transparent', color: tab === t.id ? '#fff' : 'var(--text-muted)', cursor: 'pointer', marginBottom: '-1px', whiteSpace: 'nowrap', transition: 'color 0.15s' }}>
-            {t.label}
-          </button>
+            style={{ padding: '8px 14px', fontSize: '12px', background: 'transparent', border: 'none', borderBottom: tab === t.id ? '2px solid #505050' : '2px solid transparent', color: tab === t.id ? '#fff' : 'var(--text-muted)', cursor: 'pointer', marginBottom: '-1px', whiteSpace: 'nowrap' }}>{t.label}</button>
         ))}
         {isOwnProfile && linked.includes(tab) && (
           <button className="btn btn-ghost" onClick={() => sync(tab)} disabled={!!syncing} style={{ fontSize: '11px', marginLeft: 'auto' }}>
-            <RefreshCw size={11} style={{ animation: syncing === tab ? 'spin 1s linear infinite' : 'none' }} />
-            {syncing === tab ? 'Syncing…' : 'Sync'}
+            <RefreshCw size={11} className={syncing === tab ? 'animate-spin' : ''} /> {syncing === tab ? 'Syncing…' : 'Sync'}
           </button>
         )}
       </div>
@@ -882,21 +1042,16 @@ function CodingTab({ codingData, isOwnProfile, onRefresh }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '12px' }}>
             {PLATFORMS.map(plat => (
-              <PlatformCard key={plat.id} platform={plat.id}
-                profile={profiles.find(p => p.platform === plat.id) || null}
-                onLinked={onRefresh} onTabSwitch={setTab} isOwn={isOwnProfile} />
+              <PlatformCard key={plat.id} platform={plat.id} profile={profiles.find(p => p.platform === plat.id) || null} onLinked={onRefresh} onTabSwitch={setTab} isOwn={isOwnProfile} />
             ))}
           </div>
-          <div className="card" style={{ padding: '16px' }}>
-            <div style={{ fontSize: '12px', fontWeight: '600', marginBottom: '12px' }}>Recent Activity (all platforms)</div>
-            <RecentList items={summary?.recent_submissions || []} />
-          </div>
+          <div className="card" style={{ padding: '16px' }}><div style={{ fontSize: '12px', fontWeight: '600', marginBottom: '12px' }}>Recent Activity (all platforms)</div><RecentList items={summary?.recent_submissions || []} /></div>
         </div>
       )}
-      {tab === 'leetcode'    && lc && <LCPanel p={lc} />}
-      {tab === 'github'      && gh && <GHPanel p={gh} />}
-      {tab === 'codeforces'  && cf && <CFPanel p={cf} />}
-      {tab === 'codechef'    && cc && <CCPanel p={cc} />}
+      {tab === 'leetcode' && profiles.find(p=>p.platform==='leetcode') && <LCPanel p={profiles.find(p=>p.platform==='leetcode')} />}
+      {tab === 'github' && profiles.find(p=>p.platform==='github') && <GHPanel p={profiles.find(p=>p.platform==='github')} />}
+      {tab === 'codeforces' && profiles.find(p=>p.platform==='codeforces') && <CFPanel p={profiles.find(p=>p.platform==='codeforces')} />}
+      {tab === 'codechef' && profiles.find(p=>p.platform==='codechef') && <CCPanel p={profiles.find(p=>p.platform==='codechef')} />}
       {tab === 'leaderboard' && <LeaderboardTab highlightUserId={null} />}
     </div>
   );
@@ -904,34 +1059,33 @@ function CodingTab({ codingData, isOwnProfile, onRefresh }) {
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function StudentProfilePage({ viewMode }) {
-  const { userId }         = useParams();
-  const [searchParams]     = useSearchParams();
-  const isOwnProfile       = !userId && !viewMode;
-  const [data,     setData]    = useState(null);
-  const [loading,  setLoading] = useState(true);
-  const [error,    setError]   = useState('');
-  const [activeTab,setActiveTab] = useState(searchParams.get('tab') || 'overview');
+  const { userId } = useParams();
+  const [searchParams] = useSearchParams();
+  const isOwnProfile = !userId && !viewMode;
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'overview');
   const [editMode, setEditMode] = useState(false);
   const [editFields, setEditFields] = useState({});
-  const [saving,   setSaving]  = useState(false);
-  const [toast,    setToast]   = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const result = isOwnProfile
-        ? await api.profile.getMyProfile()
-        : await api.profile.getStudentProfile(userId);
+      const result = isOwnProfile ? await api.profile.getMyProfile() : await api.profile.getStudentProfile(userId);
       setData(result);
       setEditFields({
-        bio:               result.user?.bio               || '',
-        phone:             result.user?.phone             || '',
-        linkedin_url:      result.user?.linkedin_url      || '',
-        github_url:        result.user?.github_url        || '',
+        name: result.user?.name || '',
+        bio: result.user?.bio || '',
+        phone: result.user?.phone || '',
+        linkedin_url: result.user?.linkedin_url || '',
+        github_url: result.user?.github_url || '',
         is_profile_public: result.user?.is_profile_public ?? true,
       });
     } catch { setError('Failed to load profile.'); }
-    finally  { setLoading(false); }
+    finally { setLoading(false); }
   }, [userId, isOwnProfile]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
@@ -941,6 +1095,10 @@ export default function StudentProfilePage({ viewMode }) {
     try {
       await api.profile.updateMyProfile(editFields);
       setData(prev => ({ ...prev, user: { ...prev.user, ...editFields } }));
+      if (editFields.name) {
+        const stored = JSON.parse(localStorage.getItem('user') || '{}');
+        localStorage.setItem('user', JSON.stringify({ ...stored, name: editFields.name }));
+      }
       setEditMode(false);
       setToast({ msg: 'Profile updated', type: 'success' });
     } catch { setToast({ msg: 'Failed to save', type: 'error' }); }
@@ -955,187 +1113,70 @@ export default function StudentProfilePage({ viewMode }) {
     try {
       const res = await api.profile.uploadAvatar(fd);
       setData(prev => ({ ...prev, user: { ...prev.user, avatar_url: res.avatar_url } }));
-    } catch { setToast({ msg: 'Avatar upload failed', type: 'error' }); }
+      setToast({ msg: 'Avatar updated', type: 'success' });
+    } catch (err) { setToast({ msg: err.message || 'Avatar upload failed', type: 'error' }); }
+    e.target.value = '';
   };
 
-  if (loading) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh' }}>
-      <Loader2 size={32} className="animate-spin" style={{ color: '#5B5BD6' }} />
-    </div>
-  );
-  if (error) return <div style={{ padding: '32px', color: '#ef4444', textAlign: 'center' }}>{error}</div>;
+  if (loading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh' }}><Loader2 size={32} className="animate-spin" style={{ color: '#505050' }} /></div>;
+  if (error) return <div style={{ padding: '32px', color: 'var(--status-err)', textAlign: 'center' }}>{error}</div>;
 
-  const user        = data?.user        || {};
-  const coding      = data?.coding      || {};
-  const attendance  = data?.attendance  || {};
-  const academics   = data?.academics   || {};
+  const user = data?.user || {};
+  const coding = data?.coding || {};
+  const attendance = data?.attendance || {};
+  const academics = data?.academics || {};
   const internships = data?.internships || [];
-  const tier        = getTier(coding.veloris_score ?? 0);
-  const viewerRole  = data?.viewer_role;
+  const tier = getTier(coding.veloris_score ?? 0);
+  const viewerRole = data?.viewer_role;
 
   const TABS = [
-    { id: 'overview',    label: 'Overview'       },
-    { id: 'coding',      label: 'Coding'         },
-    { id: 'academics',   label: 'Academics'      },
-    { id: 'attendance',  label: 'Attendance'     },
-    { id: 'internships', label: 'Internships'    },
-    { id: 'leaderboard', label: '🏆 Leaderboard' },
+    { id: 'overview',    label: 'Overview' },
+    { id: 'activity',    label: 'Activity' },
+    { id: 'coding',      label: 'Coding' },
+    { id: 'academics',   label: 'Academics' },
+    { id: 'attendance',  label: 'Attendance' },
+    { id: 'internships', label: 'Internships' },
+    { id: 'leaderboard', label: 'Leaderboard' },
   ];
 
   return (
     <div className="fade-in-up" style={{ maxWidth: '1100px' }}>
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
+      {!isOwnProfile && <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-muted)', padding: '10px 16px', borderRadius: '8px', marginBottom: '16px', fontSize: '13px' }}>👁 Viewing <strong>{user.name}</strong>'s profile</div>}
 
-      {/* View-mode banner */}
-      {!isOwnProfile && (
-        <div style={{ background: 'rgba(79,142,247,0.1)', border: '1px solid rgba(79,142,247,0.3)', color: '#4f8ef7', padding: '10px 16px', borderRadius: '8px', marginBottom: '16px', fontSize: '13px' }}>
-          👁 You are viewing <strong>{user.name}</strong>'s profile (read-only)
-        </div>
-      )}
-
-      {/* ── HERO ─────────────────────────────────────────────────────────── */}
-      <div className="card" style={{ padding: '24px', marginBottom: '16px', background: `linear-gradient(135deg,rgba(91,91,214,0.12) 0%, var(--bg-elevated) 60%)`, border: '1px solid rgba(91,91,214,0.2)', borderRadius: '12px' }}>
+      <div className="card" style={{ padding: '24px', marginBottom: '16px', background: 'linear-gradient(135deg,rgba(255,255,255,0.04) 0%, var(--bg-elevated) 100%)' }}>
         <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
-
-          {/* Avatar */}
           <label style={{ cursor: isOwnProfile && editMode ? 'pointer' : 'default', flexShrink: 0 }}>
             {isOwnProfile && editMode && <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleAvatarUpload} />}
-            <div style={{ width: '72px', height: '72px', borderRadius: '50%', background: 'linear-gradient(135deg,#5B5BD6,#a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', fontWeight: '700', color: '#fff', border: editMode ? '2px dashed #5B5BD6' : '2px solid rgba(255,255,255,0.15)', overflow: 'hidden', position: 'relative' }}>
-              {user.avatar_url
-                ? <img src={user.avatar_url} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                : (user.name?.[0] || '?').toUpperCase()}
-              {editMode && <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(0,0,0,0.55)', fontSize: '9px', textAlign: 'center', padding: '3px', color: '#fff' }}>Upload</div>}
+            <div style={{ width: '72px', height: '72px', borderRadius: '50%', background: 'linear-gradient(135deg,#505050,#5B5BD6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', fontWeight: '700', color: '#fff', border: editMode ? '2px dashed #505050' : '2px solid rgba(255,255,255,0.1)', overflow: 'hidden', position: 'relative' }}>
+              {user.avatar_url ? <img src={user.avatar_url} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (user.name?.[0] || '?').toUpperCase()}
             </div>
           </label>
-
-          {/* Identity */}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px', flexWrap: 'wrap' }}>
-              <h1 style={{ margin: 0, fontSize: '22px', fontWeight: '700', fontFamily: 'Space Grotesk,sans-serif', color: 'var(--text-primary)' }}>{user.name || 'Unknown'}</h1>
-              <span style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '12px', fontWeight: '600', background: `${tier.color}20`, color: tier.color, border: `1px solid ${tier.color}50` }}>⚡ {tier.label}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
+              <h1 style={{ margin: 0, fontSize: '22px', fontWeight: '700', fontFamily: 'Space Grotesk,sans-serif' }}>{user.name || 'Unknown'}</h1>
+              <span style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '12px', fontWeight: '600', background: `${tier.color}20`, color: tier.color, border: `1px solid ${tier.color}40` }}>⚡ {tier.label}</span>
             </div>
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>
-              {[user.roll_number, user.department, user.year_of_study && `Year ${user.year_of_study}`, user.batch].filter(Boolean).join(' · ')}
-            </div>
-            <div style={{ fontSize: '13px', marginBottom: '10px' }}>
-              <span style={{ color: tier.color, fontWeight: '700', fontSize: '18px', fontFamily: 'Space Grotesk,sans-serif' }}>{coding.veloris_score ?? 0}</span>
-              <span style={{ color: 'var(--text-muted)', fontSize: '11px', marginLeft: '6px' }}>Veloris Score</span>
-            </div>
-
-            {/* Bio */}
-            {editMode ? (
-              <textarea value={editFields.bio} onChange={e => setEditFields(f => ({ ...f, bio: e.target.value }))}
-                placeholder="Write a short bio..." maxLength={200} rows={2}
-                style={{ width: '100%', resize: 'vertical', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '12px', padding: '8px', fontFamily: 'inherit', marginBottom: '10px' }} />
-            ) : (
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '0 0 10px', lineHeight: '1.5' }}>
-                {user.bio || (isOwnProfile ? 'No bio yet — click Edit Profile to add one.' : '')}
-              </p>
-            )}
-
-            {/* Edit fields */}
-            {editMode ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
-                {[
-                  { key: 'linkedin_url', placeholder: 'LinkedIn URL (https://linkedin.com/in/...)' },
-                  { key: 'github_url',   placeholder: 'GitHub URL (https://github.com/...)'       },
-                  { key: 'phone',        placeholder: 'Phone'                                      },
-                ].map(({ key, placeholder }) => (
-                  <input key={key} className="input" placeholder={placeholder} value={editFields[key]}
-                    onChange={e => setEditFields(f => ({ ...f, [key]: e.target.value }))}
-                    style={{ fontSize: '12px' }} />
-                ))}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>Public profile</span>
-                  <div onClick={() => setEditFields(f => ({ ...f, is_profile_public: !f.is_profile_public }))}
-                    style={{ width: '36px', height: '20px', borderRadius: '10px', cursor: 'pointer', background: editFields.is_profile_public ? '#22c55e' : 'rgba(255,255,255,0.15)', position: 'relative', transition: 'all 0.2s' }}>
-                    <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '2px', left: editFields.is_profile_public ? '18px' : '2px', transition: 'left 0.2s' }} />
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                {user.linkedin_url && <a href={user.linkedin_url} target="_blank" rel="noreferrer" style={{ fontSize: '11px', color: '#4f8ef7', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>🔗 LinkedIn <ExternalLink size={10} /></a>}
-                {user.github_url   && <a href={user.github_url}   target="_blank" rel="noreferrer" style={{ fontSize: '11px', color: '#8b949e', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>🐙 GitHub <ExternalLink size={10} /></a>}
-                {user.email        && <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>📧 {user.email}</span>}
-                {!isOwnProfile     && <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>👁 {user.profile_views ?? 0} views</span>}
-              </div>
-            )}
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>{[user.roll_number, user.department, user.batch].filter(Boolean).join(' · ')}</div>
+            {editMode ? <textarea className="input" value={editFields.bio} onChange={e => setEditFields(f => ({ ...f, bio: e.target.value }))} rows={2} style={{ width: '100%', fontSize: '12px' }} /> : <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '0 0 10px' }}>{user.bio}</p>}
           </div>
-
-          {/* Edit / Save buttons */}
-          {isOwnProfile && (
-            <div style={{ flexShrink: 0 }}>
-              {editMode ? (
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button className="btn btn-primary" onClick={handleSave} disabled={saving} style={{ fontSize: '12px' }}>
-                    {saving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />} {saving ? 'Saving…' : 'Save'}
-                  </button>
-                  <button className="btn btn-ghost" onClick={() => setEditMode(false)} style={{ fontSize: '12px' }}>Cancel</button>
-                </div>
-              ) : (
-                <button className="btn btn-ghost" onClick={() => setEditMode(true)} style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Edit3 size={12} /> Edit Profile
-                </button>
-              )}
-            </div>
-          )}
+          {isOwnProfile && <button className="btn btn-ghost" onClick={() => (editMode ? handleSave() : setEditMode(true))} style={{ fontSize: '12px' }}>{editMode ? 'Save' : 'Edit'}</button>}
         </div>
       </div>
 
-      {/* ── QUICK STATS ROW ──────────────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: '10px', marginBottom: '16px', overflowX: 'auto' }}>
-        {[
-          { label: 'Veloris Score',    value: coding.veloris_score ?? 0,                                                                    color: tier.color },
-          { label: 'Problems Solved',  value: coding.summary?.total_problems_solved ?? 0,                                                   color: '#22c55e'  },
-          { label: 'Attendance',       value: attendance.overall_percentage != null ? `${attendance.overall_percentage}%` : '—',            color: (attendance.overall_percentage ?? 0) >= 75 ? '#22c55e' : (attendance.overall_percentage ?? 0) >= 60 ? '#f59e0b' : '#ef4444' },
-          { label: 'CGPA',             value: academics.cgpa ?? '—',                                                                        color: '#4f8ef7'  },
-          { label: 'Last Active',      value: timeAgo(coding.summary?.last_activity_at),                                                    color: 'var(--text-primary)' },
-        ].map(({ label, value, color }) => (
-          <div key={label} className="stat-card" style={{ padding: '12px', textAlign: 'center', minWidth: '100px' }}>
-            <div style={{ fontSize: '18px', fontWeight: '700', color, fontFamily: 'Space Grotesk,sans-serif' }}>{value}</div>
-            <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px' }}>{label}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* ── SECTION TABS ─────────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', gap: '2px', marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.06)', overflowX: 'auto', position: 'sticky', top: 0, zIndex: 10, background: 'var(--bg-primary)', paddingTop: '8px', backdropFilter: 'blur(8px)' }}>
+      <div style={{ display: 'flex', gap: '2px', marginBottom: '24px', borderBottom: '1px solid rgba(255,255,255,0.06)', position: 'sticky', top: 0, background: 'var(--bg-primary)', zIndex: 10 }}>
         {TABS.map(t => (
-          <button key={t.id} onClick={() => setActiveTab(t.id)}
-            style={{ padding: '8px 14px', fontSize: '12px', background: 'transparent', border: 'none', borderBottom: activeTab === t.id ? '2px solid #5B5BD6' : '2px solid transparent', color: activeTab === t.id ? '#fff' : 'var(--text-muted)', cursor: 'pointer', marginBottom: '-1px', whiteSpace: 'nowrap', transition: 'color 0.15s' }}>
-            {t.label}
-          </button>
+          <button key={t.id} onClick={() => setActiveTab(t.id)} style={{ padding: '8px 14px', fontSize: '12px', background: 'transparent', border: 'none', borderBottom: activeTab === t.id ? '2px solid #505050' : '2px solid transparent', color: activeTab === t.id ? '#fff' : 'var(--text-muted)', cursor: 'pointer' }}>{t.label}</button>
         ))}
       </div>
 
-      {/* ── TAB CONTENT ──────────────────────────────────────────────────── */}
-      {activeTab === 'overview' && (
-        <OverviewTab coding={coding} attendance={attendance} academics={academics}
-          internships={internships} tier={tier} onTabSwitch={setActiveTab} />
-      )}
-      {activeTab === 'coding' && (
-        <CodingTab codingData={coding} isOwnProfile={isOwnProfile} onRefresh={fetchData} />
-      )}
-      {activeTab === 'academics' && (
-        <AcademicsTab academics={academics} />
-      )}
-      {activeTab === 'attendance' && (
-        <AttendanceTab attendance={attendance} />
-      )}
-      {activeTab === 'internships' && (
-        <InternshipsTab internships={internships} isOwn={isOwnProfile}
-          viewerRole={viewerRole} onRefresh={fetchData} />
-      )}
-      {activeTab === 'leaderboard' && (
-        <LeaderboardTab highlightUserId={!isOwnProfile ? Number(userId) : null} />
-      )}
-
-      <style>{`
-        @keyframes spin  { to { transform: rotate(360deg); } }
-        @keyframes pulse { 0%,100% { opacity:.4; } 50% { opacity:.8; } }
-        @media (max-width:768px) { .profile-bento { grid-template-columns:1fr !important; } }
-      `}</style>
+      {activeTab === 'overview' && <OverviewTab coding={coding} attendance={attendance} academics={academics} internships={internships} tier={tier} onTabSwitch={setActiveTab} userId={userId} isOwn={isOwnProfile} />}
+      {activeTab === 'activity' && <ActivityHeatmap codingData={coding} userId={userId} isOwn={isOwnProfile} />}
+      {activeTab === 'coding' && <CodingTab codingData={coding} isOwnProfile={isOwnProfile} onRefresh={fetchData} />}
+      {activeTab === 'academics' && <AcademicsTab academics={academics} />}
+      {activeTab === 'attendance' && <AttendanceTab attendance={attendance} />}
+      {activeTab === 'internships' && <InternshipsTab internships={internships} isOwn={isOwnProfile} viewerRole={viewerRole} onRefresh={fetchData} />}
+      {activeTab === 'leaderboard' && <LeaderboardTab highlightUserId={!isOwnProfile ? Number(userId) : null} />}
     </div>
   );
 }

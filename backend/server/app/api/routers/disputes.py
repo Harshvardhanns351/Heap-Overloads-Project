@@ -147,6 +147,26 @@ def list_disputes(
     ]
 
 
+@router.delete(
+    "/{dispute_id}",
+    status_code=204,
+    summary="Delete a dispute",
+    description="Students can delete their own open disputes",
+)
+def delete_dispute(
+    dispute_id: int,
+    current_user: User = Depends(get_current_user),
+    session=Depends(get_session),
+):
+    dispute = session.get(Dispute, dispute_id)
+    if not dispute:
+        raise HTTPException(status_code=404, detail="Dispute not found")
+    if current_user.role == "student" and dispute.student_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Cannot delete another student's dispute")
+    session.delete(dispute)
+    session.commit()
+
+
 @router.patch(
     "/{dispute_id}/status",
     response_model=DisputeRead,

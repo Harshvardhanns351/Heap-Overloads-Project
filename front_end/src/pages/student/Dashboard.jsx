@@ -26,7 +26,7 @@ export default function StudentDashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
+        <Loader2 className="w-8 h-8 animate-spin" style={{color:'#606060'}} />
       </div>
     );
   }
@@ -58,7 +58,7 @@ export default function StudentDashboard() {
   return (
     <div className="fade-in-up">
       <PageHeader
-        title={`Good morning, ${name} 👋`}
+        title={`Good evening, ${name}`}
         subtitle="Here's your academic snapshot for today."
       />
 

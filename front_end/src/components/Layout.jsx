@@ -49,7 +49,7 @@ function NavItem({ path, icon: Icon, label }) {
 
 export default function Layout({ children }) {
   const { currentUser, role, logout } = useAppStore();
-    const navigate = useNavigate();
+  const navigate = useNavigate();
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef(null);
 
@@ -79,13 +79,13 @@ export default function Layout({ children }) {
       {/* ── Sidebar ── */}
       <aside
         className="w-[240px] flex-shrink-0 flex flex-col z-10 relative"
-        style={{ borderRight: '1px solid var(--border)', background: 'rgba(255,255,255,0.015)', backdropFilter: 'blur(20px)' }}
+        style={{ borderRight: '1px solid var(--border)', background: 'rgba(10,10,10,0.6)', backdropFilter: 'blur(20px)' }}
       >
         {/* Logo */}
         <div className="p-5" style={{ borderBottom: '1px solid var(--border)' }}>
           <div className="flex items-center gap-2.5">
             <img src={logo} alt="Veloris Logo" className="w-[30px] h-[30px] object-contain logo-float transition-all" />
-            <span className="text-[15px] font-bold font-space tracking-tight text-white drop-shadow-[0_0_12px_rgba(167,139,250,0.6)]">Veloris</span>
+            <span className="text-[15px] font-bold font-space tracking-tight text-white drop-shadow-[0_0_12px_rgba(91,91,214,0.6)]">Veloris</span>
           </div>
           <div className="mt-3">
             <span
@@ -121,7 +121,7 @@ export default function Layout({ children }) {
               className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0"
               style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.6)' }}
             >
-              {currentUser?.avatar}
+              {currentUser?.avatar || currentUser?.name?.[0] || '?'}
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-[12px] font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
@@ -132,7 +132,7 @@ export default function Layout({ children }) {
               </div>
             </div>
             <button
-              onClick={async (e) => { e.stopPropagation(); await logout(); logout(); }}
+              onClick={async (e) => { e.stopPropagation(); await logout(); }}
               className="p-1.5 rounded-lg transition-colors"
               style={{ color: 'var(--text-muted)' }}
               onMouseEnter={e => { e.currentTarget.style.color = 'var(--status-err)'; e.currentTarget.style.background = 'rgba(248,113,113,0.08)'; }}
@@ -177,7 +177,7 @@ export default function Layout({ children }) {
                 <Bell size={15} />
                 <span
                   className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full animate-pulse"
-                  style={{ background: 'var(--accent)' }}
+                  style={{ background: 'var(--status-warn)' }}
                 />
               </button>
             )}
@@ -194,14 +194,14 @@ export default function Layout({ children }) {
                     {currentUser?.name?.split(' ')[0]}
                   </div>
                   <div className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
-                    {currentUser?.rollNo || roleLabel}
+                    {currentUser?.roll_no || roleLabel}
                   </div>
                 </div>
                 <div
                   className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold"
                   style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.1)' }}
                 >
-                  {currentUser?.avatar}
+                  {currentUser?.avatar || currentUser?.name?.[0] || '?'}
                 </div>
                 <ChevronDown size={12} style={{ color: 'var(--text-muted)' }} />
               </div>
@@ -224,7 +224,7 @@ export default function Layout({ children }) {
                     >{label}</button>
                   ))}
                   <div style={{ height: '1px', background: 'var(--border)', margin: '3px 0' }} />
-                  <button onClick={async () => { await logout(); logout(); setProfileOpen(false); }}
+                  <button onClick={async () => { await logout(); setProfileOpen(false); }}
                     style={{ display: 'block', width: '100%', padding: '9px 14px', textAlign: 'left', background: 'none', border: 'none', color: 'var(--status-err)', fontSize: '12px', cursor: 'pointer' }}
                     onMouseEnter={e => e.currentTarget.style.background = 'rgba(248,113,113,0.06)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'none'}
@@ -245,4 +245,3 @@ export default function Layout({ children }) {
     </div>
   );
 }
-

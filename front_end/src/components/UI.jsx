@@ -7,7 +7,6 @@ export function RiskBadge({ level, score }) {
     red:    { label: 'At Risk',  bg: 'rgba(248,113,113,0.1)',  color: 'var(--status-err)', border: 'rgba(248,113,113,0.2)'  },
   };
   const c = cfg[level] || cfg.green;
-
   return (
     <span
       className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold"

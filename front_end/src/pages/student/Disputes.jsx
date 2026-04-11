@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import useAppStore from '../../store';
 import { PageHeader, Tabs } from '../../components/UI';
-import { Plus, CheckCircle2, Loader } from 'lucide-react';
+import { Plus, CheckCircle2, Loader, Trash2 } from 'lucide-react';
 
 const STATUS_CONFIG = {
   Open: { cls: 'badge-red', label: 'Open' },
@@ -12,13 +12,26 @@ const STATUS_CONFIG = {
 const CATEGORIES = ['Infrastructure', 'Academic', 'Administrative'];
 
 export default function Disputes() {
-  const { disputes, createDispute, fetchDisputes } = useAppStore();
+  const { disputes, createDispute, fetchDisputes, deleteDispute } = useAppStore();
   const [tab, setTab] = useState('list');
   const [form, setForm] = useState({ category: 'Infrastructure', title: '', description: '' });
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(null); // id being deleted
 
   useEffect(() => { fetchDisputes(); }, []);
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this dispute? This cannot be undone.')) return;
+    setDeleting(id);
+    try {
+      await deleteDispute(id);
+    } catch (err) {
+      alert(err.message || 'Failed to delete dispute');
+    } finally {
+      setDeleting(null);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -67,7 +80,26 @@ export default function Disputes() {
                     <div style={{ fontSize: '13px', fontWeight: '600', marginBottom: '3px' }}>{d.title}</div>
                     <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{d.category} · {d.date}</div>
                   </div>
-                  <span className={sc.cls} style={{ padding: '3px 10px', borderRadius: '99px', fontSize: '11px', fontWeight: '600', whiteSpace: 'nowrap' }}>{sc.label}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span className={sc.cls} style={{ padding: '3px 10px', borderRadius: '99px', fontSize: '11px', fontWeight: '600', whiteSpace: 'nowrap' }}>{sc.label}</span>
+                    <button
+                      onClick={() => handleDelete(d.id)}
+                      disabled={deleting === d.id}
+                      title="Delete dispute"
+                      style={{
+                        background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)',
+                        borderRadius: '6px', padding: '4px 7px', cursor: 'pointer',
+                        color: '#f87171', display: 'flex', alignItems: 'center',
+                        transition: 'all .15s', flexShrink: 0,
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.22)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'rgba(239,68,68,0.1)'}
+                    >
+                      {deleting === d.id
+                        ? <Loader size={12} style={{ animation: 'spin 1s linear infinite' }} />
+                        : <Trash2 size={12} />}
+                    </button>
+                  </div>
                 </div>
                 <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: d.resolution ? '10px' : 0 }}>{d.description}</p>
                 {d.resolution && (

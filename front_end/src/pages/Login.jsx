@@ -12,7 +12,6 @@ const DEMO = [
   { label: 'Admin',   email: 'admin@college.edu' },
 ];
 
-// Google icon SVG
 function GoogleIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -25,7 +24,7 @@ function GoogleIcon() {
 }
 
 export default function Login() {
-  const { setAuth } = useAppStore();
+  const login = useAppStore(s => s.login);
   const { signIn, isLoaded: clerkLoaded } = useSignIn();
 
   const [email,       setEmail]       = useState('rahul@college.edu');
@@ -35,195 +34,126 @@ export default function Login() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error,       setError]       = useState('');
 
-  // Auto-seed demo users on mount
   useEffect(() => {
     fetch(`${API}/auth/seed-demo`, { method: 'POST' }).catch(() => {});
   }, []);
 
-  // ── Email / Password login (pure JWT) ──────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    try {
-      const resp = await fetch(`${API}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({}));
-        throw new Error(err.detail || 'Invalid email or password');
-      }
-      const data = await resp.json();
-      const user = {
-        ...data.user,
-        avatar: data.user.avatar || data.user.name?.split(' ').map(w => w[0]).join('').toUpperCase() || '?',
-      };
-      setAuth(user, data.access_token);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+    try { await login(email, password); } 
+    catch (err) { setError(err.message || 'Invalid email or password'); } 
+    finally { setLoading(true); } // Keep loading while redirecting
   };
 
-  // ── Google login via Clerk → then exchange for backend JWT ─────────────────
   const handleGoogle = async () => {
     if (!clerkLoaded || !signIn) return;
     setGoogleLoading(true);
     setError('');
     try {
-      // Clerk handles the Google OAuth popup/redirect
       await signIn.authenticateWithRedirect({
         strategy:          'oauth_google',
         redirectUrl:       `${window.location.origin}/sso-callback`,
         redirectUrlComplete: `${window.location.origin}/sso-callback`,
       });
-      // After redirect, the SSO callback page will exchange Clerk session → backend JWT
     } catch (err) {
-      setError('Google sign-in failed. Try email/password.');
+      setError('Google sign-in failed.');
       setGoogleLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen bg-[#0a0a0a] font-inter">
-
+    <div className="flex min-h-screen bg-[#0a0a0a] font-inter text-white">
       {/* ── Left Form Panel ── */}
-      <div className="w-full lg:w-[500px] shrink-0 flex flex-col justify-center px-8 sm:px-16 relative bg-[#0a0a0a] z-10 border-r border-white/[0.05]">
-
-        <div className="absolute top-10 left-8 sm:left-16 flex items-center gap-2 cursor-pointer" onClick={() => window.location.href = '/'}>
-          <img src={logo} alt="Veloris" className="w-[28px] h-[28px] object-contain opacity-90 filter grayscale" />
-          <span className="text-xl font-bold font-space tracking-tight text-white">Veloris</span>
+      <div className="w-full lg:w-[500px] shrink-0 flex flex-col justify-center px-8 sm:px-16 relative bg-[#0a0a0a] z-10" style={{ borderRight: '1px solid var(--border)' }}>
+        <div className="absolute top-10 left-8 sm:left-16 flex items-center gap-2.5">
+          <img src={logo} alt="Veloris" className="w-[30px] h-[30px] object-contain logo-float" />
+          <span className="text-xl font-bold font-space tracking-tight text-white drop-shadow-[0_0_12px_rgba(91,91,214,0.4)]">Veloris</span>
         </div>
 
-        <div className="w-full mt-16 sm:mt-0">
-          <h1 className="text-[32px] font-bold font-space text-white mb-1 tracking-tight">Sign in</h1>
-          <p className="text-white/50 text-sm mb-8">to continue to Veloris</p>
+        <div className="w-full mt-16 sm:mt-0 fade-in-up">
+          <h1 className="text-[32px] font-black font-space text-white mb-1 tracking-tight">Sign in</h1>
+          <p className="text-white/40 text-sm mb-10">Advanced Student Analytics Platform</p>
 
-          {/* Google button */}
-          <button
-            type="button"
-            onClick={handleGoogle}
-            disabled={googleLoading || !clerkLoaded}
-            className="w-full flex items-center justify-center gap-3 h-[46px] border border-white/10 bg-transparent hover:bg-white/5 transition-colors text-white text-sm font-medium mb-6 disabled:opacity-40"
-            style={{ borderRadius: 0 }}
-          >
-            {googleLoading ? <Loader2 size={15} className="animate-spin" /> : <GoogleIcon />}
+          <button type="button" onClick={handleGoogle} disabled={googleLoading || !clerkLoaded}
+            className="w-full flex items-center justify-center gap-3 h-[48px] rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all text-white text-sm font-semibold mb-6 disabled:opacity-40">
+            {googleLoading ? <Loader2 size={16} className="animate-spin" /> : <GoogleIcon />}
             Continue with Google
           </button>
 
-          {/* Divider */}
-          <div className="flex items-center gap-3 mb-6">
-            <div className="flex-1 h-px bg-white/10" />
-            <span className="text-white/30 text-[11px] uppercase tracking-widest font-semibold">or</span>
-            <div className="flex-1 h-px bg-white/10" />
+          <div className="flex items-center gap-4 mb-8">
+            <div className="flex-1 h-px bg-white/5" />
+            <span className="text-white/20 text-[10px] uppercase tracking-widest font-black">or security hash</span>
+            <div className="flex-1 h-px bg-white/5" />
           </div>
 
-          {/* Demo quick-select */}
-          <div className="flex gap-2 mb-6">
-            {DEMO.map(d => (
-              <button key={d.label} type="button"
-                onClick={() => { setEmail(d.email); setPassword('password'); setError(''); }}
-                className="flex-1 py-2 text-[11px] font-semibold uppercase tracking-widest transition-colors"
-                style={{
-                  border:     email === d.email ? '1px solid rgba(255,255,255,0.3)' : '1px solid rgba(255,255,255,0.08)',
-                  background: email === d.email ? 'rgba(255,255,255,0.06)' : 'transparent',
-                  color:      email === d.email ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.3)',
-                  borderRadius: 0,
-                }}
-              >{d.label}</button>
-            ))}
-          </div>
-
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div>
-              <label className="block text-white/70 font-semibold text-[13px] mb-1.5">Email address</label>
-              <input type="email" value={email} onChange={e => { setEmail(e.target.value); setError(''); }} required
-                className="w-full bg-black border border-white/10 text-white focus:border-white/40 h-[46px] text-sm px-4 outline-none transition-colors"
-                style={{ borderRadius: 0 }} placeholder="you@college.edu" />
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+            <div className="flex gap-2 p-1.5 rounded-xl bg-white/5 border border-white/5 mb-2">
+              {DEMO.map(d => (
+                <button key={d.label} type="button" onClick={() => { setEmail(d.email); setPassword('password'); setError(''); }}
+                  className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${email === d.email ? 'bg-white/10 text-white shadow-lg' : 'text-white/30 hover:text-white/50'}`}>
+                  {d.label}
+                </button>
+              ))}
             </div>
 
-            <div>
-              <label className="block text-white/70 font-semibold text-[13px] mb-1.5">Password</label>
+            <div className="space-y-1.5">
+              <label className="text-white/50 font-bold text-[11px] uppercase tracking-wider ml-1">Email Authority</label>
+              <input type="email" value={email} onChange={e => { setEmail(e.target.value); setError(''); }} required
+                className="input h-[48px] rounded-xl" placeholder="authority@veloris.edu" />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-white/50 font-bold text-[11px] uppercase tracking-wider ml-1">Secure Key</label>
               <div className="relative">
-                <input type={showPass ? 'text' : 'password'} value={password}
-                  onChange={e => { setPassword(e.target.value); setError(''); }} required
-                  className="w-full bg-black border border-white/10 text-white focus:border-white/40 h-[46px] text-sm px-4 pr-12 outline-none transition-colors"
-                  style={{ borderRadius: 0 }} placeholder="••••••••" />
-                <button type="button" onClick={() => setShowPass(v => !v)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors">
-                  {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                <input type={showPass ? 'text' : 'password'} value={password} onChange={e => { setPassword(e.target.value); setError(''); }} required
+                  className="input h-[48px] rounded-xl pr-12" placeholder="••••••••" />
+                <button type="button" onClick={() => setShowPass(v => !v)} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/50 transition-colors">
+                  {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
             </div>
 
-            {error && (
-              <div className="text-[12px] text-red-400 bg-red-400/10 border border-red-400/20 px-3 py-2">{error}</div>
-            )}
+            {error && <div className="text-[11px] font-bold text-red-400 bg-red-400/10 border border-red-400/20 px-4 py-3 rounded-xl">{error}</div>}
 
             <button type="submit" disabled={loading}
-              className="w-full bg-white text-black hover:bg-gray-200 transition-colors h-[46px] font-bold text-sm tracking-wide mt-2 flex items-center justify-center gap-2 disabled:opacity-50"
-              style={{ borderRadius: 0 }}>
-              {loading ? <><Loader2 size={15} className="animate-spin" /> Signing in…</> : 'Continue'}
+              className="btn-primary h-[50px] rounded-xl text-black font-black text-[13px] tracking-wide mt-3 w-full">
+              {loading ? <><Loader2 size={16} className="animate-spin" /> Authenticating…</> : 'Access Dashboard'}
             </button>
           </form>
 
-          <p className="text-white/25 text-[11px] mt-8 text-center">
-            Demo password: <span className="text-white/50 font-mono">password</span>
-          </p>
+          <p className="text-white/20 text-[11px] mt-10 text-center font-medium">Demo Access Code: <span className="text-white/40 font-mono">password</span></p>
         </div>
       </div>
 
       {/* ── Right Panel ── */}
       <div className="hidden lg:flex flex-1 relative overflow-hidden bg-[#030303] flex-col justify-center p-24">
-        <div className="absolute inset-0 pointer-events-none z-0 opacity-80"
+        <div className="absolute inset-0 pointer-events-none z-0"
           style={{
-            backgroundImage: 'linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)',
-            backgroundSize: '48px 48px',
+            backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255,255,255,0.05) 1px, transparent 0)',
+            backgroundSize: '32px 32px',
             maskImage: 'radial-gradient(circle at center, black 0%, transparent 80%)',
-            WebkitMaskImage: 'radial-gradient(circle at center, black 0%, transparent 80%)',
           }} />
-        <div className="absolute top-1/4 right-1/4 w-[400px] h-[400px] bg-white/[0.02] border border-white/[0.05] rounded-full pointer-events-none fade-in-up" />
-        <div className="absolute bottom-1/4 left-1/4 w-[300px] h-[300px] bg-white/[0.01] border border-white/[0.03] rounded-full pointer-events-none fade-in-up" style={{ animationDelay: '0.1s' }} />
-        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-[20%] right-[10%] opacity-60" style={{ animation: 'float 6s ease-in-out infinite' }}>
-            <div className="flex items-center gap-3 px-4 py-2 border border-white/10 bg-[#0a0a0a]/80 backdrop-blur-md">
-              <Map size={16} className="text-white/70" />
-              <span className="text-[11px] font-space text-white/70 tracking-widest uppercase font-semibold">Dynamic Roadmaps</span>
-            </div>
+        <div className="relative z-10 max-w-xl fade-in-up">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-widest text-[#5B5BD6] mb-8">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#5B5BD6] animate-pulse" />
+            Neural Analytics v2.4
           </div>
-          <div className="absolute top-[40%] right-[25%] opacity-40" style={{ animation: 'float 8s ease-in-out infinite 1.5s' }}>
-            <div className="flex items-center gap-3 px-4 py-2 border border-white/10 bg-[#0a0a0a]/80 backdrop-blur-md">
-              <Brain size={16} className="text-white/70" />
-              <span className="text-[11px] font-space text-white/70 tracking-widest uppercase font-semibold">AI Peer Intelligence</span>
+          <h2 className="text-[54px] font-black font-space text-white mb-6 leading-[1.05] tracking-tighter">Personalized Trajectories,<br />Unprecedented Outcomes.</h2>
+          <p className="text-lg text-white/40 mb-12 leading-relaxed max-w-md">Deploy AI-powered mentors and dynamic learning roadmaps that adapt in real-time to student performance signals.</p>
+          <div className="grid grid-cols-2 gap-10 border-l border-white/10 pl-8">
+            <div>
+              <div className="text-[32px] font-space font-black text-white mb-1">98%</div>
+              <div className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Prediction Engine Accuracy</div>
             </div>
-          </div>
-        </div>
-        <div className="relative z-10 max-w-xl fade-in-up" style={{ animationDelay: '0.2s' }}>
-          <h2 className="text-[44px] lg:text-[56px] font-bold font-space text-white mb-6 leading-[1.05] tracking-tight">
-            Personalized Trajectories,<br />Unprecedented Outcomes
-          </h2>
-          <p className="text-lg text-white/40 mb-10 leading-relaxed max-w-md">
-            Deploy AI-powered mentors and dynamic learning roadmaps that adapt in real-time to granular student performance signals.
-          </p>
-          <div className="grid grid-cols-2 gap-6 max-w-md border-l border-white/10 pl-8">
-            <div className="fade-in-up" style={{ animationDelay: '0.4s' }}>
-              <div className="text-[32px] font-space font-bold text-white mb-1">98%</div>
-              <div className="text-[10px] text-white/40 uppercase tracking-widest font-semibold">Prediction Accuracy</div>
-            </div>
-            <div className="fade-in-up" style={{ animationDelay: '0.5s' }}>
-              <div className="text-[32px] font-space font-bold text-white mb-1">&lt;24h</div>
-              <div className="text-[10px] text-white/40 uppercase tracking-widest font-semibold">Risk Detection Cycle</div>
+            <div>
+              <div className="text-[32px] font-space font-black text-white mb-1">&lt;24h</div>
+              <div className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Risk Detection Cycle</div>
             </div>
           </div>
         </div>
       </div>
-
-      <style>{`
-        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
-      `}</style>
     </div>
   );
 }

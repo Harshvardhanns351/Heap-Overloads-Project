@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { PageHeader } from '../../components/UI';
-import { useAppStore } from '../../store';
-import { Bell, Eye, Loader2 } from 'lucide-react';
+import { PageHeader, RiskBadge } from '../../components/UI';
+import useAppStore from '../../store';
+import { Bell, Eye, Loader2, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function TeacherAlerts() {
@@ -16,87 +16,130 @@ export default function TeacherAlerts() {
       setLoading(false);
     }
     loadData();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const getStudent = (studentId) => students.find(s => s.id === studentId);
+  const unread = alerts.filter(a => !a.is_read);
+  const read = alerts.filter(a => a.is_read);
+
+  const severityColor = (s) => {
+    const lvl = (s || '').toLowerCase();
+    if (lvl === 'red') return 'var(--status-err)';
+    if (lvl === 'yellow') return 'var(--status-warn)';
+    return 'var(--text-muted)';
+  };
+
+  const initials = (name) =>
+    (name || '?').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+
+  const AlertCard = ({ alert }) => {
+    const student = students.find(s => s.id === alert.student_id);
+    const studentName = student?.name || alert.student_name || `Student #${alert.student_id}`;
+
+    return (
+      <div
+        className="card"
+        style={{
+          padding: '16px 20px',
+          borderLeft: `3px solid ${severityColor(alert.severity)}`,
+          opacity: alert.is_read ? 0.6 : 1,
+          transition: 'opacity 0.2s',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
+          {/* Avatar */}
+          <div style={{
+            width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
+            background: 'var(--bg-elevated)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '12px', fontWeight: '700', color: severityColor(alert.severity),
+            border: `1px solid rgba(255,255,255,0.06)`
+          }}>
+            {initials(studentName)}
+          </div>
+
+          {/* Body */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
+              <span style={{ fontSize: '13px', fontWeight: '600' }}>{studentName}</span>
+              <RiskBadge level={(alert.severity || 'green').toLowerCase()} />
+              <span style={{ fontSize: '10px', color: 'var(--text-muted)', marginLeft: 'auto' }}>
+                {alert.created_at ? new Date(alert.created_at).toLocaleString() : ''}
+              </span>
+            </div>
+            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '12px' }}>
+              {alert.message}
+            </p>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                className="btn btn-ghost"
+                onClick={() => navigate(`/teacher/student/${alert.student_id}`)}
+                style={{ fontSize: '11px', padding: '5px 12px' }}
+              >
+                <Eye size={12} /> View Student
+              </button>
+              {!alert.is_read && (
+                <button
+                  className="btn btn-ghost"
+                  onClick={() => markAlertRead(alert.id)}
+                  style={{ fontSize: '11px', padding: '5px 12px' }}
+                >
+                  <CheckCircle size={12} /> Mark Read
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
+        <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#606060' }} />
       </div>
     );
   }
 
   return (
     <div className="fade-in-up" style={{ maxWidth: '680px' }}>
-      <PageHeader title="Risk Alerts" subtitle="Students flagged by the wellbeing engine — no self-reporting, purely behavioral" />
+      <PageHeader
+        title="Risk Alerts"
+        subtitle="Students flagged by the wellbeing engine — behavioral signals only"
+      />
 
-      <div style={{ marginBottom: '20px', padding: '12px 16px', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.18)', borderRadius: '10px', fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.6' }}>
-        <strong style={{ color: '#ef4444' }}>How alerts work:</strong> The wellbeing engine runs nightly, scoring each student on behavioral signals — activity gaps, late submissions, attendance drops, and marks trends. No mood surveys. No self-reporting. Just observable patterns.
+      <div style={{ marginBottom: '20px', padding: '12px 16px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.6' }}>
+        <strong style={{ color: 'var(--status-err)' }}>How alerts work:</strong> The wellbeing engine runs nightly, scoring each student on behavioral signals — activity gaps, late submissions, attendance drops, and marks trends. No mood surveys. No self-reporting.
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        {alerts.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-            <Bell size={40} className="mx-auto mb-4 opacity-50" />
-            <p>No alerts yet. The wellbeing engine runs at midnight.</p>
-          </div>
-        )}
-        
-        {alerts.map((alert) => {
-          const student = getStudent(alert.student_id);
-          return (
-            <div key={alert.id} className="card" style={{ padding: '16px 20px', borderLeft: `3px solid ${alert.severity === 'red' ? '#ef4444' : '#f59e0b'}` }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
-                <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: alert.severity === 'red' ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', color: alert.severity === 'red' ? '#ef4444' : '#f59e0b', flexShrink: 0 }}>
-                  {student?.name?.split(' ').map(n => n[0]).join('') || '?'}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
-                    <span style={{ fontSize: '13px', fontWeight: '600' }}>{student?.name || 'Unknown Student'}</span>
-                    <span style={{ 
-                      padding: '2px 8px', 
-                      borderRadius: '99px', 
-                      fontSize: '10px', 
-                      fontWeight: '600',
-                      background: alert.severity === 'red' ? '#FCEBEB' : '#FAEEDA',
-                      color: alert.severity === 'red' ? '#A32D2D' : '#854F0B',
-                    }}>
-                      {alert.severity.toUpperCase()}
-                    </span>
-                    <span style={{ fontSize: '10px', color: 'var(--text-muted)', marginLeft: 'auto' }}>
-                      {new Date(alert.created_at).toLocaleString()}
-                    </span>
-                  </div>
-                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '12px' }}>{alert.message}</p>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button 
-                      className="btn btn-ghost" 
-                      onClick={() => navigate(`/teacher/student/${alert.student_id}`)} 
-                      style={{ fontSize: '11px', padding: '5px 12px' }}
-                    >
-                      <Eye size={12} /> View Student
-                    </button>
-                    {!alert.read && (
-                      <button 
-                        className="btn btn-ghost" 
-                        onClick={() => markAlertRead(alert.id)} 
-                        style={{ fontSize: '11px', padding: '5px 12px' }}
-                      >
-                        Mark as Read
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-
-        <div style={{ textAlign: 'center', padding: '16px', fontSize: '12px', color: 'var(--text-muted)' }}>
-          Algorithms run at midnight · Next check in 18 hours
+      {alerts.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)', fontSize: '13px' }}>
+          <Bell size={28} style={{ margin: '0 auto 12px', display: 'block', opacity: 0.3 }} />
+          No alerts at the moment — all students look healthy.
         </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {unread.length > 0 && (
+            <>
+              <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', padding: '4px 0' }}>
+                Unread ({unread.length})
+              </div>
+              {unread.map(a => <AlertCard key={a.id} alert={a} />)}
+            </>
+          )}
+          {read.length > 0 && (
+            <>
+              <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', padding: '4px 0', marginTop: '8px' }}>
+                Read ({read.length})
+              </div>
+              {read.map(a => <AlertCard key={a.id} alert={a} />)}
+            </>
+          )}
+        </div>
+      )}
+
+      <div style={{ textAlign: 'center', padding: '16px', fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px' }}>
+        Algorithms run at midnight · Next check in ~{24 - new Date().getHours()} hours
       </div>
     </div>
   );
