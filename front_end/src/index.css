@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
 @layer base {
@@ -212,6 +212,18 @@
     animation: shimmer 1.5s infinite;
     border-radius: 8px;
   }
+
+  .table-row {
+    @apply transition-colors duration-150 hover:bg-white/[0.03];
+  }
+
+  .badge-red {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-500/15 text-red-400 border border-red-500/30;
+  }
+
+  .badge-green {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30;
+  }
 }
 
 @layer utilities {
@@ -223,7 +235,6 @@
     from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
   }
-  
   @keyframes pulseRing {
     0%, 100% { box-shadow: 0 0 0 0 rgba(83, 74, 183, 0.4); }
     50% { box-shadow: 0 0 0 8px rgba(83, 74, 183, 0); }
