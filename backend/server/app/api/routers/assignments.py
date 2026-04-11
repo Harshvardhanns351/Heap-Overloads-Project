@@ -52,6 +52,13 @@ class SubmissionOut(BaseModel):
     status: str
     file_path: Optional[str] = None
     text: Optional[str] = None
+    grade: Optional[str] = None
+    feedback: Optional[str] = None
+
+
+class FeedbackPayload(BaseModel):
+    grade: Optional[str] = None
+    feedback: Optional[str] = None
 
 
 def _teacher_allowed_class_ids(teacher: User) -> List[str]:
@@ -138,7 +145,7 @@ def list_assignments(
     # Student: force to own class_id if present
     if current_user.role == "student":
         if not current_user.class_id:
-            raise HTTPException(status_code=400, detail="Student has no class_id assigned")
+            return []  # no class assigned yet — return empty list gracefully
         class_id = current_user.class_id
 
     if current_user.role == "teacher":
@@ -332,6 +339,8 @@ async def submit_assignment(
         status=sub.status,
         file_path=sub.file_path,
         text=sub.text,
+        grade=sub.grade,
+        feedback=sub.feedback,
     )
 
 
@@ -372,7 +381,189 @@ def list_submissions(
             status=s.status,
             file_path=s.file_path,
             text=s.text,
+            grade=s.grade,
+            feedback=s.feedback,
         )
         for s in subs
     ]
+
+
+@router.get(
+    "/{assignment_id}/my-submission",
+    response_model=Optional[SubmissionOut],
+    dependencies=[Depends(role_required(["student"]))],
+)
+def get_my_submission(
+    assignment_id: int,
+    current_user: User = Depends(get_current_user),
+    session=Depends(get_session),
+):
+    sub = session.exec(
+        select(AssignmentSubmission)
+        .where(AssignmentSubmission.assignment_id == assignment_id)
+        .where(AssignmentSubmission.student_id == current_user.id)
+        .order_by(AssignmentSubmission.submitted_at.desc())
+        .limit(1)
+    ).first()
+    if not sub:
+        return None
+    return SubmissionOut(
+        id=sub.id,
+        assignment_id=sub.assignment_id,
+        student_id=sub.student_id,
+        submitted_at=sub.submitted_at,
+        status=sub.status,
+        file_path=sub.file_path,
+        text=sub.text,
+        grade=sub.grade,
+        feedback=sub.feedback,
+    )
+
+
+@router.delete(
+    "/{assignment_id}/my-submission",
+    status_code=204,
+    dependencies=[Depends(role_required(["student"]))],
+)
+def delete_my_submission(
+    assignment_id: int,
+    current_user: User = Depends(get_current_user),
+    session=Depends(get_session),
+):
+    sub = session.exec(
+        select(AssignmentSubmission)
+        .where(AssignmentSubmission.assignment_id == assignment_id)
+        .where(AssignmentSubmission.student_id == current_user.id)
+        .order_by(AssignmentSubmission.submitted_at.desc())
+        .limit(1)
+    ).first()
+    if not sub:
+        raise HTTPException(status_code=404, detail="No submission found")
+    # Only allow delete if not yet graded
+    if sub.grade:
+        raise HTTPException(status_code=403, detail="Cannot delete a graded submission")
+    if sub.file_path and os.path.isfile(sub.file_path):
+        os.remove(sub.file_path)
+    session.delete(sub)
+    session.commit()
+
+
+@router.patch(
+    "/{assignment_id}/my-submission",
+    response_model=SubmissionOut,
+    dependencies=[Depends(role_required(["student"]))],
+)
+async def update_my_submission(
+    assignment_id: int,
+    file: Optional[UploadFile] = File(default=None),
+    text_response: Optional[str] = Form(default=None),
+    current_user: User = Depends(get_current_user),
+    session=Depends(get_session),
+):
+    sub = session.exec(
+        select(AssignmentSubmission)
+        .where(AssignmentSubmission.assignment_id == assignment_id)
+        .where(AssignmentSubmission.student_id == current_user.id)
+        .order_by(AssignmentSubmission.submitted_at.desc())
+        .limit(1)
+    ).first()
+    if not sub:
+        raise HTTPException(status_code=404, detail="No submission found")
+    if sub.grade:
+        raise HTTPException(status_code=403, detail="Cannot edit a graded submission")
+
+    if not file and not (text_response or "").strip():
+        raise HTTPException(status_code=400, detail="Provide file or text_response")
+
+    assignment = session.get(Assignment, assignment_id)
+    now = datetime.utcnow()
+    status = "submitted"
+    try:
+        deadline = assignment.deadline
+        if deadline.tzinfo is None:
+            deadline = deadline.replace(tzinfo=None)
+        if now > deadline.replace(tzinfo=None):
+            status = "late"
+    except Exception:
+        pass
+
+    if file:
+        if sub.file_path and os.path.isfile(sub.file_path):
+            os.remove(sub.file_path)
+        base = _ensure_submission_dir(assignment_id, current_user.id)
+        safe_name = os.path.basename(file.filename or f"submission_{int(now.timestamp())}")
+        path = os.path.join(base, safe_name)
+        content = await file.read()
+        with open(path, "wb") as f:
+            f.write(content)
+        sub.file_path = path.replace("\\", "/")
+        sub.text = None
+    else:
+        sub.text = (text_response or "").strip() or None
+        if sub.file_path and os.path.isfile(sub.file_path):
+            os.remove(sub.file_path)
+        sub.file_path = None
+
+    sub.submitted_at = now
+    sub.status = status
+    session.add(sub)
+    session.commit()
+    session.refresh(sub)
+
+    return SubmissionOut(
+        id=sub.id,
+        assignment_id=sub.assignment_id,
+        student_id=sub.student_id,
+        submitted_at=sub.submitted_at,
+        status=sub.status,
+        file_path=sub.file_path,
+        text=sub.text,
+        grade=sub.grade,
+        feedback=sub.feedback,
+    )
+
+
+@router.patch(
+    "/{assignment_id}/submissions/{submission_id}/feedback",
+    response_model=SubmissionOut,
+    dependencies=[Depends(role_required(["teacher", "admin"]))],
+)
+def give_feedback(
+    assignment_id: int,
+    submission_id: int,
+    payload: FeedbackPayload,
+    current_user: User = Depends(get_current_user),
+    session=Depends(get_session),
+):
+    assignment = session.get(Assignment, assignment_id)
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+    _ensure_teacher_can_manage_assignment(current_user, assignment)
+
+    sub = session.get(AssignmentSubmission, submission_id)
+    if not sub or sub.assignment_id != assignment_id:
+        raise HTTPException(status_code=404, detail="Submission not found")
+
+    if payload.grade is not None:
+        sub.grade = payload.grade
+    if payload.feedback is not None:
+        sub.feedback = payload.feedback
+
+    session.add(sub)
+    session.commit()
+    session.refresh(sub)
+
+    student = session.get(User, sub.student_id)
+    return SubmissionOut(
+        id=sub.id,
+        assignment_id=sub.assignment_id,
+        student_id=sub.student_id,
+        student_name=student.name if student else None,
+        submitted_at=sub.submitted_at,
+        status=sub.status,
+        file_path=sub.file_path,
+        text=sub.text,
+        grade=sub.grade,
+        feedback=sub.feedback,
+    )
 

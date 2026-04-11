@@ -9,12 +9,15 @@ PATCH /api/profile/me/internships/{id}
 DELETE /api/profile/me/internships/{id}
 PATCH /api/profile/internship/{id}/verify  → teacher/admin verify
 """
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from sqlmodel import select
 from sqlalchemy import func
 from datetime import datetime, timezone, date
 from typing import Optional
 import json
+import os
+import shutil
+import uuid
 
 from pydantic import BaseModel
 
@@ -30,6 +33,7 @@ router = APIRouter()
 # ── Schemas ───────────────────────────────────────────────────────────────────
 
 class ProfileUpdate(BaseModel):
+    name: Optional[str] = None
     bio: Optional[str] = None
     phone: Optional[str] = None
     linkedin_url: Optional[str] = None
@@ -234,6 +238,11 @@ def update_my_profile(
     current_user: User = Depends(get_current_user),
     session=Depends(get_session),
 ):
+    if payload.name is not None:
+        stripped = payload.name.strip()
+        if not stripped:
+            raise HTTPException(status_code=422, detail="Name cannot be empty")
+        current_user.name = stripped
     if payload.bio is not None:
         current_user.bio = payload.bio[:200]
     if payload.phone is not None:
@@ -248,6 +257,41 @@ def update_my_profile(
     session.commit()
     session.refresh(current_user)
     return _user_dict(current_user)
+
+
+# ── Avatar upload ─────────────────────────────────────────────────────────────
+
+UPLOAD_DIR = "uploads"
+ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
+MAX_AVATAR_BYTES = 5 * 1024 * 1024  # 5 MB
+
+@router.post("/me/avatar")
+async def upload_avatar(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    session=Depends(get_session),
+):
+    if file.content_type not in ALLOWED_IMAGE_TYPES:
+        raise HTTPException(status_code=422, detail="Only JPEG, PNG, WebP or GIF images are allowed")
+
+    contents = await file.read()
+    if len(contents) > MAX_AVATAR_BYTES:
+        raise HTTPException(status_code=413, detail="Image must be under 5 MB")
+
+    ext = os.path.splitext(file.filename or "avatar.jpg")[1].lower() or ".jpg"
+    filename = f"avatar_{current_user.id}_{uuid.uuid4().hex[:8]}{ext}"
+    user_dir = os.path.join(UPLOAD_DIR, str(current_user.id))
+    os.makedirs(user_dir, exist_ok=True)
+    dest = os.path.join(user_dir, filename)
+
+    with open(dest, "wb") as f:
+        f.write(contents)
+
+    current_user.avatar_url = f"/{dest.replace(os.sep, '/')}"
+    session.add(current_user)
+    session.commit()
+    session.refresh(current_user)
+    return {"avatar_url": current_user.avatar_url}
 
 
 # ── Internships ───────────────────────────────────────────────────────────────

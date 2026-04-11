@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef } from "react";
-import { BookOpen, Clock, CheckCircle2, AlertTriangle, Upload, FileText, Send, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import {
+  BookOpen, Clock, CheckCircle2, AlertTriangle, Upload, FileText,
+  Send, ChevronDown, ChevronUp, Loader2, MessageSquare, Star, Paperclip,
+} from "lucide-react";
 
 const API = "http://localhost:8000/api";
 const tok = () => localStorage.getItem("token");
@@ -18,7 +21,7 @@ function getDueInfo(deadline) {
 }
 
 const STATUS_CFG = {
-  submitted:     { label: "Submitted",     color: "#22c55e", bg: "rgba(34,197,94,0.1)"  },
+  submitted:     { label: "Submitted",     color: "#22c55e", bg: "rgba(34,197,94,0.1)" },
   late:          { label: "Late",          color: "#f59e0b", bg: "rgba(245,158,11,0.1)" },
   not_submitted: { label: "Not submitted", color: "#5a5a7a", bg: "rgba(255,255,255,0.04)" },
 };
@@ -34,7 +37,8 @@ function SubmitModal({ assignment, onClose, onSubmitted }) {
   const handleSubmit = async () => {
     if (mode === "text" && !text.trim()) { setError("Write something first."); return; }
     if (mode === "file" && !file) { setError("Select a file first."); return; }
-    setSubmitting(true); setError("");
+    setSubmitting(true);
+    setError("");
     try {
       const fd = new FormData();
       if (mode === "text") fd.append("text_response", text.trim());
@@ -43,7 +47,9 @@ function SubmitModal({ assignment, onClose, onSubmitted }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Submission failed");
       onSubmitted(data);
-    } catch (e) { setError(e.message); }
+    } catch (e) {
+      setError(e.message);
+    }
     setSubmitting(false);
   };
 
@@ -55,7 +61,8 @@ function SubmitModal({ assignment, onClose, onSubmitted }) {
         <div style={{ fontSize: "12px", color: "var(--text-muted)", marginBottom: "20px" }}>{assignment.subject} · {assignment.class_id}</div>
         <div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
           {[["text", "Text response", FileText], ["file", "Upload file", Upload]].map(([m, label, Icon]) => (
-            <button key={m} onClick={() => setMode(m)} style={{ flex: 1, padding: "8px", borderRadius: "8px", fontSize: "12px", fontWeight: 500, cursor: "pointer", border: `1.5px solid ${mode === m ? "#5B5BD6" : "rgba(255,255,255,0.08)"}`, background: mode === m ? "rgba(91,91,214,0.12)" : "transparent", color: mode === m ? "#A8A8F8" : "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "center", gap: "5px" }}>
+            <button key={m} onClick={() => setMode(m)}
+              style={{ flex: 1, padding: "8px", borderRadius: "8px", fontSize: "12px", fontWeight: 500, cursor: "pointer", border: `1.5px solid ${mode === m ? "#5B5BD6" : "rgba(255,255,255,0.08)"}`, background: mode === m ? "rgba(91,91,214,0.12)" : "transparent", color: mode === m ? "#A8A8F8" : "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "center", gap: "5px" }}>
               <Icon size={12} />{label}
             </button>
           ))}
@@ -65,20 +72,26 @@ function SubmitModal({ assignment, onClose, onSubmitted }) {
             style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "10px", padding: "12px", fontSize: "13px", color: "var(--text-primary)", resize: "vertical", outline: "none", boxSizing: "border-box" }} />
         )}
         {mode === "file" && (
-          <div onClick={() => fileRef.current?.click()} style={{ border: "2px dashed rgba(255,255,255,0.1)", borderRadius: "10px", padding: "32px", textAlign: "center", cursor: "pointer", background: file ? "rgba(34,197,94,0.05)" : "transparent" }}>
+          <div onClick={() => fileRef.current?.click()}
+            style={{ border: "2px dashed rgba(255,255,255,0.1)", borderRadius: "10px", padding: "32px", textAlign: "center", cursor: "pointer", background: file ? "rgba(34,197,94,0.05)" : "transparent" }}>
             <input ref={fileRef} type="file" style={{ display: "none" }} onChange={e => setFile(e.target.files[0])} />
-            {file ? (
-              <><CheckCircle2 size={24} color="#22c55e" style={{ margin: "0 auto 8px" }} /><div style={{ fontSize: "13px" }}>{file.name}</div></>
-            ) : (
-              <><Upload size={24} color="var(--text-muted)" style={{ margin: "0 auto 8px" }} /><div style={{ fontSize: "13px", color: "var(--text-muted)" }}>Click to select file</div></>
-            )}
+            {file
+              ? <><CheckCircle2 size={24} color="#22c55e" style={{ margin: "0 auto 8px" }} /><div style={{ fontSize: "13px" }}>{file.name}</div></>
+              : <><Upload size={24} color="var(--text-muted)" style={{ margin: "0 auto 8px" }} /><div style={{ fontSize: "13px", color: "var(--text-muted)" }}>Click to select file</div></>
+            }
           </div>
         )}
-        {error && <div style={{ marginTop: "10px", fontSize: "12px", color: "#f09595", background: "rgba(239,68,68,0.08)", borderRadius: "8px", padding: "8px 12px" }}>{error}</div>}
+        {error && (
+          <div style={{ marginTop: "10px", fontSize: "12px", color: "#f09595", background: "rgba(239,68,68,0.08)", borderRadius: "8px", padding: "8px 12px" }}>{error}</div>
+        )}
         <div style={{ display: "flex", gap: "8px", marginTop: "16px", justifyContent: "flex-end" }}>
           <button onClick={onClose} style={{ padding: "8px 16px", borderRadius: "8px", fontSize: "12px", background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "var(--text-muted)", cursor: "pointer" }}>Cancel</button>
-          <button onClick={handleSubmit} disabled={submitting} style={{ padding: "8px 18px", borderRadius: "8px", fontSize: "12px", fontWeight: 500, background: submitting ? "rgba(34,197,94,0.3)" : "#22c55e", color: "#fff", border: "none", cursor: submitting ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
-            {submitting ? <><Loader2 size={12} style={{ animation: "spin 0.6s linear infinite" }} /> Submitting...</> : <><Send size={12} /> Submit</>}
+          <button onClick={handleSubmit} disabled={submitting}
+            style={{ padding: "8px 18px", borderRadius: "8px", fontSize: "12px", fontWeight: 500, background: submitting ? "rgba(34,197,94,0.3)" : "#22c55e", color: "#fff", border: "none", cursor: submitting ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+            {submitting
+              ? <><Loader2 size={12} style={{ animation: "spin 0.6s linear infinite" }} /> Submitting...</>
+              : <><Send size={12} /> Submit</>
+            }
           </button>
         </div>
       </div>
@@ -88,13 +101,33 @@ function SubmitModal({ assignment, onClose, onSubmitted }) {
 
 function AssignmentCard({ a, onSubmit }) {
   const [expanded, setExpanded] = useState(false);
+  const [submission, setSubmission] = useState(null);
+  const [loadingSub, setLoadingSub] = useState(false);
+
   const due = getDueInfo(a.deadline);
   const sc = STATUS_CFG[a.submission_status] || STATUS_CFG.not_submitted;
-  const canSubmit = a.submission_status === "not_submitted" || a.submission_status === "late";
+  const canSubmit = a.submission_status === "not_submitted";
+  const isSubmitted = a.submission_status === "submitted" || a.submission_status === "late";
+  const hasDetails = a.description || isSubmitted;
+
+  const toggleExpand = async () => {
+    const next = !expanded;
+    setExpanded(next);
+    if (next && isSubmitted && !submission) {
+      setLoadingSub(true);
+      try {
+        const res = await authFetch(`/assignments/${a.id}/my-submission`);
+        if (res.ok) setSubmission(await res.json());
+      } catch { /* silent */ }
+      setLoadingSub(false);
+    }
+  };
 
   return (
     <div style={{ background: "rgba(255,255,255,0.03)", border: `1.5px solid ${due.urgent && canSubmit ? "rgba(239,68,68,0.25)" : "rgba(255,255,255,0.08)"}`, borderRadius: "14px", overflow: "hidden" }}>
-      {due.urgent && canSubmit && <div style={{ height: "3px", background: due.color, animation: "pulseBar 2s ease-in-out infinite" }} />}
+      {due.urgent && canSubmit && (
+        <div style={{ height: "3px", background: due.color, animation: "pulseBar 2s ease-in-out infinite" }} />
+      )}
       <div style={{ padding: "16px 18px" }}>
         <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
           <div style={{ width: "36px", height: "36px", borderRadius: "9px", background: "rgba(79,142,247,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -118,20 +151,75 @@ function AssignmentCard({ a, onSubmit }) {
           </div>
           <div style={{ display: "flex", gap: "6px", alignItems: "center", flexShrink: 0 }}>
             {canSubmit && (
-              <button onClick={() => onSubmit(a)} style={{ padding: "6px 12px", borderRadius: "8px", fontSize: "11px", fontWeight: 500, background: "#5B5BD6", color: "#fff", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px" }}>
+              <button onClick={() => onSubmit(a)}
+                style={{ padding: "6px 12px", borderRadius: "8px", fontSize: "11px", fontWeight: 500, background: "#5B5BD6", color: "#fff", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px" }}>
                 <Send size={10} /> Submit
               </button>
             )}
-            {a.description && (
-              <button onClick={() => setExpanded(e => !e)} style={{ padding: "6px 8px", borderRadius: "8px", background: "transparent", border: "1px solid rgba(255,255,255,0.08)", color: "var(--text-muted)", cursor: "pointer" }}>
+            {hasDetails && (
+              <button onClick={toggleExpand}
+                style={{ padding: "6px 8px", borderRadius: "8px", background: "transparent", border: "1px solid rgba(255,255,255,0.08)", color: "var(--text-muted)", cursor: "pointer" }}>
                 {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
               </button>
             )}
           </div>
         </div>
-        {expanded && a.description && (
-          <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.06)", fontSize: "13px", color: "var(--text-secondary)", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
-            {a.description}
+
+        {expanded && (
+          <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+            {a.description && (
+              <div style={{ fontSize: "13px", color: "var(--text-secondary)", lineHeight: 1.7, whiteSpace: "pre-wrap", marginBottom: isSubmitted ? "14px" : 0 }}>
+                {a.description}
+              </div>
+            )}
+
+            {isSubmitted && (
+              loadingSub ? (
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", color: "var(--text-muted)" }}>
+                  <Loader2 size={12} style={{ animation: "spin 0.6s linear infinite" }} /> Loading submission...
+                </div>
+              ) : submission ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  <div style={{ fontSize: "11px", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                    Your Submission &middot; {new Date(submission.submitted_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                  </div>
+
+                  {submission.text && (
+                    <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "10px", padding: "12px", fontSize: "13px", color: "var(--text-secondary)", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
+                      {submission.text}
+                    </div>
+                  )}
+
+                  {submission.file_path && (
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", color: "#4f8ef7" }}>
+                      <Paperclip size={12} />
+                      <span>{submission.file_path.split("/").pop()}</span>
+                    </div>
+                  )}
+
+                  {submission.grade && (
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 14px", background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.15)", borderRadius: "10px" }}>
+                      <Star size={14} color="#22c55e" />
+                      <span style={{ fontSize: "13px", fontWeight: 600, color: "#22c55e" }}>Grade: {submission.grade}</span>
+                    </div>
+                  )}
+
+                  {submission.feedback && (
+                    <div style={{ padding: "12px 14px", background: "rgba(91,91,214,0.06)", border: "1px solid rgba(91,91,214,0.15)", borderRadius: "10px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
+                        <MessageSquare size={12} color="#A8A8F8" />
+                        <span style={{ fontSize: "11px", fontWeight: 600, color: "#A8A8F8", textTransform: "uppercase", letterSpacing: "0.08em" }}>Teacher Feedback</span>
+                      </div>
+                      <div style={{ fontSize: "13px", color: "var(--text-secondary)", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{submission.feedback}</div>
+                    </div>
+                  )}
+
+                  {!submission.grade && !submission.feedback && (
+                    <div style={{ fontSize: "12px", color: "var(--text-muted)", fontStyle: "italic" }}>No grade or feedback yet.</div>
+                  )}
+                </div>
+              ) : null
+            )}
           </div>
         )}
       </div>
@@ -167,7 +255,7 @@ export default function StudentAssignments() {
       a.id === sub.assignment_id ? { ...a, submission_status: sub.status } : a
     ));
     setSubmitting(null);
-    showToast(sub.status === "late" ? "Submitted (late)" : "Submitted successfully ✓", sub.status === "late" ? "warn" : "success");
+    showToast(sub.status === "late" ? "Submitted (late)" : "Submitted successfully", sub.status === "late" ? "warn" : "success");
   };
 
   const now = new Date();
@@ -197,7 +285,7 @@ export default function StudentAssignments() {
     <div className="fade-in-up" style={{ maxWidth: "860px", margin: "0 auto", padding: "1.5rem 1rem" }}>
       <div style={{ marginBottom: "1.5rem" }}>
         <div style={{ fontFamily: "Space Grotesk, sans-serif", fontSize: "22px", fontWeight: 700, marginBottom: "4px" }}>Assignments</div>
-        <div style={{ fontSize: "13px", color: "var(--text-muted)" }}>{assignments.length} total · {pending} pending · {done} submitted</div>
+        <div style={{ fontSize: "13px", color: "var(--text-muted)" }}>{assignments.length} total &middot; {pending} pending &middot; {done} submitted</div>
       </div>
 
       {(overdue > 0 || dueToday > 0) && (
@@ -226,7 +314,7 @@ export default function StudentAssignments() {
       </div>
 
       <div style={{ display: "flex", gap: "6px", marginBottom: "16px" }}>
-        {[["all","All"],["pending","Pending"],["submitted","Submitted"],["overdue","Overdue"]].map(([k,l]) => (
+        {[["all", "All"], ["pending", "Pending"], ["submitted", "Submitted"], ["overdue", "Overdue"]].map(([k, l]) => (
           <button key={k} onClick={() => setFilter(k)}
             style={{ padding: "6px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: 500, cursor: "pointer", border: `1.5px solid ${filter === k ? "#5B5BD6" : "rgba(255,255,255,0.08)"}`, background: filter === k ? "rgba(91,91,214,0.12)" : "transparent", color: filter === k ? "#A8A8F8" : "var(--text-muted)" }}>
             {l}
@@ -243,7 +331,9 @@ export default function StudentAssignments() {
         ) : filtered.map(a => <AssignmentCard key={a.id} a={a} onSubmit={setSubmitting} />)}
       </div>
 
-      {submitting && <SubmitModal assignment={submitting} onClose={() => setSubmitting(null)} onSubmitted={handleSubmitted} />}
+      {submitting && (
+        <SubmitModal assignment={submitting} onClose={() => setSubmitting(null)} onSubmitted={handleSubmitted} />
+      )}
 
       {toast && (
         <div style={{ position: "fixed", bottom: "24px", right: "24px", background: "rgba(20,20,36,0.95)", border: `1px solid ${toast.type === "success" ? "#22c55e" : toast.type === "warn" ? "#f59e0b" : "rgba(255,255,255,0.12)"}`, borderRadius: "10px", padding: "10px 16px", fontSize: "13px", zIndex: 999, color: toast.type === "success" ? "#7DC9A8" : toast.type === "warn" ? "#fbbf24" : "var(--text-primary)" }}>
@@ -251,7 +341,7 @@ export default function StudentAssignments() {
         </div>
       )}
 
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes pulseBar{0%,100%{opacity:1}50%{opacity:0.4}}`}</style>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } } @keyframes pulseBar { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }`}</style>
     </div>
   );
 }

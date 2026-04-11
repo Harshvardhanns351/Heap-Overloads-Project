@@ -6,7 +6,7 @@ import { PageHeader, Tabs } from '../../components/UI';
 import {
   AlertTriangle, Download, Upload, CheckCircle2,
   FileText, FileSpreadsheet, X, Users, TrendingDown
-} from 'lucide-react';
+} from 'lucide-react';  
 
 // Point pdf.js worker to the bundled worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
@@ -40,8 +40,14 @@ function parseCSV(text) {
 }
 
 /**
- * Parse PDF pages using pdfjs item positions.
- * Uses header X-positions as column buckets so each cell lands in the right column.
+ * Bulletproof PDF table parser.
+ * - Extracts all text tokens with X/Y coordinates
+ * - Groups into rows by Y proximity
+ * - Finds header row by keyword matching
+ * - Collects ALL header tokens into a flat list sorted by X
+ * - Merges adjacent header tokens that belong to same column (gap < 40px)
+ * - Assigns data tokens to columns by nearest-X anchor
+ * - Returns array of objects keyed by merged header labels
  */
 async function parsePDFItems(pdfDoc) {
   const allItems = [];
@@ -52,93 +58,110 @@ async function parsePDFItems(pdfDoc) {
     content.items.forEach(item => {
       const str = item.str.trim();
       if (!str) return;
-      const tx = item.transform[4];
-      const ty = vp.height - item.transform[5]; // flip Y: top = 0
-      allItems.push({ str, x: tx, y: ty, page: p });
+      allItems.push({ str, x: item.transform[4], y: vp.height - item.transform[5], page: p });
     });
   }
   if (allItems.length === 0) return [];
 
-  // Sort top-to-bottom, left-to-right
   allItems.sort((a, b) => a.page - b.page || a.y - b.y || a.x - b.x);
 
-  // ── Step 1: group items into visual rows by Y proximity ──────────────────
+  // Group into rows by Y proximity (±10px)
   const rawRows = [];
   let cur = [allItems[0]];
   for (let i = 1; i < allItems.length; i++) {
-    const prev = allItems[i - 1];
-    const item = allItems[i];
-    if (item.page === prev.page && Math.abs(item.y - prev.y) < 6) {
-      cur.push(item);
-    } else {
-      rawRows.push(cur);
-      cur = [item];
-    }
+    const prev = allItems[i - 1], item = allItems[i];
+    if (item.page === prev.page && Math.abs(item.y - prev.y) < 10) cur.push(item);
+    else { rawRows.push(cur); cur = [item]; }
   }
   rawRows.push(cur);
 
-  // ── Step 2: find header row (most keyword matches) ───────────────────────
-  const KW = ['name', 'roll', 'present', 'total', 'attendance', 'branch', 'semester', 'columns'];
+  // Find header row — highest keyword score
+  const KW = ['name','roll','present','total','attendance','branch','semester','columns','no'];
   let headerIdx = 0, bestScore = 0;
   for (let i = 0; i < Math.min(rawRows.length, 8); i++) {
     const txt   = rawRows[i].map(t => t.str).join(' ').toLowerCase();
     const score = KW.filter(k => txt.includes(k)).length;
     if (score > bestScore) { bestScore = score; headerIdx = i; }
   }
-  if (bestScore < 2) return []; // no recognisable header
+  if (bestScore < 2) return [];
 
-  const headerItems = [...rawRows[headerIdx]].sort((a, b) => a.x - b.x);
+  // Sort header tokens left→right
+  const hTokens = [...rawRows[headerIdx]].sort((a, b) => a.x - b.x);
 
-  // ── Step 3: build column X-buckets from header positions ─────────────────
-  // Each column owns an X range: from its own X to midpoint before next column
-  const colBuckets = headerItems.map((h, i) => {
-    const next = headerItems[i + 1];
-    return {
-      label: h.str.trim(),
-      xMin:  i === 0 ? -Infinity : (headerItems[i - 1].x + h.x) / 2,
-      xMax:  next ? (h.x + next.x) / 2 : Infinity,
-    };
-  });
-
-  const assignCol = (x) => colBuckets.findIndex(b => x >= b.xMin && x < b.xMax);
-
-  // ── Step 4: map each data row to an object using column buckets ──────────
-  const dataRows = rawRows.slice(headerIdx + 1);
-  return dataRows.map(items => {
-    const obj = {};
-    colBuckets.forEach(b => { obj[b.label] = ''; });
-    items.forEach(item => {
-      const ci = assignCol(item.x);
-      if (ci >= 0) {
-        const key = colBuckets[ci].label;
-        obj[key] = obj[key] ? obj[key] + ' ' + item.str : item.str;
+  // Merge header tokens into column labels using a FIXED gap threshold of 40px
+  // This reliably joins "Roll"+"No" and "Total"+"Columns" regardless of font
+  const cols = [];
+  for (const tok of hTokens) {
+    if (cols.length > 0) {
+      const last = cols[cols.length - 1];
+      if (tok.x - last.x < 40) {          // same column header word
+        last.label += ' ' + tok.str;
+        continue;
       }
+    }
+    cols.push({ label: tok.str, x: tok.x });
+  }
+
+  // Assign each data token to the nearest column by X distance
+  const nearest = (x) => {
+    let bi = 0, bd = Infinity;
+    cols.forEach((c, i) => { const d = Math.abs(x - c.x); if (d < bd) { bd = d; bi = i; } });
+    return bi;
+  };
+
+  const dataRows = rawRows.slice(headerIdx + 1);
+  return dataRows.map(tokens => {
+    const obj = {};
+    cols.forEach(c => { obj[c.label] = ''; });
+    [...tokens].sort((a, b) => a.x - b.x).forEach(tok => {
+      const key = cols[nearest(tok.x)].label;
+      obj[key]  = obj[key] ? obj[key] + ' ' + tok.str : tok.str;
     });
     return obj;
   });
 }
 
-/** Normalise a raw row from CSV/Excel/PDF into our attendance record shape */
+/** Normalise a raw row — works for CSV, Excel, and PDF (any column naming) */
 function normaliseRow(raw) {
+  // Exact match after stripping spaces/underscores
   const get = (...keys) => {
     for (const k of keys) {
-      const found = Object.keys(raw).find(
-        rk => rk.toLowerCase().replace(/[\s_]/g, '') === k.toLowerCase().replace(/[\s_]/g, '')
+      const hit = Object.keys(raw).find(
+        rk => rk.toLowerCase().replace(/[\s_-]/g, '') === k.toLowerCase().replace(/[\s_-]/g, '')
       );
-      if (found && raw[found] !== undefined && String(raw[found]).trim() !== '') return String(raw[found]).trim();
+      if (hit && String(raw[hit]).trim()) return String(raw[hit]).trim();
+    }
+    return '';
+  };
+  // Partial/contains match
+  const getP = (...keys) => {
+    for (const k of keys) {
+      const hit = Object.keys(raw).find(
+        rk => rk.toLowerCase().includes(k.toLowerCase())
+      );
+      if (hit && String(raw[hit]).trim()) return String(raw[hit]).trim();
     }
     return '';
   };
 
-  const name     = get('name', 'studentname', 'student');
-  const rollNo   = get('rollno', 'roll', 'rollnumber', 'enrollment', 'id');
-  const branch   = get('branch', 'dept', 'department', 'stream');
-  const semester = get('semester', 'sem', 'year');
-  // "Total Columns" is the PDF header variant for total classes
-  const present  = parseInt(get('present', 'dayspresent', 'attended', 'classesattended'), 10) || 0;
-  const total    = parseInt(get('totalcolumns', 'total', 'totalclasses', 'totaldays', 'conducted'), 10) || 0;
-  const pctRaw   = get('attendance', 'attendancepercent', 'percentage', 'pct', '%');
-  const pct      = total > 0 ? Math.round((present / total) * 100) : (parseFloat(pctRaw) || 0);
+  const name   = get('name','studentname','student') || getP('name','student');
+  const rollNo = get('rollno','roll','rollnumber','enrollment','id') || getP('roll');
+
+  let branch   = get('branch','dept','department','stream') || getP('branch','dept');
+  let semester = get('semester','sem','year') || getP('semester','sem');
+
+  // If branch value looks like "IT 6" (letters+space+digits), split it
+  const branchSplit = (branch || semester || '').match(/^([A-Za-z]+)\s+(\d+)$/);
+  if (branchSplit) {
+    branch   = branchSplit[1];
+    semester = branchSplit[2];
+  }
+
+  const present = parseInt(get('present','dayspresent','attended') || getP('present','attend'), 10) || 0;
+  // "Total Columns" → getP('total') matches it
+  const total   = parseInt(get('totalcolumns','total','totalclasses','totaldays','conducted') || getP('total','conduct'), 10) || 0;
+  const pctRaw  = get('attendance','percentage','pct') || getP('attendance','percent');
+  const pct     = total > 0 ? Math.round((present / total) * 100) : (parseFloat(pctRaw) || 0);
 
   return { name, rollNo, branch, semester, present, total, attendance: pct };
 }

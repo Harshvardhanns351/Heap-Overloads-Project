@@ -1,6 +1,6 @@
-# Veloris (Heap-Overloads-Project)
-Adaptive learning + student wellbeing platform.
+# Veloris
 
+loes. Veeg colleringfor enginetform ing plaellbe wntd studerning antive leaAdap
 ## Philosophy: wellbeing by inference (not self-reporting)
 Veloris **never asks students how they feel**. It watches observable behavior and infers:
 - Late submissions at 2am, repeatedly

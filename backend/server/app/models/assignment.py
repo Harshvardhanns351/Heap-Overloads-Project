@@ -23,4 +23,6 @@ class AssignmentSubmission(SQLModel, table=True):
     status: str = Field(default="submitted", index=True)  # submitted / late
     file_path: Optional[str] = None
     text: Optional[str] = None
+    grade: Optional[str] = None        # e.g. "85/100" or "A+"
+    feedback: Optional[str] = None     # teacher feedback comment
 

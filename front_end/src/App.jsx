@@ -17,6 +17,7 @@ import StudentProfilePage from './pages/shared/StudentProfilePage';
 import StudentListPage from './pages/shared/StudentListPage';
 
 // Teacher pages
+import TeacherDashboard from './pages/teacher/Dashboard';
 import TeacherClasses from './pages/teacher/Classes';
 import TeacherAssignments from './pages/teacher/Assignments';
 import TeacherAttendance from './pages/teacher/Attendance';
@@ -52,6 +53,7 @@ function TeacherRoutes() {
   return (
     <Layout>
       <Routes>
+        <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
         <Route path="/teacher/classes" element={<TeacherClasses />} />
         <Route path="/teacher/assignments" element={<TeacherAssignments />} />
         <Route path="/teacher/attendance" element={<TeacherAttendance />} />
@@ -59,7 +61,7 @@ function TeacherRoutes() {
         <Route path="/teacher/profile" element={<TeacherProfile />} />
         <Route path="/teacher/students" element={<StudentListPage />} />
         <Route path="/teacher/students/:userId" element={<StudentProfilePage viewMode />} />
-        <Route path="*" element={<Navigate to="/teacher/classes" replace />} />
+        <Route path="*" element={<Navigate to="/teacher/dashboard" replace />} />
       </Routes>
     </Layout>
   );

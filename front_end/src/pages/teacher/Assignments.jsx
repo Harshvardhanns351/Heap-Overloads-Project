@@ -336,7 +336,7 @@ export default function TeacherAssignments() {
 
     return {
       submissionRate: Math.round(totals.submissionRate / filteredAssignments.length),
-      avgMarks: totals.avgMarksCount ? (totals.avgMarksTotal / totals.avgMarksCount).toFixed(1) : '—',
+      avgMarks: totals.avgMarksCount ? (totals.avgMarksTotal / totals.avgMarksCount).toFixed(1) : 'Ã¹',
       lateCount: totals.lateCount,
       riskAlerts: totals.riskAlerts,
     };
@@ -637,8 +637,8 @@ export default function TeacherAssignments() {
                   return (
                     <button key={assignment.id} type="button" onClick={() => openAssignment(assignment, 'view')} style={{ textAlign: 'left', padding: '14px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)' }}>
                       <div style={{ fontSize: '13px', fontWeight: '700', marginBottom: '6px' }}>{assignment.title}</div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '8px' }}>{assignment.subject} • {assignment.class_id}</div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{summary.submissionRate}% submitted • {summary.missingStudents.length} pending • {summary.lateCount} late</div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '8px' }}>{assignment.subject} Ã² {assignment.class_id}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{summary.submissionRate}% submitted Ã² {summary.missingStudents.length} pending Ã² {summary.lateCount} late</div>
                     </button>
                   );
                 })}
@@ -706,7 +706,7 @@ export default function TeacherAssignments() {
                     </div>
                     <div style={{ padding: '12px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)' }}>
                       <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginBottom: '4px' }}>Average Marks</div>
-                      <div style={{ fontSize: '16px', fontWeight: '700' }}>{selectedSummary.avgMarks !== null ? selectedSummary.avgMarks.toFixed(1) : '—'}</div>
+                      <div style={{ fontSize: '16px', fontWeight: '700' }}>{selectedSummary.avgMarks !== null ? selectedSummary.avgMarks.toFixed(1) : 'Ã¹'}</div>
                     </div>
                     <div style={{ padding: '12px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)' }}>
                       <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginBottom: '4px' }}>Late Count</div>

@@ -3,7 +3,7 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import {
   ExternalLink, Check, RefreshCw, Loader2, Clock, Trophy, Link2,
   Edit3, X, Save, Camera, UserCircle2, Eye, EyeOff, ChevronRight,
-  Briefcase, Plus, Trash2, CheckCircle, AlertTriangle,
+  Briefcase, Plus, Trash2, CheckCircle, AlertTriangle, Flame, Zap, Activity,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
@@ -17,21 +17,21 @@ import useAppStore from '../../store';
 const PLATFORMS = [
   { id: 'leetcode',   label: 'LeetCode',   color: '#f59e0b', placeholder: 'your_username',  url: u => `https://leetcode.com/u/${u}` },
   { id: 'github',     label: 'GitHub',     color: '#8b949e', placeholder: 'github_username', url: u => `https://github.com/${u}` },
-  { id: 'codeforces', label: 'Codeforces', color: '#4f8ef7', placeholder: 'cf_handle',       url: u => `https://codeforces.com/profile/${u}` },
+  { id: 'codeforces', label: 'Codeforces', color: '#c0c0c0', placeholder: 'cf_handle',       url: u => `https://codeforces.com/profile/${u}` },
   { id: 'codechef',   label: 'CodeChef',   color: '#cd7f32', placeholder: 'cc_username',     url: u => `https://codechef.com/users/${u}` },
 ];
 
 const TIERS = [
   { min: 950, label: 'Legend',   color: '#ef4444' },
   { min: 800, label: 'Elite',    color: '#f59e0b' },
-  { min: 600, label: 'Expert',   color: '#a855f7' },
+  { min: 600, label: 'Expert',   color: '#a0a0a0' },
   { min: 400, label: 'Coder',    color: '#3b82f6' },
   { min: 200, label: 'Learner',  color: '#22c55e' },
   { min: 0,   label: 'Beginner', color: '#94a3b8' },
 ];
 
 const CF_RANK_COLORS = {
-  grandmaster: '#ff0000', master: '#ff8c00', 'candidate master': '#a855f7',
+  grandmaster: '#ff0000', master: '#ff8c00', 'candidate master': '#a0a0a0',
   expert: '#3b82f6', specialist: '#22d3ee', pupil: '#22c55e', newbie: '#94a3b8',
 };
 
@@ -71,7 +71,7 @@ function VelorisCard({ coding }) {
   const bd    = coding.breakdown ?? {};
   const segs  = [
     { label: 'LeetCode',   val: bd.lc ?? 0,       max: 350, color: '#f59e0b' },
-    { label: 'Codeforces', val: bd.cf ?? 0,       max: 250, color: '#4f8ef7' },
+    { label: 'Codeforces', val: bd.cf ?? 0,       max: 250, color: '#c0c0c0' },
     { label: 'CodeChef',   val: bd.cc ?? 0,       max: 150, color: '#cd7f32' },
     { label: 'GitHub',     val: bd.gh ?? 0,       max: 150, color: '#8b949e' },
     { label: 'Activity',   val: bd.activity ?? 0, max: 100, color: '#22c55e' },
@@ -81,7 +81,7 @@ function VelorisCard({ coding }) {
       style={{ padding: '16px 20px', marginBottom: '16px', cursor: 'pointer', border: `1px solid ${tier.color}30`, background: `linear-gradient(135deg,var(--bg-elevated),${tier.color}10)` }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
-          <div style={{ fontSize: '44px', fontWeight: '800', fontFamily: 'Space Grotesk,sans-serif', color: tier.color, lineHeight: 1 }}>{total}</div>
+          <div style={{ fontSize: '44px', fontWeight: '800', fontFamily: 'Space Grotesk,sans-serif', color: '#f0f0f0', lineHeight: 1 }}>{total}</div>
           <div>
             <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Veloris Score</div>
             <div style={{ marginTop: '3px', fontSize: '11px', fontWeight: '600', padding: '2px 8px', borderRadius: '12px', background: `${tier.color}20`, color: tier.color, border: `1px solid ${tier.color}40`, display: 'inline-block' }}>⚡ {tier.label}</div>
@@ -114,7 +114,7 @@ function VelorisCard({ coding }) {
 
 // ── Recent List ───────────────────────────────────────────────────────────────
 function RecentList({ items }) {
-  const PC = { leetcode: '#f59e0b', github: '#8b949e', codeforces: '#4f8ef7', codechef: '#cd7f32' };
+  const PC = { leetcode: '#f59e0b', github: '#8b949e', codeforces: '#c0c0c0', codechef: '#cd7f32' };
   if (!items?.length) return <div style={{ fontSize: '12px', color: 'var(--text-muted)', padding: '10px 0' }}>No recent activity</div>;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -200,7 +200,7 @@ function PlatformCard({ platform, profile, onLinked, onTabSwitch, isOwn }) {
         {sub && <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginBottom: '6px' }}>{sub}</div>}
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '3px' }}><Clock size={9} /> {timeAgo(profile.last_activity_at)}</span>
-          <span style={{ fontSize: '10px', color: profile.estimated_weekly_hours > 0 ? '#8b5cf6' : 'var(--text-muted)' }}>{safeH(profile.estimated_weekly_hours)}/wk</span>
+          <span style={{ fontSize: '10px', color: profile.estimated_weekly_hours > 0 ? '#a0a0a0' : 'var(--text-muted)' }}>{safeH(profile.estimated_weekly_hours)}/wk</span>
         </div>
       </div>
     );
@@ -240,7 +240,7 @@ function LCPanel({ p }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px' }}>
-        {[{l:'Total',v:total,c:'#4f8ef7'},{l:'Easy',v:p.easy??0,c:'#22c55e'},{l:'Medium',v:p.medium??0,c:'#f59e0b'},{l:'Hard',v:p.hard??0,c:'#ef4444'}].map(({l,v,c})=>(
+        {[{l:'Total',v:total,c:'#c0c0c0'},{l:'Easy',v:p.easy??0,c:'#22c55e'},{l:'Medium',v:p.medium??0,c:'#f59e0b'},{l:'Hard',v:p.hard??0,c:'#ef4444'}].map(({l,v,c})=>(
           <div key={l} className="stat-card" style={{textAlign:'center',padding:'14px'}}>
             <div style={{fontSize:'22px',fontWeight:'700',fontFamily:'Space Grotesk,sans-serif',color:c}}>{v}</div>
             <div style={{fontSize:'10px',color:'var(--text-muted)',marginTop:'2px'}}>{l}</div>
@@ -310,7 +310,7 @@ function CFPanel({ p }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px' }}>
-        {[{l:'Rating',v:p.cf_rating??'—',c:rc},{l:'Rank',v:p.cf_rank||'—',c:rc},{l:'Problems Solved',v:p.cf_problems_solved??0,c:'#4f8ef7'}].map(({l,v,c})=>(
+        {[{l:'Rating',v:p.cf_rating??'—',c:rc},{l:'Rank',v:p.cf_rank||'—',c:rc},{l:'Problems Solved',v:p.cf_problems_solved??0,c:'#c0c0c0'}].map(({l,v,c})=>(
           <div key={l} className="stat-card" style={{textAlign:'center',padding:'14px'}}>
             <div style={{fontSize:'20px',fontWeight:'700',fontFamily:'Space Grotesk,sans-serif',color:c}}>{v}</div>
             <div style={{fontSize:'10px',color:'var(--text-muted)',marginTop:'2px'}}>{l}</div>
@@ -320,7 +320,7 @@ function CFPanel({ p }) {
       <div className="card" style={{padding:'16px'}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'12px'}}>
           <div style={{fontSize:'12px',fontWeight:'600'}}>Recent AC Submissions</div>
-          <a href={`https://codeforces.com/profile/${p.username}`} target="_blank" rel="noreferrer" style={{fontSize:'11px',color:'#4f8ef7',display:'flex',alignItems:'center',gap:'4px',textDecoration:'none'}}>View on Codeforces <ExternalLink size={10}/></a>
+          <a href={`https://codeforces.com/profile/${p.username}`} target="_blank" rel="noreferrer" style={{fontSize:'11px',color:'#c0c0c0',display:'flex',alignItems:'center',gap:'4px',textDecoration:'none'}}>View on Codeforces <ExternalLink size={10}/></a>
         </div>
         <RecentList items={p.recent_submissions} />
       </div>
@@ -397,7 +397,7 @@ function LeaderboardTab({ highlightUserId }) {
               <div style={{ fontSize: '9px', color: tier.color, opacity: 0.7 }}>{tier.label}</div>
             </div>
             <div style={{ textAlign: 'center', fontSize: '12px', fontWeight: '600' }}>{row.problems_solved ?? '—'}</div>
-            <div style={{ textAlign: 'center', fontSize: '12px', color: '#4f8ef7', fontWeight: '600' }}>{row.cf_rating || '—'}</div>
+            <div style={{ textAlign: 'center', fontSize: '12px', color: '#c0c0c0', fontWeight: '600' }}>{row.cf_rating || '—'}</div>
             <div style={{ textAlign: 'right', fontSize: '10px', color: 'var(--text-muted)' }}>{timeAgo(row.last_activity_at)}</div>
           </div>
         );
@@ -499,7 +499,7 @@ function AcademicsTab({ academics }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px' }}>
         {[
-          { l: 'CGPA', v: academics.cgpa ?? '—', c: '#5B5BD6' },
+          { l: 'CGPA', v: academics.cgpa ?? '—', c: '#505050' },
           { l: 'Current SGPA', v: academics.current_sgpa ?? '—', c: '#22c55e' },
           { l: 'Semesters', v: academics.semesters?.length ?? 0, c: '#f59e0b' },
         ].map(({ l, v, c }) => (
@@ -519,7 +519,7 @@ function AcademicsTab({ academics }) {
               <XAxis dataKey="name" tick={{ fill: '#8b8ba0', fontSize: 10 }} axisLine={false} tickLine={false} />
               <YAxis domain={[0, 10]} tick={{ fill: '#8b8ba0', fontSize: 10 }} axisLine={false} tickLine={false} />
               <Tooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '11px' }} />
-              <Line type="monotone" dataKey="sgpa" stroke="#5B5BD6" strokeWidth={2} dot={{ fill: '#5B5BD6', r: 4 }} />
+              <Line type="monotone" dataKey="sgpa" stroke="#505050" strokeWidth={2} dot={{ fill: '#505050', r: 4 }} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -629,7 +629,7 @@ function InternshipsTab({ internships: initialInternships, isOwn, viewerRole, on
       </div>
 
       {showForm && (
-        <div className="card" style={{ padding: '20px', border: '1px solid rgba(91,91,214,0.3)' }}>
+        <div className="card" style={{ padding: '20px', border: '1px solid rgba(255,255,255,0.12)' }}>
           <div style={{ fontSize: '13px', fontWeight: '600', marginBottom: '16px' }}>{editId ? 'Edit' : 'Add'} Internship</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
             <div>
@@ -681,7 +681,7 @@ function InternshipsTab({ internships: initialInternships, isOwn, viewerRole, on
         <div key={item.id} className="card" style={{ padding: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
-              <div style={{ width: '44px', height: '44px', borderRadius: '10px', background: '#5B5BD620', border: '1px solid #5B5BD640', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: '700', color: '#5B5BD6', flexShrink: 0 }}>
+              <div style={{ width: '44px', height: '44px', borderRadius: '10px', background: '#50505020', border: '1px solid #50505040', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: '700', color: '#505050', flexShrink: 0 }}>
                 {item.company[0]?.toUpperCase()}
               </div>
               <div>
@@ -693,7 +693,7 @@ function InternshipsTab({ internships: initialInternships, isOwn, viewerRole, on
                 {item.tech_stack && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '8px' }}>
                     {item.tech_stack.split(',').map(t => t.trim()).filter(Boolean).map(t => (
-                      <span key={t} style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '4px', background: 'rgba(91,91,214,0.15)', color: '#5B5BD6', border: '1px solid rgba(91,91,214,0.25)' }}>{t}</span>
+                      <span key={t} style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '4px', background: 'rgba(255,255,255,0.08)', color: '#505050', border: '1px solid rgba(91,91,214,0.25)' }}>{t}</span>
                     ))}
                   </div>
                 )}
@@ -727,6 +727,306 @@ function InternshipsTab({ internships: initialInternships, isOwn, viewerRole, on
   );
 }
 
+// ── Activity Heatmap ─────────────────────────────────────────────────────────
+
+const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+/** Collect ALL submission dates from every platform + summary */
+function collectAllDates(codingData) {
+  const dates = {};
+  const add = (isoStr) => {
+    if (!isoStr) return;
+    const d = isoStr.slice(0, 10);
+    dates[d] = (dates[d] || 0) + 1;
+  };
+  (codingData?.platforms || []).forEach(p => (p.recent_submissions || []).forEach(s => add(s.time)));
+  (codingData?.summary?.recent_submissions || []).forEach(s => add(s.time));
+  return dates;
+}
+
+/** Build Sunday-aligned week grid */
+function buildYearGrid(year) {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const isCurrentYear = year === today.getFullYear();
+
+  // Jan 1 of the year
+  const jan1 = new Date(year, 0, 1);
+  // Dec 31 or today (whichever is earlier)
+  const dec31 = isCurrentYear ? today : new Date(year, 11, 31);
+
+  // Start the grid on the Sunday on or before Jan 1
+  const gridStart = new Date(jan1);
+  gridStart.setDate(gridStart.getDate() - gridStart.getDay()); // back to Sunday
+
+  const weeks = [];
+  let week = [];
+  const cur = new Date(gridStart);
+
+  while (cur <= dec31) {
+    // Use null for days before Jan 1 (padding) or after today
+    const inYear = cur.getFullYear() === year;
+    week.push(inYear ? new Date(cur) : null);
+    if (week.length === 7) { weeks.push(week); week = []; }
+    cur.setDate(cur.getDate() + 1);
+  }
+  // Pad last week
+  if (week.length > 0) {
+    while (week.length < 7) week.push(null);
+    weeks.push(week);
+  }
+  return weeks;
+}
+
+/** Compute month label positions — one label per month, placed at the first week that starts in that month */
+function getMonthLabels(weeks, year) {
+  const labels = {}; // weekIndex → month string
+  const seen = new Set();
+  weeks.forEach((week, wi) => {
+    // Find first non-null day in this week that belongs to the year
+    const firstDay = week.find(d => d && d.getFullYear() === year);
+    if (!firstDay) return;
+    const m = firstDay.getMonth();
+    // Only label if this is the first week we see this month AND the month starts in this week
+    if (!seen.has(m) && firstDay.getDate() <= 7) {
+      seen.add(m);
+      labels[wi] = MONTHS_SHORT[m];
+    }
+  });
+  return labels;
+}
+
+const CELL = 13;
+const GAP  = 3;
+
+function HeatCell({ day, count, today, onHover, onLeave }) {
+  if (!day) return <div style={{ width: CELL, height: CELL, flexShrink: 0 }} />;
+  const isFuture = day > today;
+  const isToday  = day.toISOString().slice(0, 10) === today.toISOString().slice(0, 10);
+
+  const bg = isFuture ? 'transparent'
+    : count === 0 ? '#161b22'
+    : count === 1 ? '#0e4429'
+    : count <= 3  ? '#006d32'
+    : count <= 6  ? '#26a641'
+    :               '#39d353';
+
+  return (
+    <div
+      style={{
+        width: CELL, height: CELL, borderRadius: '3px',
+        background: bg,
+        border: isToday ? '1px solid #39d353' : '1px solid rgba(255,255,255,0.04)',
+        cursor: count > 0 ? 'pointer' : 'default',
+        flexShrink: 0,
+        transition: 'transform 0.1s, filter 0.1s',
+      }}
+      onMouseEnter={e => { e.currentTarget.style.filter = 'brightness(1.4)'; onHover(day, count, e); }}
+      onMouseLeave={e => { e.currentTarget.style.filter = 'brightness(1)'; onLeave(); }}
+    />
+  );
+}
+
+function ActivityHeatmap({ codingData, userId, isOwn }) {
+  const currentYear = new Date().getFullYear();
+  const availableYears = [currentYear, currentYear-1, currentYear-2, currentYear-3, currentYear-4];
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [tooltip, setTooltip] = useState(null);
+
+  // Build date map from all platform recent_submissions already in codingData
+  // (API-based full calendar is fetched separately and merged if available)
+  const [extraDates, setExtraDates] = useState({});
+
+  useEffect(() => {
+    // Try to fetch full heatmap from API — merge on top of local data
+    const req = isOwn
+      ? api.coding.getHeatmap?.()
+      : (userId ? api.coding.getStudentHeatmap?.(userId) : null);
+    if (!req) return;
+    req
+      .then(data => { if (data?.dates) setExtraDates(data.dates); })
+      .catch(() => {}); // silently ignore — local data is the fallback
+  }, [userId, isOwn]); // eslint-disable-line
+
+  // Merge local recent_submissions + API extra dates
+  const allDates = {};
+  const addDate = (iso) => { if (!iso) return; const d = iso.slice(0,10); allDates[d]=(allDates[d]||0)+1; };
+  try {
+    (codingData?.platforms||[]).forEach(p => (p.recent_submissions||[]).forEach(s => addDate(s.time)));
+    (codingData?.summary?.recent_submissions||[]).forEach(s => addDate(s.time));
+    Object.entries(extraDates).forEach(([d,c]) => { allDates[d] = (allDates[d]||0) + c; });
+  } catch(e) { /* ignore */ }
+
+  // Filter to selected year
+  const dateMap = {};
+  Object.entries(allDates).forEach(([d,c]) => {
+    if (d.startsWith(String(selectedYear))) dateMap[d] = c;
+  });
+
+  // Compute streaks from full data
+  const today = new Date(); today.setHours(0,0,0,0);
+  let cur = 0, longest = 0, tmp = 0;
+  for (let i = 0; i < 730; i++) {
+    const d = new Date(today); d.setDate(d.getDate()-i);
+    const k = d.toISOString().slice(0,10);
+    if (allDates[k]) { tmp++; if (i===0||cur>0) cur=tmp; }
+    else { if (i===0) cur=0; longest=Math.max(longest,tmp); tmp=0; }
+  }
+  longest = Math.max(longest, tmp);
+
+  const weeks       = buildYearGrid(selectedYear);
+  const monthLabels = getMonthLabels(weeks, selectedYear);
+  const yearTotal   = Object.values(dateMap).reduce((a,b)=>a+b, 0);
+  const totalDays   = Object.keys(dateMap).length;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+
+      {/* ── Streak stat cards ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px' }}>
+        {[
+          { label: 'Current Streak', value: `${cur} days`,     icon: '🔥', color: cur > 0 ? '#f59e0b' : '#475569', glow: cur > 0 },
+          { label: 'Longest Streak', value: `${longest} days`, icon: '🏆', color: '#a0a0a0', glow: false },
+          { label: 'Active Days',    value: totalDays,          icon: '⚡', color: '#22c55e', glow: false },
+          { label: 'Total Events',   value: yearTotal,          icon: '📌', color: '#c0c0c0', glow: false },
+        ].map(({ label, value, icon, color, glow }) => (
+          <div key={label} style={{
+            padding: '16px 18px', borderRadius: '12px',
+            background: `${color}12`, border: `1px solid ${color}28`,
+            boxShadow: glow ? `0 0 24px ${color}35` : 'none',
+          }}>
+            <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>
+              {label}
+            </div>
+            <div style={{ fontSize: '24px', fontWeight: '800', color, fontFamily: 'Space Grotesk,sans-serif' }}>{value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── GitHub-style heatmap ── */}
+      <div style={{
+        background: '#0d1117', border: '1px solid #30363d',
+        borderRadius: '12px', padding: '20px 24px',
+      }}>
+        {/* Header row */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <div style={{ fontSize: '13px', color: '#e6edf3', fontWeight: '600' }}>
+            <span style={{ color: '#e6edf3', fontWeight: '700' }}>{yearTotal.toLocaleString()}</span>
+            <span style={{ color: '#8b949e', fontWeight: '400' }}> contributions in {selectedYear}</span>
+          </div>
+          {/* Year selector */}
+          <div style={{ display: 'flex', gap: '4px' }}>
+            {availableYears.map(y => (
+              <button key={y} onClick={() => setSelectedYear(y)} style={{
+                padding: '3px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '600',
+                cursor: 'pointer', border: '1px solid',
+                background: y === selectedYear ? '#e0e0e0' : 'transparent',
+                borderColor: y === selectedYear ? '#e0e0e0' : '#30363d',
+                color: y === selectedYear ? '#fff' : '#8b949e',
+                transition: 'all 0.15s',
+              }}>{y}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* Grid */}
+        <div style={{ overflowX: 'auto' }}>
+          <div style={{ display: 'inline-flex', gap: 0 }}>
+            {/* Day-of-week labels */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: GAP, marginRight: '6px', paddingTop: `${CELL + GAP + 4}px` }}>
+              {['','Mon','','Wed','','Fri',''].map((d, i) => (
+                <div key={i} style={{ height: CELL, fontSize: '10px', color: '#8b949e', lineHeight: `${CELL}px`, textAlign: 'right', whiteSpace: 'nowrap' }}>{d}</div>
+              ))}
+            </div>
+
+            {/* Weeks */}
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {/* Month labels row */}
+              <div style={{ display: 'flex', gap: GAP, marginBottom: '4px', height: CELL }}>
+                {weeks.map((_, wi) => (
+                  <div key={wi} style={{ width: CELL, fontSize: '10px', color: '#8b949e', whiteSpace: 'nowrap', overflow: 'visible', flexShrink: 0 }}>
+                    {monthLabels[wi] || ''}
+                  </div>
+                ))}
+              </div>
+
+              {/* Cell grid — weeks × days */}
+              <div style={{ display: 'flex', gap: GAP }}>
+                {weeks.map((week, wi) => (
+                  <div key={wi} style={{ display: 'flex', flexDirection: 'column', gap: GAP }}>
+                    {week.map((day, di) => {
+                      const key   = day ? day.toISOString().slice(0,10) : null;
+                      const count = key ? (dateMap[key] || 0) : 0;
+                      return (
+                        <HeatCell
+                          key={di} day={day} count={count} today={today}
+                          onHover={(d, c, e) => setTooltip({ date: d.toISOString().slice(0,10), count: c, x: e.clientX, y: e.clientY })}
+                          onLeave={() => setTooltip(null)}
+                        />
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer: legend */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px', marginTop: '12px' }}>
+          <span style={{ fontSize: '11px', color: '#8b949e' }}>Less</span>
+          {['#161b22','#0e4429','#006d32','#26a641','#39d353'].map((c,i) => (
+            <div key={i} style={{ width: CELL, height: CELL, borderRadius: '3px', background: c, border: '1px solid rgba(255,255,255,0.06)' }} />
+          ))}
+          <span style={{ fontSize: '11px', color: '#8b949e' }}>More</span>
+        </div>
+      </div>
+
+      {/* Tooltip */}
+      {tooltip && (
+        <div style={{
+          position: 'fixed', zIndex: 9999, pointerEvents: 'none',
+          left: tooltip.x + 14, top: tooltip.y - 42,
+          background: '#1c2128', border: '1px solid #444c56',
+          borderRadius: '6px', padding: '6px 12px',
+          fontSize: '12px', color: '#e6edf3',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
+        }}>
+          <b style={{ color: '#39d353' }}>{tooltip.count} {tooltip.count === 1 ? 'contribution' : 'contributions'}</b>
+          {' on '}
+          {new Date(tooltip.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+        </div>
+      )}
+
+      {/* Monthly bar chart */}
+      <div style={{ background: '#0d1117', border: '1px solid #30363d', borderRadius: '12px', padding: '20px 24px' }}>
+        <div style={{ fontSize: '13px', color: '#e6edf3', fontWeight: '600', marginBottom: '16px' }}>Monthly Contributions</div>
+        <ResponsiveContainer width="100%" height={130}>
+          <BarChart data={(() => {
+            const months = {};
+            Object.entries(dateMap).forEach(([date, count]) => {
+              const m = date.slice(0, 7);
+              months[m] = (months[m] || 0) + count;
+            });
+            return Object.entries(months).sort().map(([m, v]) => ({
+              month: MONTHS_SHORT[parseInt(m.slice(5,7)) - 1],
+              contributions: v,
+            }));
+          })()}>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+            <XAxis dataKey="month" tick={{ fill: '#8b949e', fontSize: 10 }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fill: '#8b949e', fontSize: 10 }} axisLine={false} tickLine={false} />
+            <Tooltip
+              contentStyle={{ background: '#1c2128', border: '1px solid #444c56', borderRadius: '8px', fontSize: '11px', color: '#e6edf3' }}
+              cursor={{ fill: 'rgba(255,255,255,0.04)' }}
+            />
+            <Bar dataKey="contributions" fill="#26a641" radius={[3,3,0,0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
 // ── Overview Tab ─────────────────────────────────────────────────────────────
 function OverviewTab({ coding, attendance, academics, internships, tier, onTabSwitch }) {
   const attPct = attendance?.overall_percentage ?? null;
@@ -748,11 +1048,11 @@ function OverviewTab({ coding, attendance, academics, internships, tier, onTabSw
           </div>
           <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px' }}>{coding?.summary?.total_problems_solved ?? 0} problems solved</div>
           <div style={{ display: 'flex', gap: '4px', height: '4px', borderRadius: '2px', overflow: 'hidden', marginBottom: '12px' }}>
-            {[['lc','#f59e0b',350],['cf','#4f8ef7',250],['cc','#cd7f32',150],['gh','#8b949e',150],['activity','#22c55e',100]].map(([k,c,max]) => (
+            {[['lc','#f59e0b',350],['cf','#c0c0c0',250],['cc','#cd7f32',150],['gh','#8b949e',150],['activity','#22c55e',100]].map(([k,c,max]) => (
               <div key={k} style={{ flex: max, background: (coding?.breakdown?.[k] ?? 0) > 0 ? c : 'rgba(255,255,255,0.06)' }} />
             ))}
           </div>
-          <button onClick={() => onTabSwitch('coding')} style={{ fontSize: '11px', color: '#5B5BD6', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>View Coding Details →</button>
+          <button onClick={() => onTabSwitch('coding')} style={{ fontSize: '11px', color: '#505050', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>View Coding Details →</button>
         </div>
 
         {/* Attendance snapshot */}
@@ -766,26 +1066,61 @@ function OverviewTab({ coding, attendance, academics, internships, tier, onTabSw
               ⚠ {worstSubject.subject}: {worstSubject.percentage}%
             </div>
           )}
-          <button onClick={() => onTabSwitch('attendance')} style={{ fontSize: '11px', color: '#5B5BD6', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>View Details →</button>
+          <button onClick={() => onTabSwitch('attendance')} style={{ fontSize: '11px', color: '#505050', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>View Details →</button>
         </div>
 
         {/* Academics snapshot */}
         <div className="card" style={{ padding: '20px' }}>
           <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Academics</div>
-          <div style={{ fontSize: '36px', fontWeight: '800', color: '#4f8ef7', fontFamily: 'Space Grotesk,sans-serif', lineHeight: 1, marginBottom: '6px' }}>
+          <div style={{ fontSize: '36px', fontWeight: '800', color: '#c0c0c0', fontFamily: 'Space Grotesk,sans-serif', lineHeight: 1, marginBottom: '6px' }}>
             {academics?.cgpa ?? '—'}
           </div>
           <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '8px' }}>
             SGPA: {academics?.current_sgpa ?? '—'}
           </div>
-          <button onClick={() => onTabSwitch('academics')} style={{ fontSize: '11px', color: '#5B5BD6', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>View Details →</button>
+          <button onClick={() => onTabSwitch('academics')} style={{ fontSize: '11px', color: '#505050', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>View Details →</button>
         </div>
       </div>
 
-      {/* Row 2 — activity + internships */}
+      {/* Row 2 — heatmap preview + internships */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
         <div className="card" style={{ padding: '20px' }}>
-          <div style={{ fontSize: '12px', fontWeight: '600', marginBottom: '12px' }}>Recent Activity</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <div style={{ fontSize: '12px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Activity size={13} style={{ color: '#808080' }} /> Activity Heatmap
+            </div>
+            <button onClick={() => onTabSwitch('activity')} style={{ fontSize: '11px', color: '#505050', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>View Full →</button>
+          </div>
+          {/* Mini streak stats — derived from recent submissions */}
+          {(() => {
+            const allDates = {};
+            (coding?.platforms||[]).forEach(p=>(p.recent_submissions||[]).forEach(s=>{ if(s.time) allDates[s.time.slice(0,10)]=1; }));
+            (coding?.summary?.recent_submissions||[]).forEach(s=>{ if(s.time) allDates[s.time.slice(0,10)]=1; });
+            const today = new Date(); today.setHours(0,0,0,0);
+            let cur=0, longest=0, tmp=0;
+            for(let i=0;i<365;i++){
+              const d=new Date(today); d.setDate(d.getDate()-i);
+              const k=d.toISOString().slice(0,10);
+              if(allDates[k]){tmp++;if(i===0||cur>0)cur=tmp;}
+              else{if(i===0)cur=0;longest=Math.max(longest,tmp);tmp=0;}
+            }
+            longest=Math.max(longest,tmp);
+            const totalDays=Object.keys(allDates).length;
+            return (
+              <div style={{ display: 'flex', gap: '16px', marginBottom: '12px' }}>
+                {[
+                  { label: 'Current', value: `${cur}d 🔥`, color: cur > 0 ? '#f59e0b' : '#64748b' },
+                  { label: 'Longest', value: `${longest}d`, color: '#a0a0a0' },
+                  { label: 'Active Days', value: totalDays, color: '#22c55e' },
+                ].map(({ label, value, color }) => (
+                  <div key={label} style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '16px', fontWeight: '700', color, fontFamily: 'Space Grotesk,sans-serif' }}>{value}</div>
+                    <div style={{ fontSize: '9px', color: '#64748b' }}>{label}</div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
           <RecentList items={recentActivity} />
         </div>
         <div className="card" style={{ padding: '20px' }}>
@@ -794,7 +1129,7 @@ function OverviewTab({ coding, attendance, academics, internships, tier, onTabSw
             <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>No internships listed.</div>
           ) : recentInternships.map(item => (
             <div key={item.id} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', marginBottom: '12px' }}>
-              <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#5B5BD620', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: '700', color: '#5B5BD6', flexShrink: 0 }}>{item.company[0]?.toUpperCase()}</div>
+              <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#50505020', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: '700', color: '#505050', flexShrink: 0 }}>{item.company[0]?.toUpperCase()}</div>
               <div>
                 <div style={{ fontSize: '12px', fontWeight: '600' }}>{item.company}</div>
                 <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{item.role} · {item.start_date?.slice(0,7)} – {item.end_date?.slice(0,7) || 'Present'}</div>
@@ -802,7 +1137,7 @@ function OverviewTab({ coding, attendance, academics, internships, tier, onTabSw
               </div>
             </div>
           ))}
-          <button onClick={() => onTabSwitch('internships')} style={{ fontSize: '11px', color: '#5B5BD6', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>View All →</button>
+          <button onClick={() => onTabSwitch('internships')} style={{ fontSize: '11px', color: '#505050', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>View All →</button>
         </div>
       </div>
     </div>
@@ -852,10 +1187,10 @@ function CodingTab({ codingData, isOwnProfile, onRefresh }) {
       {summary && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px', marginBottom: '20px' }}>
           {[
-            { label: 'Weekly Hours',    value: summary.total_weekly_hours > 0 ? `${summary.total_weekly_hours.toFixed(1)}h` : '0h', color: '#8b5cf6' },
+            { label: 'Weekly Hours',    value: summary.total_weekly_hours > 0 ? `${summary.total_weekly_hours.toFixed(1)}h` : '0h', color: '#a0a0a0' },
             { label: 'Problems Solved', value: summary.total_problems_solved ?? 0, color: '#22c55e' },
             { label: 'Last Active',     value: timeAgo(summary.last_activity_at), color: (summary.days_since_activity ?? 99) > 7 ? '#ef4444' : '#f59e0b' },
-            { label: 'Platforms',       value: `${linked.length}/4`, color: '#4f8ef7' },
+            { label: 'Platforms',       value: `${linked.length}/4`, color: '#c0c0c0' },
           ].map(({ label, value, color }) => (
             <div key={label} className="stat-card" style={{ padding: '14px' }}>
               <div style={{ fontSize: '20px', fontWeight: '700', fontFamily: 'Space Grotesk,sans-serif', color }}>{value}</div>
@@ -867,7 +1202,7 @@ function CodingTab({ codingData, isOwnProfile, onRefresh }) {
       <div style={{ display: 'flex', gap: '2px', marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.06)', overflowX: 'auto' }}>
         {TABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            style={{ padding: '8px 14px', fontSize: '12px', background: 'transparent', border: 'none', borderBottom: tab === t.id ? '2px solid #5B5BD6' : '2px solid transparent', color: tab === t.id ? '#fff' : 'var(--text-muted)', cursor: 'pointer', marginBottom: '-1px', whiteSpace: 'nowrap', transition: 'color 0.15s' }}>
+            style={{ padding: '8px 14px', fontSize: '12px', background: 'transparent', border: 'none', borderBottom: tab === t.id ? '2px solid #505050' : '2px solid transparent', color: tab === t.id ? '#fff' : 'var(--text-muted)', cursor: 'pointer', marginBottom: '-1px', whiteSpace: 'nowrap', transition: 'color 0.15s' }}>
             {t.label}
           </button>
         ))}
@@ -924,6 +1259,7 @@ export default function StudentProfilePage({ viewMode }) {
         : await api.profile.getStudentProfile(userId);
       setData(result);
       setEditFields({
+        name:              result.user?.name              || '',
         bio:               result.user?.bio               || '',
         phone:             result.user?.phone             || '',
         linkedin_url:      result.user?.linkedin_url      || '',
@@ -941,6 +1277,11 @@ export default function StudentProfilePage({ viewMode }) {
     try {
       await api.profile.updateMyProfile(editFields);
       setData(prev => ({ ...prev, user: { ...prev.user, ...editFields } }));
+      // keep localStorage in sync so navbar reflects new name immediately
+      if (editFields.name) {
+        const stored = JSON.parse(localStorage.getItem('user') || '{}');
+        localStorage.setItem('user', JSON.stringify({ ...stored, name: editFields.name }));
+      }
       setEditMode(false);
       setToast({ msg: 'Profile updated', type: 'success' });
     } catch { setToast({ msg: 'Failed to save', type: 'error' }); }
@@ -955,12 +1296,17 @@ export default function StudentProfilePage({ viewMode }) {
     try {
       const res = await api.profile.uploadAvatar(fd);
       setData(prev => ({ ...prev, user: { ...prev.user, avatar_url: res.avatar_url } }));
-    } catch { setToast({ msg: 'Avatar upload failed', type: 'error' }); }
+      setToast({ msg: 'Avatar updated', type: 'success' });
+    } catch (err) {
+      setToast({ msg: err.message || 'Avatar upload failed', type: 'error' });
+    }
+    // reset so the same file can be re-selected if needed
+    e.target.value = '';
   };
 
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh' }}>
-      <Loader2 size={32} className="animate-spin" style={{ color: '#5B5BD6' }} />
+      <Loader2 size={32} className="animate-spin" style={{ color: '#505050' }} />
     </div>
   );
   if (error) return <div style={{ padding: '32px', color: '#ef4444', textAlign: 'center' }}>{error}</div>;
@@ -975,11 +1321,12 @@ export default function StudentProfilePage({ viewMode }) {
 
   const TABS = [
     { id: 'overview',    label: 'Overview'       },
+    { id: 'activity',    label: 'Activity'    },
     { id: 'coding',      label: 'Coding'         },
     { id: 'academics',   label: 'Academics'      },
     { id: 'attendance',  label: 'Attendance'     },
     { id: 'internships', label: 'Internships'    },
-    { id: 'leaderboard', label: '🏆 Leaderboard' },
+    { id: 'leaderboard', label: 'Leaderboard' },
   ];
 
   return (
@@ -988,19 +1335,19 @@ export default function StudentProfilePage({ viewMode }) {
 
       {/* View-mode banner */}
       {!isOwnProfile && (
-        <div style={{ background: 'rgba(79,142,247,0.1)', border: '1px solid rgba(79,142,247,0.3)', color: '#4f8ef7', padding: '10px 16px', borderRadius: '8px', marginBottom: '16px', fontSize: '13px' }}>
+        <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: '#c0c0c0', padding: '10px 16px', borderRadius: '8px', marginBottom: '16px', fontSize: '13px' }}>
           👁 You are viewing <strong>{user.name}</strong>'s profile (read-only)
         </div>
       )}
 
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
-      <div className="card" style={{ padding: '24px', marginBottom: '16px', background: `linear-gradient(135deg,rgba(91,91,214,0.12) 0%, var(--bg-elevated) 60%)`, border: '1px solid rgba(91,91,214,0.2)', borderRadius: '12px' }}>
+      <div className="card" style={{ padding: '24px', marginBottom: '16px', background: `linear-gradient(135deg,rgba(255,255,255,0.06) 0%, var(--bg-elevated) 60%)`, border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px' }}>
         <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
 
           {/* Avatar */}
           <label style={{ cursor: isOwnProfile && editMode ? 'pointer' : 'default', flexShrink: 0 }}>
             {isOwnProfile && editMode && <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleAvatarUpload} />}
-            <div style={{ width: '72px', height: '72px', borderRadius: '50%', background: 'linear-gradient(135deg,#5B5BD6,#a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', fontWeight: '700', color: '#fff', border: editMode ? '2px dashed #5B5BD6' : '2px solid rgba(255,255,255,0.15)', overflow: 'hidden', position: 'relative' }}>
+            <div style={{ width: '72px', height: '72px', borderRadius: '50%', background: 'linear-gradient(135deg,#505050,#a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', fontWeight: '700', color: '#fff', border: editMode ? '2px dashed #505050' : '2px solid rgba(255,255,255,0.15)', overflow: 'hidden', position: 'relative' }}>
               {user.avatar_url
                 ? <img src={user.avatar_url} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 : (user.name?.[0] || '?').toUpperCase()}
@@ -1037,6 +1384,7 @@ export default function StudentProfilePage({ viewMode }) {
             {editMode ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
                 {[
+                  { key: 'name',         placeholder: 'Full name'                                          },
                   { key: 'linkedin_url', placeholder: 'LinkedIn URL (https://linkedin.com/in/...)' },
                   { key: 'github_url',   placeholder: 'GitHub URL (https://github.com/...)'       },
                   { key: 'phone',        placeholder: 'Phone'                                      },
@@ -1055,9 +1403,9 @@ export default function StudentProfilePage({ viewMode }) {
               </div>
             ) : (
               <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                {user.linkedin_url && <a href={user.linkedin_url} target="_blank" rel="noreferrer" style={{ fontSize: '11px', color: '#4f8ef7', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>🔗 LinkedIn <ExternalLink size={10} /></a>}
-                {user.github_url   && <a href={user.github_url}   target="_blank" rel="noreferrer" style={{ fontSize: '11px', color: '#8b949e', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>🐙 GitHub <ExternalLink size={10} /></a>}
-                {user.email        && <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>📧 {user.email}</span>}
+                {user.linkedin_url && <a href={user.linkedin_url} target="_blank" rel="noreferrer" style={{ fontSize: '11px', color: '#c0c0c0', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}> LinkedIn <ExternalLink size={10} /></a>}
+                {user.github_url   && <a href={user.github_url}   target="_blank" rel="noreferrer" style={{ fontSize: '11px', color: '#8b949e', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}> GitHub <ExternalLink size={10} /></a>}
+                {user.email        && <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}> {user.email}</span>}
                 {!isOwnProfile     && <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>👁 {user.profile_views ?? 0} views</span>}
               </div>
             )}
@@ -1089,7 +1437,7 @@ export default function StudentProfilePage({ viewMode }) {
           { label: 'Veloris Score',    value: coding.veloris_score ?? 0,                                                                    color: tier.color },
           { label: 'Problems Solved',  value: coding.summary?.total_problems_solved ?? 0,                                                   color: '#22c55e'  },
           { label: 'Attendance',       value: attendance.overall_percentage != null ? `${attendance.overall_percentage}%` : '—',            color: (attendance.overall_percentage ?? 0) >= 75 ? '#22c55e' : (attendance.overall_percentage ?? 0) >= 60 ? '#f59e0b' : '#ef4444' },
-          { label: 'CGPA',             value: academics.cgpa ?? '—',                                                                        color: '#4f8ef7'  },
+          { label: 'CGPA',             value: academics.cgpa ?? '—',                                                                        color: '#c0c0c0'  },
           { label: 'Last Active',      value: timeAgo(coding.summary?.last_activity_at),                                                    color: 'var(--text-primary)' },
         ].map(({ label, value, color }) => (
           <div key={label} className="stat-card" style={{ padding: '12px', textAlign: 'center', minWidth: '100px' }}>
@@ -1103,7 +1451,7 @@ export default function StudentProfilePage({ viewMode }) {
       <div style={{ display: 'flex', gap: '2px', marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.06)', overflowX: 'auto', position: 'sticky', top: 0, zIndex: 10, background: 'var(--bg-primary)', paddingTop: '8px', backdropFilter: 'blur(8px)' }}>
         {TABS.map(t => (
           <button key={t.id} onClick={() => setActiveTab(t.id)}
-            style={{ padding: '8px 14px', fontSize: '12px', background: 'transparent', border: 'none', borderBottom: activeTab === t.id ? '2px solid #5B5BD6' : '2px solid transparent', color: activeTab === t.id ? '#fff' : 'var(--text-muted)', cursor: 'pointer', marginBottom: '-1px', whiteSpace: 'nowrap', transition: 'color 0.15s' }}>
+            style={{ padding: '8px 14px', fontSize: '12px', background: 'transparent', border: 'none', borderBottom: activeTab === t.id ? '2px solid #505050' : '2px solid transparent', color: activeTab === t.id ? '#fff' : 'var(--text-muted)', cursor: 'pointer', marginBottom: '-1px', whiteSpace: 'nowrap', transition: 'color 0.15s' }}>
             {t.label}
           </button>
         ))}
@@ -1113,6 +1461,9 @@ export default function StudentProfilePage({ viewMode }) {
       {activeTab === 'overview' && (
         <OverviewTab coding={coding} attendance={attendance} academics={academics}
           internships={internships} tier={tier} onTabSwitch={setActiveTab} />
+      )}
+      {activeTab === 'activity' && (
+        <ActivityHeatmap codingData={coding} userId={userId} isOwn={isOwnProfile} />
       )}
       {activeTab === 'coding' && (
         <CodingTab codingData={coding} isOwnProfile={isOwnProfile} onRefresh={fetchData} />

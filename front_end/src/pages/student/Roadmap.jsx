@@ -10,7 +10,7 @@ const authFetch = (url, opts = {}) =>
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const GOALS = [
-  { id: "crack placements", label: "Crack Placements", icon: "◈", color: "#5B5BD6" },
+  { id: "crack placements", label: "Crack Placements", icon: "◈", color: "#505050" },
   { id: "system design", label: "System Design", icon: "◉", color: "#1D9E75" },
   { id: "competitive programming", label: "Competitive Programming", icon: "◆", color: "#D85A30" },
   { id: "web development", label: "Full Stack Dev", icon: "◇", color: "#BA7517" },
@@ -19,7 +19,7 @@ const GOALS = [
 ];
 const DIFFICULTIES = [
   { id: "beginner", label: "Basics", desc: "Fundamentals first", color: "#1D9E75" },
-  { id: "intermediate", label: "Intermediate", desc: "Balanced depth", color: "#5B5BD6" },
+  { id: "intermediate", label: "Intermediate", desc: "Balanced depth", color: "#505050" },
   { id: "advanced", label: "Advanced", desc: "Deep mastery", color: "#D85A30" },
 ];
 const TIMEFRAMES = [
@@ -36,10 +36,10 @@ const TYPE_COLORS = {
 };
 const STATUS_CFG = {
   complete: { label: "Done", color: "#1D9E75", bg: "rgba(29,158,117,0.12)", border: "rgba(29,158,117,0.3)" },
-  in_progress: { label: "In Progress", color: "#A8A8F8", bg: "rgba(91,91,214,0.12)", border: "rgba(91,91,214,0.4)" },
+  in_progress: { label: "In Progress", color: "#c0c0c0", bg: "rgba(255,255,255,0.06)", border: "rgba(255,255,255,0.15)" },
   pending: { label: "Pending", color: "#5A5A7A", bg: "rgba(255,255,255,0.04)", border: "rgba(255,255,255,0.08)" },
 };
-const DIFF_COLORS = { beginner: "#1D9E75", intermediate: "#5B5BD6", advanced: "#D85A30" };
+const DIFF_COLORS = { beginner: "#1D9E75", intermediate: "#505050", advanced: "#D85A30" };
 
 // ── Wizard ────────────────────────────────────────────────────────────────────
 function Wizard({ onGenerated, onCancel, slotsUsed, maxSlots }) {
@@ -70,7 +70,7 @@ function Wizard({ onGenerated, onCancel, slotsUsed, maxSlots }) {
       <div style={{ display: "flex", alignItems: "center", marginBottom: "2rem" }}>
         {STEPS.map((s, i) => (
           <div key={i} style={{ display: "flex", alignItems: "center", flex: i < STEPS.length - 1 ? 1 : "none" }}>
-            <div style={{ width: "30px", height: "30px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: 600, flexShrink: 0, background: i < step ? "#1D9E75" : i === step ? "#5B5BD6" : "rgba(255,255,255,0.06)", color: i <= step ? "#fff" : "var(--text-muted)", boxShadow: i === step ? "0 0 0 3px rgba(91,91,214,0.2)" : "none" }}>
+            <div style={{ width: "30px", height: "30px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: 600, flexShrink: 0, background: i < step ? "#1D9E75" : i === step ? "#505050" : "rgba(255,255,255,0.06)", color: i <= step ? "#fff" : "var(--text-muted)", boxShadow: i === step ? "0 0 0 3px rgba(255,255,255,0.08)" : "none" }}>
               {i < step ? "✓" : i + 1}
             </div>
             <span style={{ fontSize: "12px", color: i === step ? "var(--text-primary)" : "var(--text-muted)", marginLeft: "8px", whiteSpace: "nowrap" }}>{s}</span>
@@ -82,7 +82,7 @@ function Wizard({ onGenerated, onCancel, slotsUsed, maxSlots }) {
       {/* Slot indicator */}
       <div style={{ display: "flex", gap: "6px", marginBottom: "20px" }}>
         {Array.from({ length: maxSlots }).map((_, i) => (
-          <div key={i} style={{ flex: 1, height: "4px", borderRadius: "2px", background: i < slotsUsed ? "#5B5BD6" : "rgba(255,255,255,0.08)" }} />
+          <div key={i} style={{ flex: 1, height: "4px", borderRadius: "2px", background: i < slotsUsed ? "#505050" : "rgba(255,255,255,0.08)" }} />
         ))}
       </div>
       <div style={{ fontSize: "11px", color: "var(--text-muted)", marginBottom: "20px" }}>Roadmap {slotsUsed + 1} of {maxSlots}</div>
@@ -96,7 +96,7 @@ function Wizard({ onGenerated, onCancel, slotsUsed, maxSlots }) {
             {GOALS.map(g => (
               <div key={g.id} onClick={() => setCfg(c => ({ ...c, goal: g.id, customGoal: "" }))}
                 style={{ background: cfg.goal === g.id ? `${g.color}15` : "rgba(255,255,255,0.03)", border: `1.5px solid ${cfg.goal === g.id ? g.color : "rgba(255,255,255,0.08)"}`, borderRadius: "12px", padding: "14px", cursor: "pointer", transition: "all 0.15s" }}>
-                <div style={{ fontSize: "18px", color: g.color, marginBottom: "6px" }}>{g.icon}</div>
+                
                 <div style={{ fontSize: "13px", fontWeight: 600 }}>{g.label}</div>
               </div>
             ))}
@@ -132,8 +132,8 @@ function Wizard({ onGenerated, onCancel, slotsUsed, maxSlots }) {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: "8px", marginBottom: "24px" }}>
             {TIMEFRAMES.map(t => (
               <div key={t.days} onClick={() => setCfg(c => ({ ...c, timeframe_days: t.days }))}
-                style={{ background: cfg.timeframe_days === t.days ? "rgba(91,91,214,0.12)" : "rgba(255,255,255,0.03)", border: `1.5px solid ${cfg.timeframe_days === t.days ? "#5B5BD6" : "rgba(255,255,255,0.08)"}`, borderRadius: "10px", padding: "12px 8px", cursor: "pointer", textAlign: "center" }}>
-                <div style={{ fontFamily: "Space Grotesk, sans-serif", fontSize: "14px", fontWeight: 700, color: cfg.timeframe_days === t.days ? "#A8A8F8" : "var(--text-primary)" }}>{t.label}</div>
+                style={{ background: cfg.timeframe_days === t.days ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.03)", border: `1.5px solid ${cfg.timeframe_days === t.days ? "#505050" : "rgba(255,255,255,0.08)"}`, borderRadius: "10px", padding: "12px 8px", cursor: "pointer", textAlign: "center" }}>
+                <div style={{ fontFamily: "Space Grotesk, sans-serif", fontSize: "14px", fontWeight: 700, color: cfg.timeframe_days === t.days ? "#c0c0c0" : "var(--text-primary)" }}>{t.label}</div>
                 <div style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "2px" }}>{t.sub}</div>
               </div>
             ))}
@@ -195,11 +195,11 @@ function Wizard({ onGenerated, onCancel, slotsUsed, maxSlots }) {
 
 // ── Roadmap Card (dashboard) ──────────────────────────────────────────────────
 function RoadmapCard({ rm, onActivate, onView, onDelete, activating }) {
-  const diffColor = DIFF_COLORS[rm.difficulty] || "#5B5BD6";
+  const diffColor = DIFF_COLORS[rm.difficulty] || "#505050";
   const goalObj = GOALS.find(g => g.id === rm.goal);
   return (
-    <div style={{ background: rm.is_active ? "rgba(91,91,214,0.06)" : "rgba(255,255,255,0.03)", border: `1.5px solid ${rm.is_active ? "rgba(91,91,214,0.4)" : rm.is_completed ? "rgba(29,158,117,0.3)" : "rgba(255,255,255,0.08)"}`, borderRadius: "14px", padding: "20px", position: "relative", transition: "all 0.15s" }}>
-      {rm.is_active && <div style={{ position: "absolute", top: "12px", right: "12px", fontSize: "10px", padding: "3px 8px", borderRadius: "20px", background: "rgba(91,91,214,0.2)", color: "#A8A8F8", fontWeight: 600 }}>ACTIVE</div>}
+    <div style={{ background: rm.is_active ? "rgba(91,91,214,0.06)" : "rgba(255,255,255,0.03)", border: `1.5px solid ${rm.is_active ? "rgba(255,255,255,0.15)" : rm.is_completed ? "rgba(29,158,117,0.3)" : "rgba(255,255,255,0.08)"}`, borderRadius: "14px", padding: "20px", position: "relative", transition: "all 0.15s" }}>
+      {rm.is_active && <div style={{ position: "absolute", top: "12px", right: "12px", fontSize: "10px", padding: "3px 8px", borderRadius: "20px", background: "rgba(255,255,255,0.08)", color: "#c0c0c0", fontWeight: 600 }}>ACTIVE</div>}
       {rm.is_completed && !rm.is_active && <div style={{ position: "absolute", top: "12px", right: "12px", fontSize: "10px", padding: "3px 8px", borderRadius: "20px", background: "rgba(29,158,117,0.15)", color: "#1D9E75", fontWeight: 600 }}>COMPLETED</div>}
 
       <div style={{ fontSize: "20px", marginBottom: "8px" }}>{goalObj?.icon || "◈"}</div>
@@ -216,19 +216,19 @@ function RoadmapCard({ rm, onActivate, onView, onDelete, activating }) {
       <div style={{ marginBottom: "14px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "5px" }}>
           <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>{rm.completed_nodes}/{rm.total_nodes} nodes</span>
-          <span style={{ fontSize: "11px", fontWeight: 600, color: rm.is_completed ? "#1D9E75" : "#5B5BD6" }}>{rm.completion_pct}%</span>
+          <span style={{ fontSize: "11px", fontWeight: 600, color: rm.is_completed ? "#1D9E75" : "#505050" }}>{rm.completion_pct}%</span>
         </div>
         <div style={{ height: "4px", background: "rgba(255,255,255,0.06)", borderRadius: "2px", overflow: "hidden" }}>
-          <div style={{ height: "100%", width: `${rm.completion_pct}%`, background: rm.is_completed ? "#1D9E75" : "linear-gradient(90deg,#5B5BD6,#1D9E75)", borderRadius: "2px", transition: "width 0.5s" }} />
+          <div style={{ height: "100%", width: `${rm.completion_pct}%`, background: rm.is_completed ? "#1D9E75" : "#505050", borderRadius: "2px", transition: "width 0.5s" }} />
         </div>
       </div>
 
       <div style={{ display: "flex", gap: "8px" }}>
-        <button onClick={() => onView(rm)} style={{ flex: 1, padding: "8px", borderRadius: "8px", fontSize: "12px", background: rm.is_active ? "#5B5BD6" : "rgba(255,255,255,0.06)", color: rm.is_active ? "#fff" : "var(--text-secondary)", border: "none", cursor: "pointer", fontWeight: 500 }}>
+        <button onClick={() => onView(rm)} style={{ flex: 1, padding: "8px", borderRadius: "8px", fontSize: "12px", background: rm.is_active ? "#f0f0f0" : "rgba(255,255,255,0.06)", color: rm.is_active ? "#0a0a0a" : "var(--text-secondary)", border: "none", cursor: "pointer", fontWeight: 500 }}>
           {rm.is_active ? "Continue →" : "View"}
         </button>
         {!rm.is_active && (
-          <button onClick={() => onActivate(rm.id)} disabled={activating} style={{ flex: 1, padding: "8px", borderRadius: "8px", fontSize: "12px", background: "rgba(91,91,214,0.1)", color: "#A8A8F8", border: "1px solid rgba(91,91,214,0.3)", cursor: activating ? "not-allowed" : "pointer" }}>
+          <button onClick={() => onActivate(rm.id)} disabled={activating} style={{ flex: 1, padding: "8px", borderRadius: "8px", fontSize: "12px", background: "rgba(255,255,255,0.06)", color: "#a0a0a0", border: "1px solid rgba(255,255,255,0.1)", cursor: activating ? "not-allowed" : "pointer" }}>
             {activating ? "..." : "Switch to this"}
           </button>
         )}
@@ -250,9 +250,9 @@ function SprintTimer({ onComplete }) {
   const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
   const ss = String(seconds % 60).padStart(2, "0");
   return (
-    <div style={{ background: "rgba(91,91,214,0.1)", border: "1px solid rgba(91,91,214,0.3)", borderRadius: "12px", padding: "16px", marginBottom: "20px", textAlign: "center" }}>
+    <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "12px", padding: "16px", marginBottom: "20px", textAlign: "center" }}>
       <div style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "6px" }}>Sprint in progress</div>
-      <div style={{ fontFamily: "Space Grotesk, sans-serif", fontSize: "36px", fontWeight: 700, color: "#A8A8F8" }}>{mm}:{ss}</div>
+      <div style={{ fontFamily: "Space Grotesk, sans-serif", fontSize: "36px", fontWeight: 700, color: "#c0c0c0" }}>{mm}:{ss}</div>
       <button onClick={() => setRunning(r => !r)} style={{ marginTop: "8px", padding: "5px 14px", borderRadius: "8px", fontSize: "12px", background: "transparent", border: "1px solid rgba(255,255,255,0.12)", color: "var(--text-muted)", cursor: "pointer" }}>
         {running ? "⏸ Pause" : "▶ Resume"}
       </button>
@@ -313,7 +313,7 @@ function NodePanel({ node, onClose, onMarkComplete, onStartSprint, sprintActive,
                     {showHistory ? "Hide history" : `History (${history.length})`}
                   </button>
                 )}
-                <button onClick={handleRegenResources} disabled={regenLoading} style={{ fontSize: "10px", background: regenLoading ? "rgba(91,91,214,0.1)" : "rgba(91,91,214,0.15)", border: "1px solid rgba(91,91,214,0.3)", borderRadius: "6px", color: regenLoading ? "rgba(255,255,255,0.3)" : "#8B8BF5", cursor: regenLoading ? "not-allowed" : "pointer", padding: "2px 8px" }}>
+                <button onClick={handleRegenResources} disabled={regenLoading} style={{ fontSize: "10px", background: regenLoading ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "6px", color: regenLoading ? "rgba(255,255,255,0.3)" : "#a0a0a0", cursor: regenLoading ? "not-allowed" : "pointer", padding: "2px 8px" }}>
                   {regenLoading ? "⟳ Generating..." : "⟳ Regenerate"}
                 </button>
               </div>
@@ -384,7 +384,7 @@ function RoadmapView({ roadmap, onBack, onNodeUpdate }) {
   const completed = nodes.filter(n => n.status === "complete").length;
   const pct = nodes.length > 0 ? Math.round((completed / nodes.length) * 100) : 0;
   const currentNode = nodes.find(n => n.status === "in_progress");
-  const diffColor = DIFF_COLORS[roadmap.difficulty] || "#5B5BD6";
+  const diffColor = DIFF_COLORS[roadmap.difficulty] || "#505050";
 
   const showToast = (msg, type = "") => { setToast({ msg, type }); setTimeout(() => setToast(null), 3000); };
 
@@ -424,7 +424,7 @@ function RoadmapView({ roadmap, onBack, onNodeUpdate }) {
             <span style={{ fontSize: "11px", padding: "2px 8px", borderRadius: "20px", background: "rgba(255,255,255,0.04)", color: "var(--text-muted)", border: "1px solid rgba(255,255,255,0.08)" }}>
               {TIMEFRAMES.find(t => t.days === roadmap.timeframe_days)?.label || `${roadmap.timeframe_days}d`}
             </span>
-            {currentNode && <span style={{ fontSize: "11px", padding: "2px 8px", borderRadius: "20px", background: "rgba(91,91,214,0.1)", color: "#A8A8F8", border: "1px solid rgba(91,91,214,0.3)" }}>▶ {currentNode.title}</span>}
+            {currentNode && <span style={{ fontSize: "11px", padding: "2px 8px", borderRadius: "20px", background: "rgba(255,255,255,0.06)", color: "#a0a0a0", border: "1px solid rgba(255,255,255,0.1)" }}>▶ {currentNode.title}</span>}
           </div>
         </div>
       </div>
@@ -433,9 +433,9 @@ function RoadmapView({ roadmap, onBack, onNodeUpdate }) {
       <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "12px", padding: "14px 18px", marginBottom: "1.5rem", display: "flex", alignItems: "center", gap: "14px" }}>
         <span style={{ fontSize: "12px", color: "var(--text-muted)", whiteSpace: "nowrap" }}>{completed}/{nodes.length} nodes</span>
         <div style={{ flex: 1, height: "6px", background: "rgba(255,255,255,0.06)", borderRadius: "3px", overflow: "hidden" }}>
-          <div style={{ height: "100%", width: `${pct}%`, background: roadmap.is_completed ? "#1D9E75" : "linear-gradient(90deg,#5B5BD6,#1D9E75)", borderRadius: "3px", transition: "width 0.6s" }} />
+          <div style={{ height: "100%", width: `${pct}%`, background: roadmap.is_completed ? "#1D9E75" : "#505050", borderRadius: "3px", transition: "width 0.6s" }} />
         </div>
-        <span style={{ fontFamily: "Space Grotesk, sans-serif", fontSize: "16px", fontWeight: 700, color: roadmap.is_completed ? "#1D9E75" : "#5B5BD6", minWidth: "40px", textAlign: "right" }}>{pct}%</span>
+        <span style={{ fontFamily: "Space Grotesk, sans-serif", fontSize: "16px", fontWeight: 700, color: roadmap.is_completed ? "#1D9E75" : "#505050", minWidth: "40px", textAlign: "right" }}>{pct}%</span>
       </div>
 
       {roadmap.is_completed && (
@@ -453,7 +453,7 @@ function RoadmapView({ roadmap, onBack, onNodeUpdate }) {
             <div key={node.id} onClick={() => setSelectedNode(node)}
               style={{ background: "rgba(255,255,255,0.03)", borderRadius: "14px", padding: "16px", cursor: "pointer", transition: "all 0.15s", position: "relative", overflow: "hidden", border: `1.5px solid ${sc.border}` }}>
               <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "3px", background: sc.color, animation: node.status === "in_progress" ? "pulseBar 2s ease-in-out infinite" : "none" }} />
-              <div style={{ width: "26px", height: "26px", borderRadius: "7px", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Space Grotesk, sans-serif", fontSize: "11px", fontWeight: 700, marginBottom: "10px", background: node.status === "complete" ? "rgba(29,158,117,0.15)" : node.status === "in_progress" ? "rgba(91,91,214,0.15)" : "rgba(255,255,255,0.06)", color: sc.color }}>
+              <div style={{ width: "26px", height: "26px", borderRadius: "7px", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Space Grotesk, sans-serif", fontSize: "11px", fontWeight: 700, marginBottom: "10px", background: node.status === "complete" ? "rgba(29,158,117,0.15)" : node.status === "in_progress" ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.06)", color: sc.color }}>
                 {node.status === "complete" ? "✓" : String(node.order_index + 1).padStart(2, "0")}
               </div>
               <div style={{ fontFamily: "Space Grotesk, sans-serif", fontSize: "13px", fontWeight: 600, marginBottom: "5px", lineHeight: 1.3 }}>{node.title}</div>
@@ -553,7 +553,7 @@ export default function Roadmap() {
 
   if (phase === "loading") return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "60vh", gap: "14px" }}>
-      <div style={{ width: "44px", height: "44px", border: "3px solid rgba(91,91,214,0.2)", borderTopColor: "#5B5BD6", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+      <div style={{ width: "44px", height: "44px", border: "3px solid rgba(255,255,255,0.08)", borderTopColor: "#505050", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
       <div style={{ fontSize: "13px", color: "var(--text-muted)" }}>Loading roadmaps...</div>
     </div>
   );
@@ -588,8 +588,8 @@ export default function Roadmap() {
         <button
           onClick={() => canGenerate ? setPhase("wizard") : null}
           disabled={!canGenerate}
-          style={{ padding: "10px 20px", borderRadius: "10px", fontSize: "13px", fontWeight: 500, background: canGenerate ? "#5B5BD6" : "rgba(255,255,255,0.06)", color: canGenerate ? "#fff" : "var(--text-muted)", border: "none", cursor: canGenerate ? "pointer" : "not-allowed", display: "flex", alignItems: "center", gap: "8px" }}>
-          + New Roadmap
+          style={{ padding: "10px 20px", borderRadius: "10px", fontSize: "13px", fontWeight: 500, background: canGenerate ? "#505050" : "rgba(255,255,255,0.06)", color: canGenerate ? "#fff" : "var(--text-muted)", border: "none", cursor: canGenerate ? "pointer" : "not-allowed", display: "flex", alignItems: "center", gap: "8px" }}>
+          + New Roadmap {!canGenerate && `(${3 - slotsUsed} slots full)`}
         </button>
       </div>
 
@@ -599,7 +599,7 @@ export default function Roadmap() {
           const activeRoadmaps = roadmaps.filter(r => !r.is_completed);
           const rm = activeRoadmaps[i];
           return (
-            <div key={i} style={{ flex: 1, height: "6px", borderRadius: "3px", background: rm ? (rm.is_active ? "#5B5BD6" : "rgba(91,91,214,0.4)") : "rgba(255,255,255,0.06)" }} />
+            <div key={i} style={{ flex: 1, height: "6px", borderRadius: "3px", background: rm ? (rm.is_completed ? "#1D9E75" : rm.is_active ? "#505050" : "rgba(255,255,255,0.15)") : "rgba(255,255,255,0.06)" }} />
           );
         })}
       </div>
@@ -609,7 +609,7 @@ export default function Roadmap() {
           <div style={{ fontSize: "40px", marginBottom: "16px", opacity: 0.3 }}>◈</div>
           <div style={{ fontFamily: "Space Grotesk, sans-serif", fontSize: "18px", fontWeight: 600, marginBottom: "8px" }}>No roadmaps yet</div>
           <div style={{ fontSize: "13px", color: "var(--text-muted)", marginBottom: "20px" }}>Generate your first personalized learning roadmap</div>
-          <button onClick={() => setPhase("wizard")} style={{ padding: "10px 24px", borderRadius: "10px", fontSize: "13px", background: "#5B5BD6", color: "#fff", border: "none", cursor: "pointer" }}>Generate First Roadmap →</button>
+          <button onClick={() => setPhase("wizard")} style={{ padding: "10px 24px", borderRadius: "10px", fontSize: "13px", background: "#505050", color: "#fff", border: "none", cursor: "pointer" }}>Generate First Roadmap →</button>
         </div>
       ) : (
         <>

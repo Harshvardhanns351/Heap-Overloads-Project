@@ -50,7 +50,12 @@ async def process_student_wellbeing(session, student: User):
         .order_by(MonitoringEvent.created_at.desc())
     ).first()
 
-    last_activity_at = last_activity.created_at if last_activity else None
+    last_activity_at = None
+    if last_activity and last_activity.created_at:
+        dt = last_activity.created_at
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        last_activity_at = dt
 
     # Also check coding platform activity — more reliable signal
     coding_profiles = session.exec(
@@ -60,7 +65,6 @@ async def process_student_wellbeing(session, student: User):
         if cp.last_activity_at:
             dt = cp.last_activity_at
             if dt.tzinfo is None:
-                from datetime import timezone
                 dt = dt.replace(tzinfo=timezone.utc)
             if last_activity_at is None or dt > last_activity_at:
                 last_activity_at = dt
@@ -132,11 +136,11 @@ async def process_student_wellbeing(session, student: User):
 def get_student_attendance(session, student_id: int) -> float | None:
     """Calculate attendance percentage for a student."""
     total = (
-        session.exec(
+        session.scalar(
             select(func.count(AttendanceRecord.id)).where(
                 AttendanceRecord.student_id == student_id
             )
-        ).scalar()
+        )
         or 0
     )
 
@@ -144,12 +148,12 @@ def get_student_attendance(session, student_id: int) -> float | None:
         return None
 
     present = (
-        session.exec(
+        session.scalar(
             select(func.count(AttendanceRecord.id)).where(
                 AttendanceRecord.student_id == student_id,
                 AttendanceRecord.present == True,
             )
-        ).scalar()
+        )
         or 0
     )
 

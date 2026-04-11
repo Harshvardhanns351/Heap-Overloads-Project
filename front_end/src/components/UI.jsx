@@ -2,121 +2,94 @@ import React from 'react';
 
 export function RiskBadge({ level, score }) {
   const cfg = {
-    green: { label: 'On Track', cls: 'risk-badge-green' },
-    yellow: { label: 'Watching', cls: 'risk-badge-yellow' },
-    red: { label: 'At Risk', cls: 'risk-badge-red' },
+    green:  { label: 'Low Risk', bg: 'rgba(255,255,255,0.06)', color: '#a0a0a0', border: 'rgba(255,255,255,0.1)' },
+    yellow: { label: 'At Watch', bg: 'rgba(245,158,11,0.1)',   color: '#fbbf24', border: 'rgba(245,158,11,0.2)' },
+    red:    { label: 'At Risk',  bg: 'rgba(239,68,68,0.1)',    color: '#f87171', border: 'rgba(239,68,68,0.2)'  },
   };
   const c = cfg[level] || cfg.green;
-
   return (
-    <span className={c.cls}>
-      {c.label}{score !== undefined && ` (${score})`}
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '3px 10px', borderRadius: '99px', fontSize: '11px', fontWeight: '600', background: c.bg, color: c.color, border: `1px solid ${c.border}` }}>
+      <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: c.color, flexShrink: 0 }} />
+      {c.label}{score !== undefined && ` · ${score}`}
     </span>
   );
 }
 
-export function StatCard({ label, value, sub, color = '#8b5cf6', icon: Icon, trend }) {
+export function StatCard({ label, value, sub, icon: Icon, trend }) {
   return (
-    <div className="neumorphic p-5 group hover:translate-y-[-2px] transition-all duration-200">
-      <div className="flex items-start justify-between mb-4">
-        <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">{label}</span>
+    <div className="premium-card">
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '14px' }}>
+        <span style={{ fontSize: '10px', fontWeight: '700', color: '#505050', textTransform: 'uppercase', letterSpacing: '0.07em' }}>{label}</span>
         {Icon && (
-          <div 
-            className="w-8 h-8 rounded-lg flex items-center justify-center border"
-            style={{ background: `${color}15`, borderColor: `${color}30`, color }}
-          >
-            <Icon size={16} />
+          <div style={{ width: '30px', height: '30px', borderRadius: '7px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Icon size={14} style={{ color: '#808080' }} />
           </div>
         )}
       </div>
-      
-      <div>
-        <div 
-          className="text-[28px] font-medium text-white mb-1"
-          style={{ fontFamily: 'Inter, sans-serif' }}
-        >
-          {value}
+      <div style={{ fontSize: '28px', fontWeight: '800', color: '#f0f0f0', fontFamily: 'Space Grotesk, sans-serif', lineHeight: 1, marginBottom: '4px' }}>{value}</div>
+      {sub && <div style={{ fontSize: '11px', color: '#505050' }}>{sub}</div>}
+      {trend && (
+        <div style={{ fontSize: '11px', fontWeight: '600', marginTop: '10px', color: trend > 0 ? '#6ee7b7' : '#f87171', display: 'flex', alignItems: 'center', gap: '4px' }}>
+          {trend > 0 ? '↑' : '↓'} {Math.abs(trend)}% vs last month
         </div>
-        {sub && <div className="text-xs text-[var(--text-muted)]">{sub}</div>}
-        
-        {trend && (
-          <div className={`text-xs font-medium mt-3 flex items-center gap-1.5 ${trend > 0 ? 'text-[#1D9E75]' : 'text-[#A32D2D]'}`}>
-            <span>{trend > 0 ? '↑' : '↓'}</span>
-            <span>{Math.abs(trend)}%</span>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }
 
 export function PageHeader({ title, subtitle, action }) {
   return (
-    <div className="flex items-start justify-between mb-8 pb-6 border-b border-white/[0.06]">
+    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '28px', paddingBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
       <div>
-        <h1 className="text-2xl font-medium text-white tracking-tight mb-2">
-          {title}
-        </h1>
-        {subtitle && <p className="text-sm font-normal text-[var(--text-muted)]">{subtitle}</p>}
+        <h1 style={{ margin: 0, fontSize: '24px', fontWeight: '800', fontFamily: 'Space Grotesk, sans-serif', color: '#f0f0f0', letterSpacing: '-0.02em' }}>{title}</h1>
+        {subtitle && <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#606060' }}>{subtitle}</p>}
       </div>
-      {action && <div className="ml-4 shrink-0">{action}</div>}
+      {action && <div style={{ marginLeft: '16px', flexShrink: 0 }}>{action}</div>}
     </div>
   );
 }
 
-export function ProgressBar({ value, max = 100, color = '#8b5cf6', height = 5 }) {
+export function ProgressBar({ value, max = 100, color, height = 'h-2' }) {
   const pct = Math.min(100, (value / max) * 100);
+  // Accept both hex colors and Tailwind class strings — normalize to inline style
+  const barColor = color && color.startsWith('#') ? color : '#505050';
+  const h = typeof height === 'number' ? `${height}px` : '6px';
   return (
-    <div 
-      className="w-full rounded-full overflow-hidden"
-      style={{ 
-        background: 'rgba(255,255,255,0.06)', 
-        height: `${height}px` 
-      }}
-    >
-      <div 
-        className="h-full rounded-full transition-all duration-500"
-        style={{ 
-          width: `${pct}%`,
-          background: color,
-          boxShadow: `0 0 10px ${color}40`
-        }} 
-      />
+    <div style={{ width: '100%', height: h, background: 'rgba(255,255,255,0.06)', borderRadius: '99px', overflow: 'hidden' }}>
+      <div style={{ width: `${pct}%`, height: '100%', background: barColor, borderRadius: '99px', transition: 'width 0.6s ease' }} />
     </div>
   );
 }
 
 export function EmptyState({ icon: Icon, title, desc }) {
   return (
-    <div className="flex flex-col items-center justify-center p-12 text-center rounded-2xl glass-panel border border-dashed border-white/[0.1]">
-      <div className="w-16 h-16 rounded-full bg-white/[0.03] flex items-center justify-center mb-4 border border-white/[0.08]">
-        {Icon && <Icon size={32} className="text-[var(--text-muted)]" />}
-      </div>
-      <div className="text-base font-medium text-white mb-2">{title}</div>
-      {desc && <div className="text-sm text-[var(--text-muted)] max-w-sm">{desc}</div>}
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px', textAlign: 'center', borderRadius: '12px', border: '1px dashed rgba(255,255,255,0.08)' }}>
+      {Icon && (
+        <div style={{ width: '52px', height: '52px', borderRadius: '50%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
+          <Icon size={24} style={{ color: '#404040' }} />
+        </div>
+      )}
+      <div style={{ fontSize: '14px', fontWeight: '600', color: '#c0c0c0', marginBottom: '6px' }}>{title}</div>
+      {desc && <div style={{ fontSize: '12px', color: '#505050', maxWidth: '280px' }}>{desc}</div>}
     </div>
   );
 }
 
 export function Tabs({ tabs, active, onChange }) {
   return (
-    <div className="inline-flex gap-1 glass-panel p-1.5 rounded-xl mb-8">
-      {tabs.map((t) => {
+    <div style={{ display: 'inline-flex', gap: '2px', background: '#111111', padding: '4px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.07)', marginBottom: '24px' }}>
+      {tabs.map(t => {
         const isActive = active === t.key;
         return (
-          <button
-            key={t.key}
-            onClick={() => onChange(t.key)}
-            className={`relative px-5 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 
-              ${isActive ? 'text-white' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'}
-            `}
+          <button key={t.key} onClick={() => onChange(t.key)} style={{
+            padding: '7px 16px', borderRadius: '7px', fontSize: '12px', fontWeight: '600',
+            cursor: 'pointer', border: 'none', fontFamily: 'inherit', transition: 'all 0.15s',
+            background: isActive ? 'rgba(255,255,255,0.1)' : 'transparent',
+            color: isActive ? '#f0f0f0' : '#606060',
+          }}
+            onMouseEnter={e => { if (!isActive) e.currentTarget.style.color = '#a0a0a0'; }}
+            onMouseLeave={e => { if (!isActive) e.currentTarget.style.color = '#606060'; }}
           >
-            {isActive && (
-              <div 
-                className="absolute inset-0 rounded-lg" 
-                style={{ background: 'rgba(83, 74, 183, 0.2)', border: '1px solid rgba(83, 74, 183, 0.3)' }} 
-              />
-            )}
             {t.label}
           </button>
         );
@@ -127,26 +100,19 @@ export function Tabs({ tabs, active, onChange }) {
 
 export function Modal({ open, onClose, title, children }) {
   if (!open) return null;
-  
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-[#030014]/80 glass-tooltip" />
-      <div 
-        className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-white/[0.15] glass-elevated shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="sticky top-0 glass-elevated p-6 pb-4 mb-4 border-b border-white/[0.06] flex items-center justify-between rounded-t-2xl -mx-6 -mt-6 px-8">
-          <h3 className="text-lg font-medium text-white">{title}</h3>
-          <button 
-            onClick={onClose} 
-            className="w-8 h-8 rounded-full bg-white/[0.05] hover:bg-rose-500/20 hover:text-rose-400 flex items-center justify-center transition-all text-[var(--text-muted)]"
-          >
+    <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }} onClick={onClose}>
+      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }} />
+      <div className="premium-card" style={{ position: 'relative', width: '100%', maxWidth: '640px', maxHeight: '90vh', overflowY: 'auto', zIndex: 1, boxShadow: '0 20px 60px rgba(0,0,0,0.8)' }} onClick={e => e.stopPropagation()}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#f0f0f0', fontFamily: 'Space Grotesk, sans-serif' }}>{title}</h3>
+          <button onClick={onClose} style={{ width: '28px', height: '28px', borderRadius: '6px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', color: '#808080', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', transition: 'all 0.15s' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; e.currentTarget.style.color = '#ef4444'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = '#808080'; }}>
             ×
           </button>
         </div>
-        <div className="px-8 pb-6">
-          {children}
-        </div>
+        {children}
       </div>
     </div>
   );

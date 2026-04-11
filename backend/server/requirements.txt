@@ -12,4 +12,7 @@ passlib[bcrypt]
 pytesseract
 pillow
 httpx
+pdfplumber
+PyPDF2
+pdf2image
 

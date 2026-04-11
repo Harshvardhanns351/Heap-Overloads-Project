@@ -108,6 +108,10 @@ export const api = {
       headers: getHeaders(),
       body: JSON.stringify({ status, resolution }),
     }).then(handleResponse),
+    remove: (id) => fetch(`${API_BASE}/disputes/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    }).then(r => { if (!r.ok && r.status !== 204) return handleResponse(r); }),
   },
   
   attendance: {
@@ -153,16 +157,21 @@ export const api = {
   alerts: {
     listMine: () => fetch(`${API_BASE}/alerts/mine`, { headers: getHeaders() }).then(handleResponse),
     markRead: (id) => fetch(`${API_BASE}/alerts/${id}/read`, { method: 'PATCH', headers: getHeaders() }).then(handleResponse),
+    runCheck: () => fetch(`${API_BASE}/alerts/run-check`, { method: 'POST', headers: getHeaders() }).then(handleResponse),
   },
   
   riskScores: {
     getMine: () => fetch(`${API_BASE}/risk-scores/me`, { headers: getHeaders() }).then(handleResponse),
+    getHistory: (studentId) => fetch(`${API_BASE}/risk-scores/history/${studentId}`, { headers: getHeaders() }).then(handleResponse),
+    getClassBurnout: (classId) => fetch(`${API_BASE}/risk-scores/burnout/${classId}`, { headers: getHeaders() }).then(handleResponse),
   },
   
   coding: {
     getProfiles: () => fetch(`${API_BASE}/coding/me`, { headers: getHeaders() }).then(handleResponse),
     getSummary: () => fetch(`${API_BASE}/coding/me/summary`, { headers: getHeaders() }).then(handleResponse),
     getScore: () => fetch(`${API_BASE}/coding/me/score`, { headers: getHeaders() }).then(handleResponse),
+    getHeatmap: () => fetch(`${API_BASE}/coding/me/heatmap`, { headers: getHeaders() }).then(handleResponse),
+    getStudentHeatmap: (userId) => fetch(`${API_BASE}/coding/heatmap/${userId}`, { headers: getHeaders() }).then(handleResponse),
     getLeaderboard: () => fetch(`${API_BASE}/coding/leaderboard`, { headers: getHeaders() }).then(handleResponse),
     syncLeetcode: (username) => fetch(`${API_BASE}/coding/leetcode/${username}`, { headers: getHeaders() }).then(handleResponse),
     syncGithub: (username) => fetch(`${API_BASE}/coding/github/${username}`, { headers: getHeaders() }).then(handleResponse),
@@ -189,6 +198,10 @@ export const api = {
   analytics: {
     getClassAverage: (classId) => fetch(`${API_BASE}/analytics/class-average/${classId}`, { headers: getHeaders() }).then(handleResponse),
     getMyRadar: () => fetch(`${API_BASE}/analytics/my-radar`, { headers: getHeaders() }).then(handleResponse),
+    getTopStudents: (params = {}) => {
+      const q = new URLSearchParams(params).toString();
+      return fetch(`${API_BASE}/analytics/top-students${q ? `?${q}` : ''}`, { headers: getHeaders() }).then(handleResponse);
+    },
   },
 
   sprints: {
@@ -252,6 +265,14 @@ export const api = {
   profile: {
     getMyProfile: () => fetch(`${API_BASE}/profile/me`, { headers: getHeaders() }).then(handleResponse),
     updateMyProfile: (data) => fetch(`${API_BASE}/profile/me`, { method: 'PATCH', headers: getHeaders(), body: JSON.stringify(data) }).then(handleResponse),
+    uploadAvatar: (formData) => {
+      const token = localStorage.getItem('token');
+      return fetch(`${API_BASE}/profile/me/avatar`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      }).then(handleResponse);
+    },
     getStudentProfile: (userId) => fetch(`${API_BASE}/profile/student/${userId}`, { headers: getHeaders() }).then(handleResponse),
     getStudentsList: (params = {}) => {
       const q = new URLSearchParams(params).toString();
