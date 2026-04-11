@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react";
 import {
+  import { useState, useEffect, useRef } from "react";
   BookOpen, Clock, CheckCircle2, AlertTriangle, Upload, FileText,
   Send, ChevronDown, ChevronUp, Loader2, MessageSquare, Star, Paperclip,
 } from "lucide-react";
