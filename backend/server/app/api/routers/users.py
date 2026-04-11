@@ -16,10 +16,6 @@ def _to_user_read(u: User) -> UserRead:
         name=u.name,
         email=u.email,
         role=u.role,
-        class_id=u.class_id,
-        semester=u.semester,
-        branch=u.branch,
-        goal=u.goal,
         created_at=u.created_at,
     )
 

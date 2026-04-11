@@ -90,33 +90,7 @@ _FALLBACKS: Dict[str, List[Dict]] = {
 }
 
 
-def _generic_fallback(goal: str, difficulty: str = "intermediate", timeframe_days: int = 30) -> List[Dict]:
-    """Topic-aware fallback for any goal not in the curated list."""
-    templates = {
-        "beginner":     ["Introduction & Overview", "Core Concepts", "Hands-on Practice", "Mini Project"],
-        "intermediate": ["Foundations", "Core Topics", "Advanced Concepts", "Practical Application", "Real-world Project"],
-        "advanced":     ["Architecture & Theory", "Advanced Implementation", "Performance & Optimization", "System Design", "Expert Capstone"],
-    }
-    steps = templates.get(difficulty, templates["intermediate"])
-    hours_each = max(3, timeframe_days // len(steps))
-    return [
-        {
-            "title": f"{goal} — {step}",
-            "description": (
-                f"Study the {step.lower()} aspects of {goal}. "
-                f"This node covers essential concepts and practical skills "
-                f"for {difficulty}-level learners working toward mastery of {goal}."
-            ),
-            "hours": hours_each,
-            "node_type": "project" if "Project" in step or "Capstone" in step else "practice" if "Practice" in step or "Application" in step else "concept",
-            "prereq_ids": [],
-            "resources": [],
-        }
-        for step in steps
-    ]
-
-
-def generate_roadmap_fallback(goal: str, branch: str = "CSE", difficulty: str = "intermediate", timeframe_days: int = 30) -> List[Dict]:
+def generate_roadmap_fallback(goal: str, branch: str = "CSE") -> List[Dict]:
     g = goal.lower()
     if any(k in g for k in ["placement", "faang", "interview", "crack", "job"]):
         return _FALLBACKS["placement"]
@@ -125,7 +99,7 @@ def generate_roadmap_fallback(goal: str, branch: str = "CSE", difficulty: str = 
     if any(k in g for k in ["web", "full stack", "frontend", "backend", "react", "node"]):
         return _FALLBACKS["web_development"]
     if any(k in g for k in ["prompt engineering", "red team", "red-team", "jailbreak", "llm security", "ai safety", "prompt injection"]):
-        return _FALLBACKS.get("prompt_engineering", _FALLBACKS["default"])
+        return _FALLBACKS["prompt_engineering"]
     if any(k in g for k in ["ml", "machine learning", "deep learning", "data science"]):
         return _FALLBACKS["machine_learning"]
     if any(k in g for k in ["competitive", "cp", "codeforces", "icpc", "programming contest"]):
@@ -134,8 +108,7 @@ def generate_roadmap_fallback(goal: str, branch: str = "CSE", difficulty: str = 
         return _FALLBACKS["startup"]
     if any(k in g for k in ["ai", "artificial intelligence", "generative ai", "gen ai"]):
         return _FALLBACKS["machine_learning"]
-    # Generic topic-aware fallback — uses the actual goal as the topic
-    return _generic_fallback(goal)
+    return _FALLBACKS["default"]
 
 
 # ─── Groq call ────────────────────────────────────────────────────────────────
@@ -164,20 +137,12 @@ def generate_roadmap(
     api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
         logger.info("No GROQ_API_KEY — using curated fallback roadmap")
-        return generate_roadmap_fallback(goal, branch, difficulty, timeframe_days)
+        return generate_roadmap_fallback(goal, branch)
 
-    # Node count: explicit matrix keyed by (timeframe_days, difficulty)
-    _NODE_COUNT = {
-        (1,  "beginner"): 3, (1,  "intermediate"): 3, (1,  "advanced"): 4,
-        (5,  "beginner"): 4, (5,  "intermediate"): 5, (5,  "advanced"): 5,
-        (10, "beginner"): 5, (10, "intermediate"): 6, (10, "advanced"): 6,
-        (15, "beginner"): 5, (15, "intermediate"): 6, (15, "advanced"): 7,
-        (30, "beginner"): 6, (30, "intermediate"): 7, (30, "advanced"): 8,
-    }
-    node_count = _NODE_COUNT.get(
-        (timeframe_days, difficulty),
-        _NODE_COUNT.get((timeframe_days, "intermediate"), 6)
-    )
+    # Node count scales with timeframe and difficulty
+    base = max(3, timeframe_days // 5)
+    depth_mult = {"beginner": 0.7, "intermediate": 1.0, "advanced": 1.3}.get(difficulty, 1.0)
+    node_count = min(10, max(3, int(base * depth_mult)))
     weak = _weak_subjects(marks)
 
     depth_desc = {
@@ -186,142 +151,163 @@ def generate_roadmap(
         "advanced": "deep mastery — include edge cases, internals, advanced patterns, tradeoffs",
     }.get(difficulty, "intermediate level")
 
-    system_prompt = (
-        "You are an expert curriculum designer. "
-        "You MUST generate a roadmap specifically about the given topic. "
-        "NEVER substitute generic DSA/programming content unless the topic explicitly asks for it. "
-        "Every node title and description MUST mention the actual topic. "
-        "Return ONLY a valid JSON array with no markdown fences or extra text."
+    prompt = (
+        f"Generate a {node_count}-node personalized learning roadmap.\n"
+        f"Student: {branch} engineering, Semester {semester}\n"
+        f"Goal: {goal}\n"
+        f"Difficulty: {difficulty} ({depth_desc})\n"
+        f"Timeframe: {timeframe_days} days\n"
+        f"Weak subjects to prioritize: {weak}\n\n"
+        "Rules:\n"
+        "- Return ONLY a JSON array, no markdown, no explanation\n"
+        "- Each node: title, node_type (concept|practice|project), hours (int), "
+        "description (2-3 sentences matching the difficulty level), "
+        "resources (empty array []), prereq_ids ([])\n"
+        "- DO NOT generate any URLs or resource links — leave resources as []\n"
+        f"- For {difficulty} level: {'keep descriptions simple and beginner-friendly' if difficulty == 'beginner' else 'include implementation details and tradeoffs' if difficulty == 'advanced' else 'balance theory and practice'}\n"
+        "- Order nodes from foundational to advanced within the goal\n"
+        f"Return exactly {node_count} nodes as a JSON array."
     )
 
-    def _build_prompt(strict: bool = False) -> str:
-        strictness = (
-            "\nCRITICAL: Every single node title MUST contain a keyword from the topic. "
-            "Do NOT generate generic content.\n"
-        ) if strict else ""
-        return (
-            f"Generate a {node_count}-node learning roadmap for the topic: \"{goal}\"\n"
-            f"{strictness}"
-            f"Student context: {branch} engineering, Semester {semester}\n"
-            f"Difficulty: {difficulty} ({depth_desc})\n"
-            f"Timeframe: {timeframe_days} days\n"
-            f"Weak subjects to reinforce: {weak}\n\n"
-            "Rules:\n"
-            f"- The roadmap is SPECIFICALLY about \"{goal}\" — not generic programming\n"
-            "- Return ONLY a JSON array, no markdown, no explanation\n"
-            "- Each node: title (must reference the topic), node_type (concept|practice|project), "
-            "hours (int), description (2-3 sentences, topic-specific), "
-            "resources (empty array []), prereq_ids ([])\n"
-            "- Order nodes from foundational to advanced\n"
-            f"Return exactly {node_count} nodes as a JSON array."
-        )
+    try:
+        logger.info(f"Calling Groq: goal={goal}, difficulty={difficulty}, days={timeframe_days}, nodes={node_count}")
+        with httpx.Client(timeout=45) as client:
+            resp = client.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+                json={
+                    "model": "llama-3.3-70b-versatile",
+                    "temperature": 0.4,
+                    "max_tokens": 3500,
+                    "messages": [
+                        {"role": "system", "content": "You are an expert CS curriculum designer. Return ONLY valid JSON arrays with no markdown fences or extra text."},
+                        {"role": "user", "content": prompt},
+                    ],
+                },
+            )
+            resp.raise_for_status()
+            content = resp.json()["choices"][0]["message"]["content"].strip()
+            logger.info("Groq responded successfully")
 
-    def _validate(nodes: list) -> bool:
-        if not isinstance(nodes, list) or len(nodes) < max(3, node_count - 1):
-            return False
-        goal_words = {w for w in goal.lower().split() if len(w) > 3}
-        if not goal_words:
-            return True
-        relevant = sum(
-            1 for n in nodes
-            if any(w in n.get("title", "").lower() or w in n.get("description", "").lower()
-                   for w in goal_words)
-        )
-        return relevant >= len(nodes) * 0.5
+            if "```" in content:
+                parts = content.split("```")
+                for part in parts:
+                    part = part.strip()
+                    if part.startswith("json"):
+                        part = part[4:].strip()
+                    if part.startswith("["):
+                        content = part
+                        break
 
-    for attempt in range(3):
-        try:
-            prompt = _build_prompt(strict=(attempt > 0))
-            logger.info(f"Groq attempt {attempt+1}: goal={goal}, difficulty={difficulty}, days={timeframe_days}, nodes={node_count}")
-            with httpx.Client(timeout=45) as client:
-                resp = client.post(
-                    "https://api.groq.com/openai/v1/chat/completions",
-                    headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-                    json={
-                        "model": "llama-3.3-70b-versatile",
-                        "temperature": max(0.2, 0.4 - attempt * 0.1),
-                        "max_tokens": 3500,
-                        "messages": [
-                            {"role": "system", "content": system_prompt},
-                            {"role": "user", "content": prompt},
-                        ],
-                    },
-                )
-                resp.raise_for_status()
-                content = resp.json()["choices"][0]["message"]["content"].strip()
-                logger.info(f"Groq attempt {attempt+1} responded, length={len(content)}")
+            nodes = json.loads(content)
+            if isinstance(nodes, list) and len(nodes) >= 3:
+                logger.info(f"Groq generated {len(nodes)} nodes")
+                return nodes
+            logger.warning("Groq returned invalid structure, using fallback")
+    except Exception as e:
+        logger.warning(f"Groq roadmap generation failed: {e} — using curated fallback")
 
-                if "```" in content:
-                    for part in content.split("```"):
-                        part = part.strip().lstrip("json").strip()
-                        if part.startswith("["):
-                            content = part
-                            break
-
-                nodes = json.loads(content)
-                if _validate(nodes):
-                    logger.info(f"Groq generated {len(nodes)} valid nodes on attempt {attempt+1}")
-                    return nodes
-                logger.warning(f"Groq attempt {attempt+1}: validation failed — nodes don't match topic '{goal}'")
-        except Exception as e:
-            logger.warning(f"Groq attempt {attempt+1} failed: {e}")
-
-    logger.warning(f"All Groq attempts failed for goal='{goal}' — using topic-aware fallback")
-    return generate_roadmap_fallback(goal, branch, difficulty, timeframe_days)
+    return generate_roadmap_fallback(goal, branch)
 
 
 # ─── Resource regeneration ────────────────────────────────────────────────────
 
-def _build_resource_queries(node_title: str, node_description: str, goal: str, difficulty: str) -> List[Dict]:
-    """
-    Build targeted search queries from node title keywords.
-    Avoids Groq timeout by not calling LLM for query generation.
-    Strips stop words so ArXiv/GitHub get precise queries.
-    """
-    _STOP = {"and", "the", "for", "with", "in", "of", "to", "a", "an",
-             "is", "are", "how", "what", "introduction", "fundamentals",
-             "basics", "overview", "project", "advanced", "using", "via"}
-    words = [w for w in node_title.lower().split() if w not in _STOP and len(w) > 3]
-    core = " ".join(words[:4]) or goal
-
-    depth_suffix = {
-        "beginner": "tutorial beginner",
-        "intermediate": "deep dive tutorial 2024",
-        "advanced": "advanced architecture production",
-    }.get(difficulty, "tutorial")
-
-    return [
-        {"type": "github_repo",    "query": f"{core} examples"},
-        {"type": "youtube_video",  "query": f"{core} {depth_suffix}"},
-        {"type": "research_paper", "query": core},
-    ]
-
-
 def generate_resources(node_title: str, node_description: str, goal: str, difficulty: str = "intermediate", timeframe_days: int = 30) -> List[Dict]:
     """
     Hybrid resource generation:
-      1. Build targeted search queries from node title (no Groq — avoids timeout)
+      1. Groq generates targeted search QUERIES (no URLs — avoids hallucination)
       2. Real APIs (GitHub, ArXiv, YouTube) fetch actual URLs
       3. Curated verified fallbacks fill any gaps
     """
     import asyncio
     from ai_engine.resource_fetcher import fetch_resources_for_queries, get_curated
 
-    resource_count = {1: 3, 5: 4, 10: 5, 15: 6, 30: 7}.get(timeframe_days, 5)
+    api_key = os.getenv("GROQ_API_KEY")
 
-    queries = _build_resource_queries(node_title, node_description, goal, difficulty)
+    # Resource count based on depth + timeframe
+    base = {1: 3, 5: 4, 10: 5, 15: 6, 30: 7}.get(timeframe_days, 5)
+    depth_mult = {"beginner": 0.8, "intermediate": 1.0, "advanced": 1.3}.get(difficulty, 1.0)
+    resource_count = max(3, int(base * depth_mult))
 
-    # Fetch real resources from APIs in a fresh thread (avoids event loop conflicts)
+    # Depth-based mix strategy
+    mix = {
+        "beginner":     {"github_repo": 1, "youtube_video": 2, "research_paper": 0},
+        "intermediate": {"github_repo": 2, "youtube_video": 1, "research_paper": 1},
+        "advanced":     {"github_repo": 2, "youtube_video": 1, "research_paper": 2},
+    }.get(difficulty, {"github_repo": 2, "youtube_video": 1, "research_paper": 1})
+
+    queries = []
+
+    # Step 1: Ask Groq for search queries only (no URLs)
+    if api_key:
+        mix_desc = ", ".join(f"{v} {k.replace('_', ' ')}(s)" for k, v in mix.items() if v > 0)
+        prompt = (
+            f"Topic: {node_title}\n"
+            f"Context: {node_description}\n"
+            f"Overall goal: {goal}\n"
+            f"Depth: {difficulty}\n\n"
+            f"Generate {resource_count} search queries to find real learning resources.\n"
+            f"Mix: {mix_desc}.\n"
+            "For github_repo: write a specific repo search query (e.g. 'prompt injection defense LLM').\n"
+            "For youtube_video: write a specific video search query (e.g. 'prompt engineering tutorial 2024 intermediate').\n"
+            "For research_paper: write an ArXiv search query (e.g. 'adversarial attacks language models survey').\n"
+            "Return ONLY a JSON array. No markdown. No URLs. No explanation.\n"
+            'Each item: {"type": "github_repo"|"youtube_video"|"research_paper", "query": "search string"}\n'
+            f"Return exactly {resource_count} items."
+        )
+        try:
+            with httpx.Client(timeout=20) as client:
+                resp = client.post(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+                    json={
+                        "model": "llama-3.3-70b-versatile",
+                        "temperature": 0.3,
+                        "max_tokens": 600,
+                        "messages": [
+                            {"role": "system", "content": "You generate search queries for learning resources. Return ONLY a valid JSON array. No URLs. No markdown."},
+                            {"role": "user", "content": prompt},
+                        ],
+                    },
+                )
+                resp.raise_for_status()
+                content = resp.json()["choices"][0]["message"]["content"].strip()
+                if "```" in content:
+                    for part in content.split("```"):
+                        part = part.strip().lstrip("json").strip()
+                        if part.startswith("["):
+                            content = part
+                            break
+                parsed = json.loads(content)
+                if isinstance(parsed, list):
+                    queries = parsed
+                    logger.info(f"Groq generated {len(queries)} search queries for: {node_title}")
+        except Exception as e:
+            logger.warning(f"Groq query generation failed: {e}")
+
+    # Fallback queries if Groq failed
+    if not queries:
+        queries = [
+            {"type": "github_repo", "query": f"{goal} {node_title}"},
+            {"type": "youtube_video", "query": f"{node_title} {difficulty} tutorial"},
+            {"type": "research_paper", "query": f"{goal} {node_title}"},
+        ]
+
+    # Step 2: Fetch real resources from APIs
     try:
-        import concurrent.futures
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-            future = pool.submit(asyncio.run, fetch_resources_for_queries(queries, topic=goal))
-            fetched = future.result(timeout=25)
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as pool:
+                future = pool.submit(asyncio.run, fetch_resources_for_queries(queries))
+                fetched = future.result(timeout=25)
+        else:
+            fetched = loop.run_until_complete(fetch_resources_for_queries(queries))
     except Exception as e:
         logger.warning(f"API resource fetch failed: {e}")
         fetched = []
 
-    # Merge curated (highest quality) + fetched, deduplicate
+    # Step 3: Merge with curated fallbacks (curated first — highest quality)
     curated = get_curated(goal, node_title)
     seen_urls: set = set()
     merged = []
@@ -329,7 +315,8 @@ def generate_resources(node_title: str, node_description: str, goal: str, diffic
         url = r.get("url", "")
         if url and url not in seen_urls:
             seen_urls.add(url)
+            # Normalize to {label, url, tag} — keep tag if present
             merged.append({"label": r.get("label", url), "url": url, "tag": r.get("tag", "")})
 
     logger.info(f"Resources for '{node_title}': {len(curated)} curated + {len(fetched)} fetched = {len(merged)} total")
-    return merged[:resource_count + 2]
+    return merged[:resource_count + 2]  # slight buffer so UI has enough to show

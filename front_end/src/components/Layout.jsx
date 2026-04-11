@@ -6,7 +6,6 @@ import {
   AlertCircle, BookOpen, Users, BarChart3, LogOut,
   Bell, ChevronDown, UserCircle2
 } from 'lucide-react';
-import { useClerk } from '@clerk/react';
 import logo from '../assets/veloris-logo.png';
 
 const STUDENT_NAV = [
@@ -50,8 +49,7 @@ function NavItem({ path, icon: Icon, label }) {
 
 export default function Layout({ children }) {
   const { currentUser, role, logout } = useAppStore();
-  const { signOut } = useClerk();
-  const navigate = useNavigate();
+    const navigate = useNavigate();
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef(null);
 
@@ -134,7 +132,7 @@ export default function Layout({ children }) {
               </div>
             </div>
             <button
-              onClick={async (e) => { e.stopPropagation(); await signOut(); logout(); }}
+              onClick={async (e) => { e.stopPropagation(); await logout(); logout(); }}
               className="p-1.5 rounded-lg transition-colors"
               style={{ color: 'var(--text-muted)' }}
               onMouseEnter={e => { e.currentTarget.style.color = 'var(--status-err)'; e.currentTarget.style.background = 'rgba(248,113,113,0.08)'; }}
@@ -226,7 +224,7 @@ export default function Layout({ children }) {
                     >{label}</button>
                   ))}
                   <div style={{ height: '1px', background: 'var(--border)', margin: '3px 0' }} />
-                  <button onClick={async () => { await signOut(); logout(); setProfileOpen(false); }}
+                  <button onClick={async () => { await logout(); logout(); setProfileOpen(false); }}
                     style={{ display: 'block', width: '100%', padding: '9px 14px', textAlign: 'left', background: 'none', border: 'none', color: 'var(--status-err)', fontSize: '12px', cursor: 'pointer' }}
                     onMouseEnter={e => e.currentTarget.style.background = 'rgba(248,113,113,0.06)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'none'}
@@ -247,3 +245,4 @@ export default function Layout({ children }) {
     </div>
   );
 }
+

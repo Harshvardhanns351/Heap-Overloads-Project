@@ -55,12 +55,11 @@ def _serialize(roadmap: Roadmap, nodes) -> dict:
     }
 
 
-def _cascade_delete(db: Session, roadmap_id: int, commit: bool = True):
+def _cascade_delete(db: Session, roadmap_id: int):
     db.exec(text(f"DELETE FROM sprint WHERE node_id IN (SELECT id FROM roadmapnode WHERE roadmap_id = {roadmap_id})"))
     db.exec(text(f"DELETE FROM roadmapnode WHERE roadmap_id = {roadmap_id}"))
     db.exec(text(f"DELETE FROM roadmap WHERE id = {roadmap_id}"))
-    if commit:
-        db.commit()
+    db.commit()
 
 
 def _get_nodes(db: Session, roadmap_id: int):
@@ -96,16 +95,15 @@ def list_roadmaps(
             db.commit()
         result.append(_serialize(rm, nodes))
 
-    # Only count non-completed as "active slots"
     active_count = sum(1 for r in result if not r["is_completed"])
     all_completed = active_count == 0 and len(result) >= MAX_ROADMAPS
-    can_generate = active_count < MAX_ROADMAPS
+    can_generate = len(result) < MAX_ROADMAPS or all_completed
 
     return {
         "roadmaps": result,
         "count": len(result),
         "can_generate": can_generate,
-        "slots_used": active_count,
+        "slots_used": len(result),
         "max_slots": MAX_ROADMAPS,
         "all_completed": all_completed,
     }
@@ -169,39 +167,26 @@ def generate_my_roadmap(
 ):
     existing = db.exec(select(Roadmap).where(Roadmap.student_id == current_user.id)).all()
 
+    # Check slot limit
+    if len(existing) >= MAX_ROADMAPS:
+        # Allow only if ALL existing are completed
+        all_nodes_per_rm = [_get_nodes(db, rm.id) for rm in existing]
+        all_done = all(_check_completed(nodes) for nodes in all_nodes_per_rm)
+        if not all_done:
+            incomplete = sum(1 for nodes in all_nodes_per_rm if not _check_completed(nodes))
+            raise HTTPException(
+                status_code=400,
+                detail=f"You have {MAX_ROADMAPS} roadmaps. Complete all {incomplete} incomplete roadmap(s) before generating new ones."
+            )
+        # All done — wipe them all and start fresh
+        for rm in existing:
+            _cascade_delete(db, rm.id)
+
     goal = payload.goal or current_user.goal or "crack placements"
     semester = payload.semester or current_user.semester or 6
     branch = payload.branch or current_user.branch or "CSE"
     difficulty = payload.difficulty or "intermediate"
     timeframe_days = payload.timeframe_days or 30
-
-    # Count only incomplete roadmaps as "active slots"
-    incomplete = [rm for rm in existing if not rm.is_completed]
-
-    if len(incomplete) >= MAX_ROADMAPS:
-        raise HTTPException(
-            status_code=400,
-            detail=f"You have {MAX_ROADMAPS} active roadmaps. Complete them before generating new ones."
-        )
-
-    # Check for duplicate goal among incomplete roadmaps
-    for rm in incomplete:
-        if rm.goal.lower().strip() == goal.lower().strip():
-            raise HTTPException(
-                status_code=400,
-                detail=f"You already have an active roadmap for '{goal}'. Complete it or delete it first."
-            )
-
-    # If we're at total capacity (3 slots including completed), delete the oldest completed one
-    if len(existing) >= MAX_ROADMAPS:
-        completed_rms = sorted(
-            [rm for rm in existing if rm.is_completed],
-            key=lambda r: r.created_at
-        )
-        if completed_rms:
-            _cascade_delete(db, completed_rms[0].id, commit=True)
-            # Refresh existing list
-            existing = db.exec(select(Roadmap).where(Roadmap.student_id == current_user.id)).all()
 
     marks = db.exec(select(Mark).where(Mark.student_id == current_user.id)).all()
     marks_data = [{"subject": m.subject, "score": m.score, "max_score": m.max_score} for m in marks]
@@ -212,7 +197,7 @@ def generate_my_roadmap(
             marks=marks_data, difficulty=difficulty, timeframe_days=timeframe_days,
         )
     except Exception:
-        nodes_data = generate_roadmap_fallback(goal=goal, branch=branch, difficulty=difficulty, timeframe_days=timeframe_days)
+        nodes_data = generate_roadmap_fallback(goal=goal, branch=branch)
 
     # Deactivate all existing, new one will be active
     for rm in db.exec(select(Roadmap).where(Roadmap.student_id == current_user.id)).all():

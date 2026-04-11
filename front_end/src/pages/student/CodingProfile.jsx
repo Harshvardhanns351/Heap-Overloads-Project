@@ -10,24 +10,24 @@ import { api } from '../../api';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const PLATFORMS = [
-  { id: 'leetcode',   label: 'LeetCode',   color: 'var(--accent)', placeholder: 'your_username',  url: u => `https://leetcode.com/u/${u}` },
-  { id: 'github',     label: 'GitHub',     color: 'var(--accent-dim)', placeholder: 'github_username', url: u => `https://github.com/${u}` },
-  { id: 'codeforces', label: 'Codeforces', color: 'var(--accent)', placeholder: 'cf_handle',       url: u => `https://codeforces.com/profile/${u}` },
-  { id: 'codechef',   label: 'CodeChef',   color: 'var(--accent-dim)', placeholder: 'cc_username',     url: u => `https://codechef.com/users/${u}` },
+  { id: 'leetcode',   label: 'LeetCode',   color: '#f59e0b', placeholder: 'your_username',  url: u => `https://leetcode.com/u/${u}` },
+  { id: 'github',     label: 'GitHub',     color: '#8b949e', placeholder: 'github_username', url: u => `https://github.com/${u}` },
+  { id: 'codeforces', label: 'Codeforces', color: '#4f8ef7', placeholder: 'cf_handle',       url: u => `https://codeforces.com/profile/${u}` },
+  { id: 'codechef',   label: 'CodeChef',   color: '#cd7f32', placeholder: 'cc_username',     url: u => `https://codechef.com/users/${u}` },
 ];
 
 const TIERS = [
-  { min: 950, label: 'Legend',   color: 'var(--accent)' },
-  { min: 800, label: 'Elite',    color: 'var(--accent)' },
-  { min: 600, label: 'Expert',   color: 'var(--accent-dim)' },
-  { min: 400, label: 'Coder',    color: 'var(--accent-dim)' },
-  { min: 200, label: 'Learner',  color: 'var(--text-primary)' },
-  { min: 0,   label: 'Beginner', color: 'var(--text-muted)' },
+  { min: 950, label: 'Legend',   color: '#ef4444' },
+  { min: 800, label: 'Elite',    color: '#f59e0b' },
+  { min: 600, label: 'Expert',   color: '#a855f7' },
+  { min: 400, label: 'Coder',    color: '#3b82f6' },
+  { min: 200, label: 'Learner',  color: '#22c55e' },
+  { min: 0,   label: 'Beginner', color: '#94a3b8' },
 ];
 
 const CF_RANK_COLORS = {
-  grandmaster: 'var(--accent)', master: 'var(--accent)', 'candidate master': 'var(--accent-dim)',
-  expert: 'var(--accent-dim)', specialist: 'var(--text-primary)', pupil: 'var(--text-primary)', newbie: 'var(--text-muted)',
+  grandmaster: '#ff0000', master: '#ff8c00', 'candidate master': '#a855f7',
+  expert: '#3b82f6', specialist: '#22d3ee', pupil: '#22c55e', newbie: '#94a3b8',
 };
 
 const getTier = s => TIERS.find(t => s >= t.min) || TIERS[TIERS.length - 1];
@@ -52,11 +52,11 @@ function VelorisCard({ score }) {
   const tier  = getTier(total);
   const bd    = score.breakdown ?? {};
   const segs  = [
-    { label: 'LeetCode',   val: bd.lc ?? 0,       max: 350, color: 'var(--accent)' },
-    { label: 'Codeforces', val: bd.cf ?? 0,       max: 250, color: 'var(--accent-dim)' },
-    { label: 'CodeChef',   val: bd.cc ?? 0,       max: 150, color: 'var(--text-primary)' },
-    { label: 'GitHub',     val: bd.gh ?? 0,       max: 150, color: 'var(--text-muted)' },
-    { label: 'Activity',   val: bd.activity ?? 0, max: 100, color: 'var(--status-ok)' },
+    { label: 'LeetCode',   val: bd.lc ?? 0,       max: 350, color: '#f59e0b' },
+    { label: 'Codeforces', val: bd.cf ?? 0,       max: 250, color: '#4f8ef7' },
+    { label: 'CodeChef',   val: bd.cc ?? 0,       max: 150, color: '#cd7f32' },
+    { label: 'GitHub',     val: bd.gh ?? 0,       max: 150, color: '#8b949e' },
+    { label: 'Activity',   val: bd.activity ?? 0, max: 100, color: '#22c55e' },
   ];
   return (
     <div className="card" onClick={() => setOpen(o => !o)}
@@ -140,9 +140,9 @@ function PlatformCard({ platform, profile, onLinked, onTabSwitch }) {
       : profile.cc_stars ? `${'★'.repeat(Math.min(parseInt(profile.cc_stars)||0,5))} ${profile.cc_stars}` : '';
     return (
       <div className="card" onClick={() => onTabSwitch(platform)}
-        style={{ padding: '14px 16px', cursor: 'pointer', border: `1px solid var(--border)`, transition: 'transform 0.15s, border-color 0.15s' }}
-        onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.borderColor = `var(--accent-border)`; }}
-        onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = `var(--border)`; }}>
+        style={{ padding: '14px 16px', cursor: 'pointer', border: `1px solid ${meta.color}30`, transition: 'transform 0.15s, border-color 0.15s' }}
+        onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.borderColor = `${meta.color}60`; }}
+        onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = `${meta.color}30`; }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
@@ -152,7 +152,7 @@ function PlatformCard({ platform, profile, onLinked, onTabSwitch }) {
             <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>@{profile.username}</div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
-            <span style={{ fontSize: '9px', padding: '1px 6px', borderRadius: '4px', background: 'var(--accent-bg)', color: 'var(--accent)', border: '1px solid var(--accent-border)' }}>✓ Connected</span>
+            <span style={{ fontSize: '9px', padding: '1px 6px', borderRadius: '4px', background: '#22c55e20', color: '#22c55e', border: '1px solid #22c55e30' }}>✓ Connected</span>
             <a href={meta.url(profile.username)} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}>
               <ExternalLink size={11} color="var(--text-muted)" />
             </a>
@@ -162,7 +162,7 @@ function PlatformCard({ platform, profile, onLinked, onTabSwitch }) {
         {sub && <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginBottom: '6px' }}>{sub}</div>}
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '3px' }}><Clock size={9} /> {timeAgo(profile.last_activity_at)}</span>
-          <span style={{ fontSize: '10px', color: profile.estimated_weekly_hours > 0 ? 'var(--accent)' : 'var(--text-muted)' }}>{safeH(profile.estimated_weekly_hours)}/wk</span>
+          <span style={{ fontSize: '10px', color: profile.estimated_weekly_hours > 0 ? '#8b5cf6' : 'var(--text-muted)' }}>{safeH(profile.estimated_weekly_hours)}/wk</span>
         </div>
       </div>
     );
@@ -171,11 +171,11 @@ function PlatformCard({ platform, profile, onLinked, onTabSwitch }) {
     <div className="card" style={{ border: '1px dashed rgba(255,255,255,0.10)', background: 'rgba(255,255,255,0.015)', overflow: 'hidden' }}>
       {!showForm ? (
         <div style={{ padding: '20px', textAlign: 'center', cursor: 'pointer' }} onClick={() => setShowForm(true)}>
-          <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: `var(--accent-bg)`, border: `1px solid var(--accent-border)`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px' }}>
+          <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: `${meta.color}15`, border: `1px solid ${meta.color}25`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px' }}>
             <Link2 size={16} color={meta.color} style={{ opacity: 0.7 }} />
           </div>
           <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '8px' }}>{meta.label}</div>
-          <button className="btn" style={{ fontSize: '11px', padding: '5px 14px', background: `var(--accent-bg)`, color: meta.color, border: `1px solid var(--accent-border)` }}
+          <button className="btn" style={{ fontSize: '11px', padding: '5px 14px', background: `${meta.color}15`, color: meta.color, border: `1px solid ${meta.color}35` }}
             onClick={e => { e.stopPropagation(); setShowForm(true); }}>+ Connect</button>
         </div>
       ) : (
@@ -202,7 +202,7 @@ function RecentList({ items }) {
           style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', textDecoration: 'none', color: 'var(--text-primary)', transition: 'background 0.15s' }}
           onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
           onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}>
-          <span style={{ fontSize: '9px', padding: '2px 6px', borderRadius: '4px', background: `var(--accent-bg)`, color: `var(--accent)`, whiteSpace: 'nowrap', flexShrink: 0 }}>{s.platform}</span>
+          <span style={{ fontSize: '9px', padding: '2px 6px', borderRadius: '4px', background: `${PC[s.platform]||'#555'}22`, color: PC[s.platform]||'#aaa', whiteSpace: 'nowrap', flexShrink: 0 }}>{s.platform}</span>
           <span style={{ flex: 1, fontSize: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.title}</span>
           <span style={{ fontSize: '10px', color: 'var(--text-muted)', whiteSpace: 'nowrap', flexShrink: 0 }}>{timeAgo(s.time)}</span>
           <ExternalLink size={10} color="var(--text-muted)" style={{ flexShrink: 0 }} />
@@ -214,12 +214,12 @@ function RecentList({ items }) {
 
 // ── Platform Panels ───────────────────────────────────────────────────────────
 function LCPanel({ p }) {
-  const data = [{ tag: 'Easy', solved: p.easy??0, color:'var(--status-ok)' }, { tag: 'Medium', solved: p.medium??0, color:'var(--status-warn)' }, { tag: 'Hard', solved: p.hard??0, color:'var(--status-err)' }];
+  const data = [{ tag: 'Easy', solved: p.easy??0, color:'#22c55e' }, { tag: 'Medium', solved: p.medium??0, color:'#f59e0b' }, { tag: 'Hard', solved: p.hard??0, color:'#ef4444' }];
   const total = p.solved_total ?? 0;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px' }}>
-        {[{l:'Total',v:total,c:'var(--accent)'},{l:'Easy',v:p.easy??0,c:'var(--status-ok)'},{l:'Medium',v:p.medium??0,c:'var(--status-warn)'},{l:'Hard',v:p.hard??0,c:'var(--status-err)'}].map(({l,v,c})=>(
+        {[{l:'Total',v:total,c:'#4f8ef7'},{l:'Easy',v:p.easy??0,c:'#22c55e'},{l:'Medium',v:p.medium??0,c:'#f59e0b'},{l:'Hard',v:p.hard??0,c:'#ef4444'}].map(({l,v,c})=>(
           <div key={l} className="stat-card" style={{textAlign:'center',padding:'14px'}}>
             <div style={{fontSize:'22px',fontWeight:'700',fontFamily:'Space Grotesk,sans-serif',color:c}}>{v}</div>
             <div style={{fontSize:'10px',color:'var(--text-muted)',marginTop:'2px'}}>{l}</div>
@@ -246,7 +246,7 @@ function LCPanel({ p }) {
               <XAxis dataKey="tag" tick={{fill:'#8b8ba0',fontSize:10}} axisLine={false} tickLine={false} />
               <YAxis tick={{fill:'#8b8ba0',fontSize:10}} axisLine={false} tickLine={false} />
               <Tooltip contentStyle={{background:'var(--bg-elevated)',border:'1px solid var(--border)',borderRadius:'8px',fontSize:'11px'}} />
-              <Bar dataKey="solved" fill="var(--accent)" radius={[4,4,0,0]} />
+              <Bar dataKey="solved" fill="#f59e0b" radius={[4,4,0,0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -254,7 +254,7 @@ function LCPanel({ p }) {
       <div className="card" style={{padding:'16px'}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'12px'}}>
           <div style={{fontSize:'12px',fontWeight:'600'}}>Recent Submissions</div>
-          <a href={`https://leetcode.com/u/${p.username}`} target="_blank" rel="noreferrer" style={{fontSize:'11px',color:'var(--accent)',display:'flex',alignItems:'center',gap:'4px',textDecoration:'none'}}>View on LeetCode <ExternalLink size={10}/></a>
+          <a href={`https://leetcode.com/u/${p.username}`} target="_blank" rel="noreferrer" style={{fontSize:'11px',color:'#f59e0b',display:'flex',alignItems:'center',gap:'4px',textDecoration:'none'}}>View on LeetCode <ExternalLink size={10}/></a>
         </div>
         <RecentList items={p.recent_submissions} />
       </div>
@@ -268,7 +268,7 @@ function GHPanel({ p }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px' }}>
         {[{l:'Public Repos',v:p.public_repos??0},{l:'Commits (year)',v:p.total_commits_year??0},{l:'Top Language',v:p.top_language||'—'},{l:'Weekly Hours',v:safeH(p.estimated_weekly_hours)}].map(({l,v})=>(
           <div key={l} className="stat-card" style={{textAlign:'center',padding:'14px'}}>
-            <div style={{fontSize:'18px',fontWeight:'700',fontFamily:'Space Grotesk,sans-serif',color:'var(--accent-dim)'}}>{v}</div>
+            <div style={{fontSize:'18px',fontWeight:'700',fontFamily:'Space Grotesk,sans-serif',color:'#8b949e'}}>{v}</div>
             <div style={{fontSize:'10px',color:'var(--text-muted)',marginTop:'2px'}}>{l}</div>
           </div>
         ))}
@@ -276,7 +276,7 @@ function GHPanel({ p }) {
       <div className="card" style={{padding:'16px'}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'12px'}}>
           <div style={{fontSize:'12px',fontWeight:'600'}}>Recent Commits</div>
-          <a href={`https://github.com/${p.username}`} target="_blank" rel="noreferrer" style={{fontSize:'11px',color:'var(--accent-dim)',display:'flex',alignItems:'center',gap:'4px',textDecoration:'none'}}>View on GitHub <ExternalLink size={10}/></a>
+          <a href={`https://github.com/${p.username}`} target="_blank" rel="noreferrer" style={{fontSize:'11px',color:'#8b949e',display:'flex',alignItems:'center',gap:'4px',textDecoration:'none'}}>View on GitHub <ExternalLink size={10}/></a>
         </div>
         <RecentList items={p.recent_submissions} />
       </div>
@@ -289,7 +289,7 @@ function CFPanel({ p }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px' }}>
-        {[{l:'Rating',v:p.cf_rating??'—',c:rc},{l:'Rank',v:p.cf_rank||'—',c:rc},{l:'Problems Solved',v:p.cf_problems_solved??0,c:'var(--accent)'}].map(({l,v,c})=>(
+        {[{l:'Rating',v:p.cf_rating??'—',c:rc},{l:'Rank',v:p.cf_rank||'—',c:rc},{l:'Problems Solved',v:p.cf_problems_solved??0,c:'#4f8ef7'}].map(({l,v,c})=>(
           <div key={l} className="stat-card" style={{textAlign:'center',padding:'14px'}}>
             <div style={{fontSize:'20px',fontWeight:'700',fontFamily:'Space Grotesk,sans-serif',color:c}}>{v}</div>
             <div style={{fontSize:'10px',color:'var(--text-muted)',marginTop:'2px'}}>{l}</div>
@@ -299,7 +299,7 @@ function CFPanel({ p }) {
       <div className="card" style={{padding:'16px'}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'12px'}}>
           <div style={{fontSize:'12px',fontWeight:'600'}}>Recent AC Submissions</div>
-          <a href={`https://codeforces.com/profile/${p.username}`} target="_blank" rel="noreferrer" style={{fontSize:'11px',color:'var(--accent)',display:'flex',alignItems:'center',gap:'4px',textDecoration:'none'}}>View on Codeforces <ExternalLink size={10}/></a>
+          <a href={`https://codeforces.com/profile/${p.username}`} target="_blank" rel="noreferrer" style={{fontSize:'11px',color:'#4f8ef7',display:'flex',alignItems:'center',gap:'4px',textDecoration:'none'}}>View on Codeforces <ExternalLink size={10}/></a>
         </div>
         <RecentList items={p.recent_submissions} />
       </div>
@@ -314,7 +314,7 @@ function CCPanel({ p }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px' }}>
         {[{l:'Rating',v:p.cc_rating??'—'},{l:'Stars',v:'★'.repeat(stars)||'—'},{l:'Problems Solved',v:p.cc_problems_solved??0}].map(({l,v})=>(
           <div key={l} className="stat-card" style={{textAlign:'center',padding:'14px'}}>
-            <div style={{fontSize:'20px',fontWeight:'700',fontFamily:'Space Grotesk,sans-serif',color:'var(--accent-dim)'}}>{v}</div>
+            <div style={{fontSize:'20px',fontWeight:'700',fontFamily:'Space Grotesk,sans-serif',color:'#cd7f32'}}>{v}</div>
             <div style={{fontSize:'10px',color:'var(--text-muted)',marginTop:'2px'}}>{l}</div>
           </div>
         ))}
@@ -322,7 +322,7 @@ function CCPanel({ p }) {
       <div className="card" style={{padding:'16px'}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'12px'}}>
           <div style={{fontSize:'12px',fontWeight:'600'}}>Recent Contests</div>
-          <a href={`https://codechef.com/users/${p.username}`} target="_blank" rel="noreferrer" style={{fontSize:'11px',color:'var(--accent-dim)',display:'flex',alignItems:'center',gap:'4px',textDecoration:'none'}}>View on CodeChef <ExternalLink size={10}/></a>
+          <a href={`https://codechef.com/users/${p.username}`} target="_blank" rel="noreferrer" style={{fontSize:'11px',color:'#cd7f32',display:'flex',alignItems:'center',gap:'4px',textDecoration:'none'}}>View on CodeChef <ExternalLink size={10}/></a>
         </div>
         <RecentList items={p.recent_submissions} />
       </div>
@@ -358,7 +358,7 @@ function Leaderboard() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
       {me && (
-        <div style={{ padding: '12px 16px', borderRadius: '10px', background: `var(--accent-bg)`, border: `1px solid var(--accent-border)` }}>
+        <div style={{ padding: '12px 16px', borderRadius: '10px', background: `${getTier(me.veloris_score??0).color}15`, border: `1px solid ${getTier(me.veloris_score??0).color}40` }}>
           <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginBottom: '4px' }}>Your Rank</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <span style={{ fontSize: '22px', fontWeight: '800', fontFamily: 'Space Grotesk', color: getTier(me.veloris_score??0).color }}>#{me.rank}</span>
@@ -373,7 +373,7 @@ function Leaderboard() {
       {board.map(row => {
         const tier = getTier(row.veloris_score ?? 0);
         return (
-          <div key={row.rank} style={{ display: 'grid', gridTemplateColumns: '44px 1fr 110px 80px 80px 80px', gap: '8px', padding: '10px 12px', borderRadius: '8px', background: row.is_me ? `var(--accent-bg)` : 'rgba(255,255,255,0.02)', border: row.is_me ? `1px solid var(--accent-border)` : '1px solid rgba(255,255,255,0.05)', borderLeft: row.is_me ? `3px solid var(--accent)` : undefined, alignItems: 'center' }}>
+          <div key={row.rank} style={{ display: 'grid', gridTemplateColumns: '44px 1fr 110px 80px 80px 80px', gap: '8px', padding: '10px 12px', borderRadius: '8px', background: row.is_me ? `${tier.color}12` : 'rgba(255,255,255,0.02)', border: row.is_me ? `1px solid ${tier.color}40` : '1px solid rgba(255,255,255,0.05)', borderLeft: row.is_me ? `3px solid ${tier.color}` : undefined, alignItems: 'center' }}>
             <span style={{ fontSize: row.rank <= 3 ? '18px' : '13px', fontWeight: '700', textAlign: 'center' }}>{MEDAL[row.rank] || `#${row.rank}`}</span>
             <div style={{ overflow: 'hidden' }}>
               <div style={{ fontSize: '13px', fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -386,7 +386,7 @@ function Leaderboard() {
               <div style={{ fontSize: '9px', color: tier.color, opacity: 0.7 }}>{tier.label}</div>
             </div>
             <div style={{ textAlign: 'center', fontSize: '12px', fontWeight: '600' }}>{row.problems_solved ?? '—'}</div>
-            <div style={{ textAlign: 'center', fontSize: '12px', color: 'var(--accent)', fontWeight: '600' }}>{row.cf_rating || '—'}</div>
+            <div style={{ textAlign: 'center', fontSize: '12px', color: '#4f8ef7', fontWeight: '600' }}>{row.cf_rating || '—'}</div>
             <div style={{ textAlign: 'right', fontSize: '10px', color: 'var(--text-muted)' }}>{timeAgo(row.last_activity_at)}</div>
           </div>
         );
@@ -472,10 +472,10 @@ export default function CodingProfile() {
       {summary && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px', marginBottom: '20px' }}>
           {[
-            { label: 'Weekly Coding Hours', value: safeH(summary.total_weekly_hours), color: summary.total_weekly_hours > 0 ? 'var(--accent-dim)' : 'var(--text-muted)' },
-            { label: 'Total Problems Solved', value: summary.total_problems_solved ?? 0, color: 'var(--status-ok)' },
-            { label: 'Last Active', value: timeAgo(summary.last_activity_at), color: (summary.days_since_activity ?? 99) > 7 ? 'var(--status-err)' : 'var(--status-warn)' },
-            { label: 'Platforms Linked', value: `${linked.length}/4`, color: 'var(--accent)' },
+            { label: 'Weekly Coding Hours', value: safeH(summary.total_weekly_hours), color: summary.total_weekly_hours > 0 ? '#8b5cf6' : 'var(--text-muted)' },
+            { label: 'Total Problems Solved', value: summary.total_problems_solved ?? 0, color: '#22c55e' },
+            { label: 'Last Active', value: timeAgo(summary.last_activity_at), color: (summary.days_since_activity ?? 99) > 7 ? '#ef4444' : '#f59e0b' },
+            { label: 'Platforms Linked', value: `${linked.length}/4`, color: '#4f8ef7' },
           ].map(({ label, value, color }) => (
             <div key={label} className="stat-card" style={{ padding: '14px' }}>
               <div style={{ fontSize: '20px', fontWeight: '700', fontFamily: 'Space Grotesk,sans-serif', color }}>{value}</div>
@@ -489,7 +489,7 @@ export default function CodingProfile() {
       <div style={{ display: 'flex', gap: '2px', marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.06)', overflowX: 'auto' }}>
         {TABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            style={{ padding: '8px 14px', fontSize: '12px', background: 'transparent', border: 'none', borderBottom: tab === t.id ? '2px solid var(--accent)' : '2px solid transparent', color: tab === t.id ? '#fff' : 'var(--text-muted)', cursor: 'pointer', marginBottom: '-1px', whiteSpace: 'nowrap', transition: 'color 0.15s' }}>
+            style={{ padding: '8px 14px', fontSize: '12px', background: 'transparent', border: 'none', borderBottom: tab === t.id ? '2px solid #5B5BD6' : '2px solid transparent', color: tab === t.id ? '#fff' : 'var(--text-muted)', cursor: 'pointer', marginBottom: '-1px', whiteSpace: 'nowrap', transition: 'color 0.15s' }}>
             {t.label}
           </button>
         ))}

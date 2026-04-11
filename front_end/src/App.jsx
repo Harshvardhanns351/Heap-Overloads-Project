@@ -1,31 +1,26 @@
-import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { Show, useUser } from '@clerk/react';
+﻿import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import useAppStore from './store';
 import Layout from './components/Layout';
 import Login from './pages/Login';
-import SignUp from './pages/SignUp';
 import Landing from './pages/Landing';
+import SSOCallback from './pages/SSOCallback';
+import SSOExchange from './pages/SSOExchange';
 
-// Student pages
 import StudentDashboard from './pages/student/Dashboard';
 import Roadmap from './pages/student/Roadmap';
 import Mentor from './pages/student/Mentor';
 import Documents from './pages/student/Documents';
 import Disputes from './pages/student/Disputes';
 
-// Shared
 import StudentProfilePage from './pages/shared/StudentProfilePage';
 import StudentListPage from './pages/shared/StudentListPage';
 
-// Teacher pages
 import TeacherClasses from './pages/teacher/Classes';
 import TeacherAssignments from './pages/teacher/Assignments';
 import TeacherAttendance from './pages/teacher/Attendance';
 import TeacherAlerts from './pages/teacher/Alerts';
 import TeacherProfile from './pages/teacher/TeacherProfile';
 
-// Admin pages
 import AdminAnalytics from './pages/admin/Analytics';
 import AdminDisputes from './pages/admin/Disputes';
 import AdminUsers from './pages/admin/Users';
@@ -41,7 +36,6 @@ function StudentRoutes() {
         <Route path="/documents" element={<Documents />} />
         <Route path="/disputes" element={<Disputes />} />
         <Route path="/profile" element={<StudentProfilePage />} />
-        {/* Legacy redirect */}
         <Route path="/coding" element={<Navigate to="/profile?tab=coding" replace />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
@@ -84,40 +78,38 @@ function AdminRoutes() {
 
 export default function App() {
   const { currentUser, role } = useAppStore();
-  const { isSignedIn, user } = useUser();
-  
-  // Sync Clerk auth state to Zustand mock store
-  useEffect(() => {
-    if (isSignedIn && user && !currentUser) {
-      useAppStore.setState({ 
-        currentUser: { id: user.id, name: user.fullName || 'System User', email: user.primaryEmailAddress?.emailAddress },
-        role: 'student' // Default to student portal
-      });
-    }
-  }, [isSignedIn, user, currentUser]);
+
+  // These routes must always be accessible regardless of auth state
+  // (Clerk redirects back to /sso-callback even when not logged in)
+  const path = window.location.pathname;
+  if (path === '/sso-callback' || path === '/sso-exchange') {
+    return (
+      <BrowserRouter>
+        <Routes>
+          <Route path="/sso-callback" element={<SSOCallback />} />
+          <Route path="/sso-exchange" element={<SSOExchange />} />
+        </Routes>
+      </BrowserRouter>
+    );
+  }
+
+  if (!currentUser) {
+    return (
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Landing />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    );
+  }
 
   return (
-    <>
-      <Show when="signed-out">
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Landing />} />
-            <Route path="/login/*" element={<Login />} />
-            <Route path="/signup/*" element={<SignUp />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </BrowserRouter>
-      </Show>
-
-      <Show when="signed-in">
-        {currentUser && (
-          <BrowserRouter>
-            {role === 'student' && <StudentRoutes />}
-            {role === 'teacher' && <TeacherRoutes />}
-            {role === 'admin' && <AdminRoutes />}
-          </BrowserRouter>
-        )}
-      </Show>
-    </>
+    <BrowserRouter>
+      {role === 'student' && <StudentRoutes />}
+      {role === 'teacher' && <TeacherRoutes />}
+      {role === 'admin'   && <AdminRoutes />}
+    </BrowserRouter>
   );
 }

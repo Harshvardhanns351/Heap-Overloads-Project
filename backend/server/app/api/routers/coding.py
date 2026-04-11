@@ -7,7 +7,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import select
 from datetime import datetime, timezone
 import json
-import os
 
 from app.database import get_session
 from app.models import CodingProfile, User
@@ -294,107 +293,6 @@ def get_coding_summary(
     }
 
 
-@router.get("/me/heatmap")
-async def get_heatmap(
-    current_user: User = Depends(get_current_user),
-    session=Depends(get_session),
-):
-    """
-    Returns a full contribution calendar for the heatmap.
-    Merges: GitHub daily contributions + Codeforces all submissions + LeetCode recent + CodeChef contests.
-    Returns: { "dates": {"YYYY-MM-DD": count, ...} }
-    """
-    profiles = session.exec(
-        select(CodingProfile).where(CodingProfile.student_id == current_user.id)
-    ).all()
-
-    dates: dict[str, int] = {}
-
-    def add(iso: str | None, n: int = 1):
-        if not iso:
-            return
-        d = iso[:10]
-        dates[d] = dates.get(d, 0) + n
-
-    # ── 1. Merge all stored recent_submissions from every platform ────────────
-    for p in profiles:
-        subs = json.loads(p.recent_submissions_json or "[]")
-        for s in subs:
-            add(s.get("time"))
-
-    # ── 2. GitHub — fetch full contribution calendar via GraphQL ─────────────
-    gh = next((p for p in profiles if p.platform == "github"), None)
-    if gh and gh.username:
-        token = os.getenv("GITHUB_TOKEN", "")
-        if token:
-            try:
-                import httpx
-                headers = {
-                    "Authorization": f"Bearer {token}",
-                    "Accept": "application/vnd.github+json",
-                }
-                gql = """
-                query($login: String!) {
-                  user(login: $login) {
-                    contributionsCollection {
-                      contributionCalendar {
-                        weeks {
-                          contributionDays {
-                            date
-                            contributionCount
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-                """
-                async with httpx.AsyncClient(timeout=12.0) as client:
-                    resp = await client.post(
-                        "https://api.github.com/graphql",
-                        headers=headers,
-                        json={"query": gql, "variables": {"login": gh.username}},
-                    )
-                    if resp.status_code == 200:
-                        data = resp.json()
-                        weeks = (
-                            data.get("data", {})
-                            .get("user", {})
-                            .get("contributionsCollection", {})
-                            .get("contributionCalendar", {})
-                            .get("weeks", [])
-                        )
-                        for week in weeks:
-                            for day in week.get("contributionDays", []):
-                                if day.get("contributionCount", 0) > 0:
-                                    add(day["date"], day["contributionCount"])
-            except Exception as e:
-                logger.warning(f"GitHub heatmap fetch failed: {e}")
-
-    # ── 3. Codeforces — fetch full submission history (up to 500) ────────────
-    cf = next((p for p in profiles if p.platform == "codeforces"), None)
-    if cf and cf.username:
-        try:
-            import httpx
-            async with httpx.AsyncClient(timeout=12.0) as client:
-                r = await client.get(
-                    "https://codeforces.com/api/user.status",
-                    params={"handle": cf.username, "from": 1, "count": 500},
-                )
-                if r.status_code == 200:
-                    data = r.json()
-                    if data.get("status") == "OK":
-                        for s in data.get("result", []):
-                            ts = s.get("creationTimeSeconds")
-                            if ts and s.get("verdict") == "OK":
-                                dt = datetime.fromtimestamp(ts, tz=timezone.utc)
-                                add(dt.strftime("%Y-%m-%d"))
-        except Exception as e:
-            logger.warning(f"Codeforces heatmap fetch failed: {e}")
-
-    return {"dates": dates}
-
-
 @router.get("/me/score")
 def get_my_score(
     current_user: User = Depends(get_current_user),
@@ -404,60 +302,6 @@ def get_my_score(
         select(CodingProfile).where(CodingProfile.student_id == current_user.id)
     ).all()
     return compute_veloris_score(list(profiles))
-
-
-@router.get("/heatmap/{student_id}")
-async def get_student_heatmap(
-    student_id: int,
-    current_user: User = Depends(get_current_user),
-    session=Depends(get_session),
-):
-    """Teacher/admin view of a student's contribution heatmap."""
-    profiles = session.exec(
-        select(CodingProfile).where(CodingProfile.student_id == student_id)
-    ).all()
-    dates: dict[str, int] = {}
-
-    def add(iso, n=1):
-        if not iso: return
-        d = iso[:10]; dates[d] = dates.get(d, 0) + n
-
-    for p in profiles:
-        for s in json.loads(p.recent_submissions_json or "[]"):
-            add(s.get("time"))
-
-    gh = next((p for p in profiles if p.platform == "github"), None)
-    if gh and gh.username:
-        token = os.getenv("GITHUB_TOKEN", "")
-        if token:
-            try:
-                import httpx
-                h = {"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"}
-                gql = 'query($l:String!){user(login:$l){contributionsCollection{contributionCalendar{weeks{contributionDays{date contributionCount}}}}}}'
-                async with httpx.AsyncClient(timeout=12.0) as c:
-                    r = await c.post("https://api.github.com/graphql", headers=h, json={"query": gql, "variables": {"l": gh.username}})
-                    if r.status_code == 200:
-                        for w in r.json().get("data",{}).get("user",{}).get("contributionsCollection",{}).get("contributionCalendar",{}).get("weeks",[]):
-                            for d in w.get("contributionDays",[]):
-                                if d.get("contributionCount",0) > 0: add(d["date"], d["contributionCount"])
-            except Exception as e:
-                logger.warning(f"GH heatmap teacher: {e}")
-
-    cf = next((p for p in profiles if p.platform == "codeforces"), None)
-    if cf and cf.username:
-        try:
-            import httpx
-            async with httpx.AsyncClient(timeout=12.0) as c:
-                r = await c.get("https://codeforces.com/api/user.status", params={"handle": cf.username, "from": 1, "count": 500})
-                if r.status_code == 200 and r.json().get("status") == "OK":
-                    for s in r.json().get("result", []):
-                        ts = s.get("creationTimeSeconds")
-                        if ts and s.get("verdict") == "OK":
-                            add(datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%d"))
-        except Exception as e:
-            logger.warning(f"CF heatmap teacher: {e}")
-
-    return {"dates": dates}
 
 
 @router.get("/leaderboard")

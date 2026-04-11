@@ -4,25 +4,38 @@ import { api } from './api';
 // Kept for StudentDetail legacy reference — will be removed once fully migrated
 export const MOCK_STUDENTS = [];
 
-const useAppStore = create((set, get) => ({
-  // Auth
-  currentUser: (() => {
-    try {
-      const user = JSON.parse(localStorage.getItem('user') || 'null');
-      const token = localStorage.getItem('token');
-      // If user is set but token is missing, clear everything
-      if (user && !token) {
-        localStorage.removeItem('user');
-        localStorage.removeItem('role');
-        return null;
-      }
-      return user;
-    } catch { return null; }
-  })(),
-  role: (() => {
+// ── Token validation helper ───────────────────────────────────────────────────
+function isTokenValid(token) {
+  if (!token) return false;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    // Check expiry with 30s buffer
+    return payload.exp && payload.exp > (Date.now() / 1000) + 30;
+  } catch {
+    return false;
+  }
+}
+
+function getStoredAuth() {
+  try {
     const token = localStorage.getItem('token');
-    return token ? (localStorage.getItem('role') || null) : null;
-  })(),
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    if (!token || !user || !isTokenValid(token)) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('role');
+      return { user: null, role: null };
+    }
+    return { user, role: localStorage.getItem('role') || user.role };
+  } catch {
+    return { user: null, role: null };
+  }
+}
+
+const useAppStore = create((set, get) => ({
+  // Auth — validated on startup, stale tokens cleared immediately
+  currentUser: getStoredAuth().user,
+  role: getStoredAuth().role,
   isInitializing: false,
 
   setAuth: (user, token) => {

@@ -12,4 +12,8 @@ passlib[bcrypt]
 pytesseract
 pillow
 httpx
+openpyxl
+pypdf
+mammoth
+python-docx
 

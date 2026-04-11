@@ -8,21 +8,27 @@ const getHeaders = () => {
   };
 };
 
+// Track if we're already redirecting to avoid loops
+let _redirecting = false;
+
 const handleResponse = async (resp) => {
   if (resp.status === 401) {
-    // Only redirect if we had a token — prevents redirect loops on missing token
     const hadToken = !!localStorage.getItem('token');
-    if (hadToken) {
+    if (hadToken && !_redirecting) {
+      _redirecting = true;
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       localStorage.removeItem('role');
-      window.location.href = '/login';
+      // Small delay so multiple concurrent 401s don't all redirect
+      setTimeout(() => {
+        _redirecting = false;
+        window.location.href = '/login';
+      }, 100);
     }
     throw new Error('Unauthorized');
   }
   if (!resp.ok) {
     const err = await resp.json().catch(() => ({ detail: 'Unknown error' }));
-    // FastAPI 422 returns detail as an array of validation errors
     const detail = Array.isArray(err.detail)
       ? err.detail.map(e => e.msg || JSON.stringify(e)).join(', ')
       : (err.detail || 'API error');
