@@ -120,7 +120,7 @@ def health():
     """Health check endpoint for monitoring and load balancers."""
     return {
         "status": "ok",
-        "environment": ENVIRONMENT,
+        "environment": settings.ENVIRONMENT,
         "version": "1.0.0"
     }
 

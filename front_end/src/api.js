@@ -1,4 +1,11 @@
-const API_BASE = 'http://localhost:8000/api';
+// Get API base URL from environment variable
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+
+// Log configuration in development
+if (import.meta.env.DEV) {
+  console.log('API Base URL:', API_BASE);
+  console.log('Environment:', import.meta.env.VITE_ENVIRONMENT);
+}
 
 const getHeaders = () => {
   const token = localStorage.getItem('token');
