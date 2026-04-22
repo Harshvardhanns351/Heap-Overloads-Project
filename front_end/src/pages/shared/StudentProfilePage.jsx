@@ -864,7 +864,7 @@ function ActivityHeatmap({ codingData, userId, isOwn }) {
 
         <div style={{ overflowX: 'auto' }}>
           <div style={{ display: 'inline-flex', gap: 0 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: GAP, marginRight: '6px', paddingTop: `${CELL + GAP + 4}px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: GAP, marginRight: '6px', paddingTop: `${CELL + GAP + 4}px` }}>
               {['','Mon','','Wed','','Fri',''].map((d, i) => (
                 <div key={i} style={{ height: CELL, fontSize: '10px', color: 'var(--text-muted)', lineHeight: `${CELL}px`, textAlign: 'right', whiteSpace: 'nowrap' }}>{d}</div>
               ))}
