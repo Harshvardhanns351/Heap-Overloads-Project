@@ -22,7 +22,60 @@ def _to_risk_score_read(r: RiskScore) -> RiskScoreRead:
     )
 
 
-@router.get("/me", response_model=Optional[RiskScoreRead])
+@router.get("/burnout/{class_id}", response_model=List[dict])
+def get_class_burnout(
+    class_id: str,
+    current_user: User = Depends(get_current_user),
+    session=Depends(get_session),
+):
+    """Return students with declining risk scores in the given class."""
+    students = session.exec(
+        select(User).where(User.class_id == class_id, User.role == "student")
+    ).all()
+
+    result = []
+    for student in students:
+        history = session.exec(
+            select(RiskScore)
+            .where(RiskScore.student_id == student.id)
+            .order_by(RiskScore.created_at.asc())
+        ).all()
+        if not history:
+            continue
+        latest = history[-1]
+        # Only include students with RED or YELLOW, or declining trend
+        scores = [r.score for r in history]
+        is_declining = len(scores) >= 3 and scores[-1] < scores[-3]
+        if latest.level in ("RED", "YELLOW") or is_declining:
+            result.append({
+                "student_id": student.id,
+                "student_name": student.name,
+                "current_score": latest.score,
+                "current_level": latest.level,
+                "history": [
+                    {"score": r.score, "level": r.level, "created_at": r.created_at.isoformat()}
+                    for r in history
+                ],
+            })
+    result.sort(key=lambda x: x["current_score"])
+    return result
+
+
+
+def get_risk_history(
+    student_id: int,
+    current_user: User = Depends(get_current_user),
+    session=Depends(get_session),
+):
+    items = session.exec(
+        select(RiskScore)
+        .where(RiskScore.student_id == student_id)
+        .order_by(RiskScore.created_at.asc())
+    ).all()
+    return [_to_risk_score_read(r) for r in items]
+
+
+
 def get_my_risk_score(
     current_user: User = Depends(get_current_user),
     session=Depends(get_session),

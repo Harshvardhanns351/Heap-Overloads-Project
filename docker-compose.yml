@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: veloris
+      POSTGRES_PASSWORD: veloris_dev_password
+      POSTGRES_DB: veloris
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U veloris"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend/server
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://veloris:veloris_dev_password@db:5432/veloris
+      ENVIRONMENT: development
+      SECRET_KEY: dev-secret-key-change-in-production
+      ALLOWED_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+      FRONTEND_URL: http://localhost:5173
+      GROQ_API_KEY: ${GROQ_API_KEY}
+      YOUTUBE_API_KEY: ${YOUTUBE_API_KEY}
+      GITHUB_TOKEN: ${GITHUB_TOKEN}
+      LOG_LEVEL: INFO
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend/server/uploads:/app/uploads
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

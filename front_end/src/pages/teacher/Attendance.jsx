@@ -1,8 +1,11 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import useAppStore from '../../store';
 import { api } from '../../api';
 import { PageHeader, ProgressBar, Tabs } from '../../components/UI';
-import { AlertTriangle, Download, Upload, CheckCircle2, Loader2, FileText, FileSpreadsheet, X, Users, TrendingDown } from 'lucide-react';
+import {
+  AlertTriangle, Download, Upload, CheckCircle2, Loader2,
+  FileText, FileSpreadsheet, X, Users, TrendingDown, FileBadge
+} from 'lucide-react';
 import * as XLSX from 'xlsx';
 import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
@@ -13,9 +16,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url
 ).toString();
 
-// ─── Helpers (Merged from Main) ───────────────────────────────────────────────────
-
-/** Parse a CSV text into array-of-objects using first row as headers */
+// ─── Parsers & Helpers ────────────────────────────────────────────────────────
 function parseCSV(text) {
   const lines = text.trim().split(/\r?\n/);
   if (lines.length < 2) return [];
@@ -28,72 +29,6 @@ function parseCSV(text) {
   });
 }
 
-/** Bulletproof PDF table parser */
-async function parsePDFItems(pdfDoc) {
-  const allItems = [];
-  for (let p = 1; p <= pdfDoc.numPages; p++) {
-    const page    = await pdfDoc.getPage(p);
-    const content = await page.getTextContent();
-    const vp      = page.getViewport({ scale: 1 });
-    content.items.forEach(item => {
-      const str = item.str.trim();
-      if (!str) return;
-      allItems.push({ str, x: item.transform[4], y: vp.height - item.transform[5], page: p });
-    });
-  }
-  if (allItems.length === 0) return [];
-
-  allItems.sort((a, b) => a.page - b.page || a.y - b.y || a.x - b.x);
-
-  const rawRows = [];
-  let cur = [allItems[0]];
-  for (let i = 1; i < allItems.length; i++) {
-    const prev = allItems[i - 1], item = allItems[i];
-    if (item.page === prev.page && Math.abs(item.y - prev.y) < 10) cur.push(item);
-    else { rawRows.push(cur); cur = [item]; }
-  }
-  rawRows.push(cur);
-
-  const KW = ['name','roll','present','total','attendance','branch','semester','columns','no'];
-  let headerIdx = 0, bestScore = 0;
-  for (let i = 0; i < Math.min(rawRows.length, 8); i++) {
-    const txt   = rawRows[i].map(t => t.str).join(' ').toLowerCase();
-    const score = KW.filter(k => txt.includes(k)).length;
-    if (score > bestScore) { bestScore = score; headerIdx = i; }
-  }
-  if (bestScore < 2) return [];
-
-  const hTokens = [...rawRows[headerIdx]].sort((a, b) => a.x - b.x);
-  const cols = [];
-  for (const tok of hTokens) {
-    if (cols.length > 0) {
-      const last = cols[cols.length - 1];
-      if (tok.x - last.x < 40) {
-        last.label += ' ' + tok.str;
-        continue;
-      }
-    }
-    cols.push({ label: tok.str, x: tok.x });
-  }
-
-  const nearest = (x) => {
-    let bi = 0, bd = Infinity;
-    cols.forEach((c, i) => { const d = Math.abs(x - c.x); if (d < bd) { bd = d; bi = i; } });
-    return bi;
-  };
-
-  const dataRows = rawRows.slice(headerIdx + 1);
-  return dataRows.map(tokens => {
-    const obj = {};
-    cols.forEach(c => { obj[c.label] = ''; });
-    [...tokens].sort((a, b) => a.x - b.x).forEach(tok => {
-      const key = cols[nearest(tok.x)].label;
-      obj[key]  = obj[key] ? obj[key] + ' ' + tok.str : tok.str;
-    });
-    return obj;
-  });
-}
-
 function normaliseRow(raw) {
   const get = (...keys) => {
     for (const k of keys) {
@@ -102,31 +37,12 @@ function normaliseRow(raw) {
     }
     return '';
   };
-  const getP = (...keys) => {
-    for (const k of keys) {
-      const hit = Object.keys(raw).find(rk => rk.toLowerCase().includes(k.toLowerCase()));
-      if (hit && String(raw[hit]).trim()) return String(raw[hit]).trim();
-    }
-    return '';
-  };
-
-  const name = get('name','studentname','student') || getP('name','student');
-  const rollNo = get('rollno','roll','rollnumber','enrollment','id') || getP('roll');
-  let branch = get('branch','dept','department','stream') || getP('branch','dept');
-  let semester = get('semester','sem','year') || getP('semester','sem');
-
-  const branchSplit = (branch || semester || '').match(/^([A-Za-z]+)\s+(\d+)$/);
-  if (branchSplit) {
-    branch = branchSplit[1];
-    semester = branchSplit[2];
-  }
-
-  const present = parseInt(get('present','dayspresent','attended') || getP('present','attend'), 10) || 0;
-  const total = parseInt(get('totalcolumns','total','totalclasses','totaldays','conducted') || getP('total','conduct'), 10) || 0;
-  const pctRaw = get('attendance','percentage','pct') || getP('attendance','percent');
-  const pct = total > 0 ? Math.round((present / total) * 100) : (parseFloat(pctRaw) || 0);
-
-  return { name, rollNo, branch, semester, present, total, attendance: pct };
+  const name = get('name', 'studentname', 'student');
+  const rollNo = get('rollno', 'roll', 'rollnumber', 'enrollment', 'id');
+  const present = parseInt(get('present', 'dayspresent', 'attended') || '0', 10);
+  const total = parseInt(get('total', 'conducted', 'totalclasses') || '0', 10);
+  const attendance = total > 0 ? Math.round((present / total) * 100) : 0;
+  return { name, rollNo, present, total, attendance, original: raw };
 }
 
 function downloadBlob(blob, filename) {
@@ -136,175 +52,188 @@ function downloadBlob(blob, filename) {
   URL.revokeObjectURL(url);
 }
 
-const exportCSV = (rows) => {
-  const headers = ['Name', 'Roll No', 'Branch', 'Semester', 'Present', 'Total', 'Attendance %'];
-  const lines = [headers.join(','), ...rows.map(r => [r.student_name, r.roll_no, r.class_id, '', r.present_days, r.total_days, r.attendance_percentage].join(','))];
-  downloadBlob(new Blob([lines.join('\n')], { type: 'text/csv' }), 'attendance_report.csv');
-};
-
-// ─── Component ──────────────────────────────────────────────────────────────────
-
+// ─── Component ───────────────────────────────────────────────────────────────
 export default function TeacherAttendance() {
-  const { students, fetchStudents, defaulters, fetchDefaulters } = useAppStore();
+  const { students, fetchStudents, fetchDefaulters, defaulters } = useAppStore();
   const [tab, setTab] = useState('overview');
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [uploadedRows, setUploadedRows] = useState([]);
+  const [fileName, setFileName] = useState('');
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    async function loadData() {
-      setLoading(true);
-      await Promise.all([fetchStudents(), fetchDefaulters('CSE-A')]);
-      setLoading(false);
-    }
-    loadData();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    Promise.all([fetchStudents(), fetchDefaulters('CSE-A')]).finally(() => setLoading(false));
+  }, []);
 
-  const handleBulkUpload = async (e) => {
+  const handleFile = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
+    setFileName(file.name);
     setUploading(true);
     try {
-      // Basic CSV parser logic for now or use the helpers above for more advanced files
-      const text = await file.text();
-      const lines = text.trim().split('\n');
-      const records = [];
-      
-      for (let i = 1; i < lines.length; i++) {
-        const parts = lines[i].split(',');
-        if (parts.length >= 2) {
-          records.push({
-            student_id: parseInt(parts[0].trim()),
-            present: parts[1].trim().toLowerCase() === 'true',
-          });
-        }
+      const ext = file.name.split('.').pop().toLowerCase();
+      let rows = [];
+
+      if (ext === 'csv') {
+        const text = await file.text();
+        rows = parseCSV(text).map(normaliseRow);
+      } else if (ext === 'xlsx' || ext === 'xls') {
+        const buf = await file.arrayBuffer();
+        const wb = XLSX.read(buf, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        rows = XLSX.utils.sheet_to_json(ws, { defval: '' }).map(normaliseRow);
       }
 
-      await api.attendance.bulkUpload('CSE-A', new Date().toISOString().split('T')[0], records);
-      alert('Attendance uploaded successfully!');
-      await fetchDefaulters('CSE-A');
+      if (rows.length > 0) {
+        setUploadedRows(rows);
+        setTab('preview');
+      }
     } catch (err) {
-      alert('Upload failed: ' + err.message);
+      alert('Parse failed: ' + err.message);
     } finally {
       setUploading(false);
     }
   };
 
-  const handleExport = () => {
-    exportCSV(defaulters);
-  };
+  const currentDefaulters = useMemo(() => {
+    // If we have uploaded rows, show those that are < 75%
+    if (uploadedRows.length > 0) return uploadedRows.filter(r => r.attendance < 75);
+    // Otherwise fallback to API defaulters
+    return defaulters || [];
+  }, [uploadedRows, defaulters]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#606060' }} />
-      </div>
-    );
-  }
+  if (loading) return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+      <Loader2 size={32} className="animate-spin" style={{ color: 'var(--accent)' }} />
+    </div>
+  );
 
   return (
-    <div className="fade-in-up">
+    <div className="fade-in-up" style={{ maxWidth: '1000px', margin: '0 auto', padding: '2rem 1rem' }}>
       <PageHeader
-        title="Attendance"
-        subtitle="Monthly attendance tracking · Defaulters auto-flagged at <75%"
+        title="Attendance Tracking"
+        subtitle="Upload class records to auto-flag students below 75% threshold"
         action={
           <div style={{ display: 'flex', gap: '8px' }}>
-            <input 
-              type="file" 
-              accept=".csv" 
-              ref={fileInputRef} 
-              style={{ display: 'none' }}
-              onChange={handleBulkUpload}
-            />
-            <button 
-              className="btn btn-ghost" 
-              style={{ fontSize: '11px' }}
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-            >
-              {uploading ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />} 
-              {uploading ? 'Uploading...' : 'Bulk Upload CSV'}
+            <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFile} accept=".csv,.xlsx,.xls" />
+            <button className="btn" onClick={() => fileInputRef.current.click()} disabled={uploading}>
+              {uploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+              {uploading ? 'Processing...' : 'Upload Record'}
             </button>
-            <button className="btn btn-ghost" style={{ fontSize: '11px' }} onClick={handleExport}>
-              <Download size={12} /> Export Defaulters
+            <button className="btn" onClick={() => {/* export logic */}} disabled={currentDefaulters.length === 0}>
+              <Download size={14} /> Export Defaulters
             </button>
           </div>
         }
       />
 
-      <Tabs tabs={[{ key: 'overview', label: 'Class Overview' }, { key: 'defaulters', label: `Defaulters (${defaulters.length})` }]} active={tab} onChange={setTab} />
+      <Tabs 
+        tabs={[
+          { key: 'overview', label: 'Overview' }, 
+          { key: 'defaulters', label: `Defaulters (${currentDefaulters.length})` },
+          ...(uploadedRows.length > 0 ? [{ key: 'preview', label: 'Recently Uploaded' }] : [])
+        ]} 
+        active={tab} 
+        onChange={setTab} 
+      />
 
       {tab === 'overview' && (
-        <div className="card" style={{ overflow: 'hidden' }}>
-          {students.length > 0 ? (
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ background: 'var(--bg-elevated)' }}>
-                  {['Student', 'Roll No', 'Attendance %', 'Status'].map((h) => (
-                    <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {students.filter(s => s.class_id === 'CSE-A').map((s) => {
-                  // Mocking dynamic data for overview if not available in store
-                  const attendancePct = 82; // Default
-                  return (
-                    <tr key={s.id} className="table-row">
-                      <td style={{ padding: '11px 14px', fontSize: '13px', fontWeight: '500' }}>{s.name || 'Unknown'}</td>
-                      <td style={{ padding: '11px 14px', fontSize: '12px', color: 'var(--text-muted)' }}>{s.roll_no || '-'}</td>
-                      <td style={{ padding: '11px 14px', minWidth: '140px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <span style={{ fontSize: '13px', fontWeight: '700', color: attendancePct < 75 ? 'var(--status-err)' : attendancePct < 85 ? 'var(--status-warn)' : 'var(--status-ok)', minWidth: '36px' }}>{attendancePct}%</span>
-                          <ProgressBar value={attendancePct} color={attendancePct < 75 ? 'var(--status-err)' : attendancePct < 85 ? 'var(--status-warn)' : 'var(--status-ok)'} height={5} />
-                        </div>
-                      </td>
-                      <td style={{ padding: '11px 14px' }}>
-                        {attendancePct < 75 ? (
-                          <span className="badge-red" style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '99px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px', width: 'fit-content' }}>
-                            <AlertTriangle size={9} /> Defaulter
-                          </span>
-                        ) : (
-                          <span className="badge-green" style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '99px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px', width: 'fit-content' }}>
-                            <CheckCircle2 size={9} /> OK
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          ) : (
-            <div className="p-8 text-center text-slate-500">No students in class</div>
-          )}
+        <div className="premium-card" style={{ padding: 0, overflow: 'hidden' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border)' }}>
+                {['Student', 'Roll No', 'Attendance %', 'Status'].map(h => (
+                  <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: '11px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {students.filter(s => s.role === 'student').map(s => {
+                const att = 85; // Mock/Placeholder for overview
+                return (
+                  <tr key={s.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                    <td style={{ padding: '14px 16px', fontSize: '13px', fontWeight: 600 }}>{s.name}</td>
+                    <td style={{ padding: '14px 16px', fontSize: '12px', color: 'var(--text-muted)' }}>{s.roll_no || '-'}</td>
+                    <td style={{ padding: '14px 16px', minWidth: '150px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontSize: '13px', fontWeight: 800, width: '38px', color: att < 75 ? 'var(--status-err)' : 'var(--status-ok)' }}>{att}%</span>
+                        <ProgressBar value={att} color={att < 75 ? 'var(--status-err)' : 'var(--status-ok)'} height={5} />
+                      </div>
+                    </td>
+                    <td style={{ padding: '14px 16px' }}>
+                      <span className={att < 75 ? 'badge-red' : 'badge-green'}>{att < 75 ? 'Defaulter' : 'OK'}</span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 
       {tab === 'defaulters' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {defaulters.length === 0 && <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>No defaulters this month 🎉</div>}
-          {defaulters.map((s) => {
-            const absent = s.total_days - s.present_days;
-            return (
-              <div key={s.student_id} className="card" style={{ padding: '16px 20px', borderLeft: '3px solid var(--status-err)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                  <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: 'rgba(239,68,68,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: '700', color: 'var(--status-err)', flexShrink: 0 }}>
-                    {s.student_name?.split(' ').map(n => n[0]).join('') || '?'}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '13px', fontWeight: '600', marginBottom: '2px' }}>{s.student_name}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{s.roll_no || '-'} · {absent} days absent out of {s.total_days}</div>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '22px', fontWeight: '800', fontFamily: 'Space Grotesk', color: 'var(--status-err)' }}>{s.attendance_percentage}%</div>
-                    <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{75 - s.attendance_percentage}% below threshold</div>
-                  </div>
+        <div className="fade-in-up" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
+          {currentDefaulters.length === 0 && (
+            <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '64px 20px', color: 'var(--text-muted)' }}>
+              <CheckCircle2 size={32} style={{ margin: '0 auto 16px', color: 'var(--status-ok)', opacity: 0.5 }} />
+              No defaulters found — high engagement across the class.
+            </div>
+          )}
+          {currentDefaulters.map((d, i) => (
+            <div key={i} className="premium-card" style={{ borderLeft: '3px solid var(--status-err)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '16px' }}>
+                <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'rgba(239,68,68,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 800, color: 'var(--status-err)' }}>
+                  {(d.student_name || d.name || '?').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '14px', fontWeight: 700 }}>{d.student_name || d.name}</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Roll: {d.roll_no || d.rollNo || '-'}</div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '20px', fontWeight: 900, color: 'var(--status-err)', fontFamily: 'Space Grotesk' }}>{d.attendance || d.attendance_percentage}%</div>
+                  <div style={{ fontSize: '9px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Defaulter</div>
                 </div>
               </div>
-            );
-          })}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'rgba(239,68,68,0.05)', borderRadius: '8px', fontSize: '11px', color: '#fca5a5' }}>
+                <span>Threshold breach detected</span>
+                <span style={{ fontWeight: 800 }}>- {75 - (d.attendance || d.attendance_percentage)}% gap</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === 'preview' && (
+        <div className="fade-in-up">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>File: <strong>{fileName}</strong> · {uploadedRows.length} students found</div>
+            <button className="btn" onClick={() => setUploadedRows([])} style={{ color: 'var(--status-err)' }}>Clear</button>
+          </div>
+          <div className="premium-card" style={{ padding: 0, overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border)' }}>
+                  {['Name', 'Roll No', 'Attended', 'Total', 'Status'].map(h => (
+                    <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: '11px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {uploadedRows.map((r, i) => (
+                  <tr key={i} style={{ borderBottom: '1px solid var(--border)' }}>
+                    <td style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 600 }}>{r.name || '—'}</td>
+                    <td style={{ padding: '12px 16px', fontSize: '12px', color: 'var(--text-muted)' }}>{r.rollNo || '—'}</td>
+                    <td style={{ padding: '12px 16px', fontSize: '13px' }}>{r.present}</td>
+                    <td style={{ padding: '12px 16px', fontSize: '13px' }}>{r.total}</td>
+                    <td style={{ padding: '12px 16px' }}>
+                      <span className={r.attendance < 75 ? 'badge-red' : 'badge-green'}>{r.attendance}%</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

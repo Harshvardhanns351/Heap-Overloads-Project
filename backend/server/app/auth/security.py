@@ -5,6 +5,8 @@ from typing import Optional, Dict, Any
 import bcrypt
 from jose import jwt, JWTError
 
+from app.config import settings
+
 
 def hash_password(password: str) -> str:
     """Hash a password using bcrypt directly (bypasses passlib/bcrypt 4.x conflict)."""
@@ -29,17 +31,13 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
             return False
 
 
-def _secret_key() -> str:
-    return os.getenv("JWT_SECRET_KEY", "dev-secret-change-me")
-
-
 def create_access_token(
     subject: str,
     extra_claims: Optional[Dict[str, Any]] = None,
     expires_minutes: Optional[int] = None,
 ) -> str:
     if expires_minutes is None:
-        expires_minutes = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "10080"))
+        expires_minutes = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 
     now = datetime.now(timezone.utc)
     to_encode: Dict[str, Any] = {
@@ -50,11 +48,11 @@ def create_access_token(
     if extra_claims:
         to_encode.update(extra_claims)
 
-    return jwt.encode(to_encode, _secret_key(), algorithm="HS256")
+    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
 
 
 def decode_token(token: str) -> Dict[str, Any]:
     try:
-        return jwt.decode(token, _secret_key(), algorithms=["HS256"])
+        return jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
     except JWTError as e:
         raise ValueError("Invalid token") from e

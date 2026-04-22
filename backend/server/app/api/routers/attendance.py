@@ -157,7 +157,7 @@ def get_defaulters(
                     AttendanceRecord.student_id == student.id,
                     AttendanceRecord.class_id == class_id,
                 )
-            ).scalar()
+            ).one()
             or 0
         )
 
@@ -171,7 +171,7 @@ def get_defaulters(
                     AttendanceRecord.class_id == class_id,
                     AttendanceRecord.present == True,
                 )
-            ).scalar()
+            ).one()
             or 0
         )
 

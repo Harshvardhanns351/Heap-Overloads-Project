@@ -1,4 +1,4 @@
-﻿import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import useAppStore from './store';
 import Layout from './components/Layout';
 import Login from './pages/Login';
@@ -11,10 +11,13 @@ import Roadmap from './pages/student/Roadmap';
 import Mentor from './pages/student/Mentor';
 import Documents from './pages/student/Documents';
 import Disputes from './pages/student/Disputes';
+import StudentAssignments from './pages/student/Assignments';
 
 import StudentProfilePage from './pages/shared/StudentProfilePage';
 import StudentListPage from './pages/shared/StudentListPage';
 
+// Teacher pages
+import TeacherDashboard from './pages/teacher/Dashboard';
 import TeacherClasses from './pages/teacher/Classes';
 import TeacherAssignments from './pages/teacher/Assignments';
 import TeacherAttendance from './pages/teacher/Attendance';
@@ -32,6 +35,7 @@ function StudentRoutes() {
       <Routes>
         <Route path="/dashboard" element={<StudentDashboard />} />
         <Route path="/roadmap" element={<Roadmap />} />
+        <Route path="/assignments" element={<StudentAssignments />} />
         <Route path="/mentor" element={<Mentor />} />
         <Route path="/documents" element={<Documents />} />
         <Route path="/disputes" element={<Disputes />} />
@@ -47,6 +51,7 @@ function TeacherRoutes() {
   return (
     <Layout>
       <Routes>
+        <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
         <Route path="/teacher/classes" element={<TeacherClasses />} />
         <Route path="/teacher/assignments" element={<TeacherAssignments />} />
         <Route path="/teacher/attendance" element={<TeacherAttendance />} />
@@ -54,7 +59,7 @@ function TeacherRoutes() {
         <Route path="/teacher/profile" element={<TeacherProfile />} />
         <Route path="/teacher/students" element={<StudentListPage />} />
         <Route path="/teacher/students/:userId" element={<StudentProfilePage viewMode />} />
-        <Route path="*" element={<Navigate to="/teacher/classes" replace />} />
+        <Route path="*" element={<Navigate to="/teacher/dashboard" replace />} />
       </Routes>
     </Layout>
   );

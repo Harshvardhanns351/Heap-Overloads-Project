@@ -9,15 +9,17 @@ import {
 import logo from '../assets/veloris-logo.png';
 
 const STUDENT_NAV = [
-  { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { path: '/profile',   icon: UserCircle2,     label: 'My Profile' },
-  { path: '/roadmap',   icon: Map,             label: 'My Roadmap' },
-  { path: '/mentor',    icon: MessageSquare,   label: 'AI Mentor'  },
-  { path: '/documents', icon: FileText,        label: 'Documents'  },
-  { path: '/disputes',  icon: AlertCircle,     label: 'Disputes'   },
+  { path: '/dashboard',   icon: LayoutDashboard, label: 'Dashboard'   },
+  { path: '/profile',     icon: UserCircle2,     label: 'My Profile'  },
+  { path: '/roadmap',     icon: Map,             label: 'My Roadmap'  },
+  { path: '/assignments', icon: BookOpen,        label: 'Assignments' },
+  { path: '/mentor',      icon: MessageSquare,   label: 'AI Mentor'   },
+  { path: '/documents',   icon: FileText,        label: 'Documents'   },
+  { path: '/disputes',    icon: AlertCircle,     label: 'Disputes'    },
 ];
 
 const TEACHER_NAV = [
+  { path: '/teacher/dashboard',   icon: LayoutDashboard, label: 'Dashboard'   },
   { path: '/teacher/classes',     icon: Users,       label: 'My Classes'  },
   { path: '/teacher/students',    icon: UserCircle2, label: 'Students'    },
   { path: '/teacher/assignments', icon: BookOpen,    label: 'Assignments' },

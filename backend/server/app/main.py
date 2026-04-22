@@ -11,13 +11,23 @@ import os
 import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-# Initialize logging and scheduler first
-logging.basicConfig(level=logging.INFO)
+# Import settings
+from app.config import settings
+
+# Initialize logging
+logging.basicConfig(
+    level=getattr(logging, settings.LOG_LEVEL),
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
+
+# Initialize scheduler
 scheduler = AsyncIOScheduler()
 
 from app.database import engine, create_db
@@ -69,20 +79,35 @@ async def lifespan(app: FastAPI):
     scheduler.shutdown()
     logger.info("Scheduler shut down")
 
-app = FastAPI(title="Veloris API", version="1.0.0", lifespan=lifespan)
+# Initialize FastAPI app
+app = FastAPI(
+    title="Veloris API",
+    version="1.0.0",
+    lifespan=lifespan,
+    docs_url="/docs" if not settings.IS_PRODUCTION else None,  # Disable docs in production
+    redoc_url="/redoc" if not settings.IS_PRODUCTION else None,
+)
 
+logger.info(f"Environment: {settings.ENVIRONMENT}")
+logger.info(f"Allowed CORS origins: {settings.ALLOWED_ORIGINS}")
+
+# CORS Middleware - Must be added before other middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:3000",
-        "https://veloris.vercel.app",
-    ],
+    allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["Content-Disposition"],
+    max_age=600,  # Cache preflight requests for 10 minutes
 )
+
+# GZip compression for responses
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+# Trusted host middleware for production
+if settings.IS_PRODUCTION:
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.TRUSTED_HOSTS)
 
 # Serve uploaded files (documents/submissions) from disk.
 uploads_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
@@ -93,7 +118,13 @@ app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok"}
+    """Health check endpoint for monitoring and load balancers."""
+    return {
+        "status": "ok",
+        "environment": settings.ENVIRONMENT,
+        "version": "1.0.0"
+    }
+
 
 
 app.include_router(users_router, prefix="/api/users", tags=["users"])

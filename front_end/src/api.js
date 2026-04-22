@@ -1,4 +1,11 @@
-const API_BASE = 'http://localhost:8000/api';
+// Get API base URL from environment variable
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+
+// Log configuration in development
+if (import.meta.env.DEV) {
+  console.log('API Base URL:', API_BASE);
+  console.log('Environment:', import.meta.env.VITE_ENVIRONMENT);
+}
 
 const getHeaders = () => {
   const token = localStorage.getItem('token');
@@ -163,10 +170,13 @@ export const api = {
   alerts: {
     listMine: () => fetch(`${API_BASE}/alerts/mine`, { headers: getHeaders() }).then(handleResponse),
     markRead: (id) => fetch(`${API_BASE}/alerts/${id}/read`, { method: 'PATCH', headers: getHeaders() }).then(handleResponse),
+    runCheck: () => fetch(`${API_BASE}/alerts/run-check`, { method: 'POST', headers: getHeaders() }).then(handleResponse),
   },
   
   riskScores: {
     getMine: () => fetch(`${API_BASE}/risk-scores/me`, { headers: getHeaders() }).then(handleResponse),
+    getHistory: (studentId) => fetch(`${API_BASE}/risk-scores/history/${studentId}`, { headers: getHeaders() }).then(handleResponse),
+    getClassBurnout: (classId) => fetch(`${API_BASE}/risk-scores/burnout/${classId}`, { headers: getHeaders() }).then(handleResponse),
   },
   
   coding: {
@@ -201,6 +211,10 @@ export const api = {
   analytics: {
     getClassAverage: (classId) => fetch(`${API_BASE}/analytics/class-average/${classId}`, { headers: getHeaders() }).then(handleResponse),
     getMyRadar: () => fetch(`${API_BASE}/analytics/my-radar`, { headers: getHeaders() }).then(handleResponse),
+    getTopStudents: (params = {}) => {
+      const q = new URLSearchParams(params).toString();
+      return fetch(`${API_BASE}/analytics/top-students${q ? `?${q}` : ''}`, { headers: getHeaders() }).then(handleResponse);
+    },
   },
 
   sprints: {
